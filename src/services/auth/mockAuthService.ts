@@ -53,7 +53,6 @@ export function createMockAuthService({ delayMs = 400, storage = safeStorage }: 
 
   return {
     async getSession() {
-      await wait()
       const session = storage.getJson<unknown>(sessionKey)
       return isSession(session) ? session : null
     },

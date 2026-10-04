@@ -32,3 +32,5 @@
   .button:active:not(:disabled) { transform: none; }
   .spinner { animation: none; }
 }
+
+.fullWidth { width: 100%; }

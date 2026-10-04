@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { SafeStorage } from '../../lib/safeStorage'
 import { demoAccounts, demoPassword } from '../../mocks/mockAuth'
 import { createMockAuthService, hashPassword } from './mockAuthService'
@@ -18,6 +18,16 @@ function setup() {
 }
 
 describe('demo authentication', () => {
+  it('restores local sessions without scheduling the simulated delay', async () => {
+    const { service, storage } = setup()
+    const session = await service.login({ email: demoAccounts[0].email, password: demoPassword })
+    vi.useFakeTimers()
+    try {
+      const restored = createMockAuthService({ delayMs: 400, storage }).getSession()
+      expect(vi.getTimerCount()).toBe(0)
+      await expect(restored).resolves.toEqual(session)
+    } finally { vi.useRealTimers() }
+  })
   it.each(demoAccounts)('logs in $role and restores the session', async account => {
     const { service, storage } = setup()
     const session = await service.login({ email: account.email, password: demoPassword })

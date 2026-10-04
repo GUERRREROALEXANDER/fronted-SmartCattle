@@ -26,8 +26,8 @@ const pages = {
 export const router = createBrowserRouter([{
   Component: RedirectIfAuthenticated,
   children: [
-    { path: '/login', Component: LoginPage },
-    { path: '/register', Component: RegisterPage },
+    { path: '/login', Component: LoginPage, handle: { title: 'Ingresar' } },
+    { path: '/register', Component: RegisterPage, handle: { title: 'Crear cuenta' } },
   ],
 }, {
   Component: RequireAuth,
