@@ -12,16 +12,16 @@
 .footer a { color: var(--color-brand); font-weight: var(--weight-semibold); text-decoration: none; }
 .footer a:hover { text-decoration: underline; }
 @media (min-width: 1024px) {
-  .layout { display: flex; align-items: center; justify-content: flex-end; padding-block: var(--space-6); }
-  .scene { position: fixed; inset: 0; height: auto; background: var(--color-stage); }
+  /* Split layout: the scene keeps its full story visible beside the form column. */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(440px, 36vw, 560px); height: 100dvh; }
+  .scene { height: 100%; min-height: 0; }
   .panel {
-    width: min(var(--auth-panel-width), 100% - 2 * var(--space-6));
-    margin-top: 0; margin-right: clamp(var(--space-6), 6vw, 7rem);
-    max-height: calc(100dvh - 2 * var(--space-6)); overflow: auto;
-    border-radius: var(--radius-lg); box-shadow: var(--shadow-overlay); padding: var(--space-10);
+    display: flex; flex-direction: column; justify-content: center;
+    margin-top: 0; padding: var(--space-10) var(--space-8); overflow-y: auto; border-radius: 0;
   }
+  .panelInner { width: 100%; max-width: 400px; margin-inline: auto; }
   .title { font-size: var(--text-2xl); }
   .description { font-size: var(--text-base); }
 }
-@media (prefers-reduced-motion: no-preference) { .panel { animation: enter var(--duration-slow) var(--ease-out) 150ms both; } }
+@media (prefers-reduced-motion: no-preference) { .panelInner { animation: enter var(--duration-slow) var(--ease-out) 150ms both; } }
 @keyframes enter { from { opacity: 0; transform: translateY(var(--space-2)); } to { opacity: 1; transform: translateY(0); } }

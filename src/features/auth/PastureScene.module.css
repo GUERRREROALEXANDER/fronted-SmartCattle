@@ -10,17 +10,28 @@
   top: calc((100cqh - max(100cqh, 100cqw / 1.5047)) * 0.5);
   transform-origin: 75% 50%;
 }
-.frame img, .frame svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; }
+.frame img, .frame svg, .labels { position: absolute; inset: 0; width: 100%; height: 100%; }
+.frame img { object-fit: fill; }
+.labels { pointer-events: none; }
 .boundary polygon { fill: var(--color-auth-zone); stroke: var(--color-overlay-lindero); stroke-width: 2; stroke-dasharray: 10 7; }
-.boundary rect, .boundary text { fill: var(--color-overlay-lindero); }
-.boundary text { font-size: 26px; letter-spacing: 2px; font-stretch: var(--stretch-condensed); font-weight: var(--weight-semibold); }
+.boundary rect { fill: var(--color-overlay-lindero); }
 .detection { transform-box: fill-box; transform-origin: center; }
 .box { stroke: var(--color-overlay-cattle); stroke-width: 1.5; }
-.tag { fill: var(--color-auth-tag); }
-.label { fill: var(--color-stage-ink); font-size: 22px; font-variant-numeric: tabular-nums; font-weight: var(--weight-semibold); }
 .outside .box { stroke: var(--color-overlay-outside); stroke-width: 2; }
-.outside .tag { fill: var(--color-auth-outside-tag); }
-.outside .label { fill: var(--color-surface-raised); }
+.label {
+  position: absolute; transform: translateY(calc(-100% - 2px));
+  padding: 3px 5px; border-radius: 2px; background: var(--color-auth-tag); color: var(--color-stage-ink);
+  font-size: 12px; line-height: 1; font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.below { transform: translateY(2px); }
+.outsideLabel { transform: translate(-100%, calc(-100% - 2px)); background: var(--color-auth-outside-tag); color: var(--color-surface-raised); }
+.zoneLabel {
+  position: absolute; transform: translate(-100%, -130%);
+  color: var(--color-overlay-lindero); font-size: 11px; font-weight: var(--weight-semibold); font-stretch: var(--stretch-condensed);
+  letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; text-shadow: 0 1px 2px rgb(0 0 0 / 0.5);
+}
+@media (max-width: 1023px) { .label, .zoneLabel { font-size: 11px; } }
+@media (max-width: 599px) { .label:not(.outsideLabel) { display: none; } }
 .hatch { stroke: var(--color-overlay-outside); stroke-opacity: 0.22; }
 .chrome, .caption { position: absolute; z-index: 1; left: var(--space-6); right: var(--space-6); }
 .chrome { top: var(--space-6); color: var(--color-stage-ink); }
@@ -28,15 +39,16 @@
 .pill { display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); background: var(--color-auth-pill); font-size: var(--text-xs); }
 .pill span { width: var(--active-dot-size); height: var(--active-dot-size); border-radius: var(--radius-full); background: var(--color-safe); }
 .caption { bottom: var(--space-6); color: var(--color-stage-ink-muted); font-size: var(--text-xs); }
-@media (min-width: 1024px) { .caption { right: calc(var(--auth-panel-width) + 7rem + var(--space-6)); } }
-@media (max-width: 1023px) { .scene { --focus-x: 0.62; } }
+@media (max-width: 1023px) { .scene { --focus-x: 0.78; } }
 @media (prefers-reduced-motion: no-preference) {
   .frame { animation: drift var(--duration-pasture-drift) ease-in-out infinite alternate; }
-  .boundary { animation: reveal var(--duration-lindero-reveal) var(--ease-out) 200ms both; }
+  .boundary, .zoneLabel { animation: reveal var(--duration-lindero-reveal) var(--ease-out) 200ms both; }
   .detection { animation: detect var(--duration-detection-reveal) var(--ease-out) var(--reveal-delay) both; }
+  .label { animation: fade var(--duration-detection-reveal) var(--ease-out) var(--reveal-delay) both; }
   .outside .box { animation: pulse var(--duration-outside-pulse) ease-in-out 1200ms 2; }
 }
 @keyframes drift { from { transform: scale(1); } to { transform: scale(1.035); } }
 @keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
 @keyframes detect { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
 @keyframes pulse { 0%, 100% { stroke-opacity: 1; } 50% { stroke-opacity: 0.45; } }

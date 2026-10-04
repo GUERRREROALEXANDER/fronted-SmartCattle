@@ -3,15 +3,22 @@ import pastureSmall from '../../assets/login/pasture-dusk-1200.jpg'
 import pastureLarge from '../../assets/login/pasture-dusk-2400.jpg'
 import styles from './PastureScene.module.css'
 
+// Coordinates are in the photo's own 2400x1595 pixel space.
+const photoWidth = 2400
+const photoHeight = 1595
+const zoneVertices = [[60, 800], [1560, 600], [1760, 1010], [40, 1120]] as const
 const detections = [
   { x: 160, y: 850, width: 250, height: 140, confidence: 0.88 },
   { x: 690, y: 765, width: 150, height: 165, confidence: 0.91 },
   { x: 845, y: 725, width: 265, height: 170, confidence: 0.94 },
   { x: 1095, y: 672, width: 200, height: 182, confidence: 0.89 },
-  { x: 1232, y: 672, width: 160, height: 172, confidence: 0.83 },
+  // Labelled below its box so it does not collide with the neighbouring label.
+  { x: 1232, y: 672, width: 160, height: 172, confidence: 0.83, labelBelow: true },
   { x: 2085, y: 518, width: 160, height: 182, confidence: 0.92, outside: true },
 ]
 const confidenceFormat = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const toPercent = (value: number, total: number) => `${(value / total) * 100}%`
+const revealDelay = (index: number, outside?: boolean) => `${outside ? 1200 : 700 + index * 70}ms`
 
 export function PastureScene({ focusX }: { focusX?: number }) {
   const hatchId = `hatch-outside-${useId()}`
@@ -26,22 +33,33 @@ export function PastureScene({ focusX }: { focusX?: number }) {
           </pattern>
         </defs>
         <g className={styles.boundary}>
-          <polygon points="60,800 1560,600 1760,1010 40,1120" vectorEffect="non-scaling-stroke" />
-          {[[60, 800], [1560, 600], [1760, 1010], [40, 1120]].map(([x, y]) =>
-            <rect key={x} x={x - 5} y={y - 5} width="10" height="10" />)}
-          <text x="1190" y="576">ZONA SEGURA · LOTE 3</text>
+          <polygon points={zoneVertices.map(point => point.join(',')).join(' ')} vectorEffect="non-scaling-stroke" />
+          {zoneVertices.map(([x, y]) => <rect key={x} x={x - 5} y={y - 5} width="10" height="10" />)}
         </g>
         {detections.map((box, index) => <g key={box.x}
           className={`${styles.detection} ${box.outside ? styles.outside : ''}`}
-          style={{ '--reveal-delay': `${box.outside ? 1200 : 700 + index * 70}ms` } as CSSProperties}>
+          style={{ '--reveal-delay': revealDelay(index, box.outside) } as CSSProperties}>
           <rect className={styles.box} x={box.x} y={box.y} width={box.width} height={box.height}
             rx="3" fill={box.outside ? `url(#${hatchId})` : 'none'} vectorEffect="non-scaling-stroke" />
-          <rect className={styles.tag} x={box.x} y={box.y - 36} width={box.outside ? 252 : 146} height="32" rx="3" />
-          <text className={styles.label} x={box.x + 8} y={box.y - 13}>
-            {box.outside ? 'fuera de zona' : 'bovino'} · {confidenceFormat.format(box.confidence)}
-          </text>
         </g>)}
       </svg>
+      {/* Labels are HTML so they keep a legible size at any scale. */}
+      <div className={styles.labels}>
+        <span className={styles.zoneLabel}
+          style={{ left: toPercent(zoneVertices[1][0], photoWidth), top: toPercent(zoneVertices[1][1], photoHeight) }}>
+          Zona segura · Lote 3
+        </span>
+        {detections.map((box, index) => <span key={box.x}
+          className={[styles.label, box.outside && styles.outsideLabel, box.labelBelow && styles.below].filter(Boolean).join(' ')}
+          style={{
+            // The outside box sits near the photo edge, so its label is right-aligned to the box.
+            left: toPercent(box.outside ? box.x + box.width : box.x, photoWidth),
+            top: toPercent(box.labelBelow ? box.y + box.height : box.y, photoHeight),
+            '--reveal-delay': revealDelay(index, box.outside),
+          } as CSSProperties}>
+          {box.outside ? 'fuera de zona' : 'bovino'} · {confidenceFormat.format(box.confidence)}
+        </span>)}
+      </div>
     </div>
     <div className={styles.chrome}>
       <p className={styles.wordmark}>SmartCattle</p>

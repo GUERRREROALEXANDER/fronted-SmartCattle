@@ -9,10 +9,12 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
   return <main className={styles.layout}>
     <div className={styles.scene}><PastureScene /></div>
     <section className={styles.panel} aria-labelledby="auth-title">
-      <h1 id="auth-title" className={styles.title}>{title}</h1>
-      <p className={styles.description}>{description}</p>
-      <div className={styles.content}>{children}</div>
-      <footer className={styles.footer}>{footer}</footer>
+      <div className={styles.panelInner}>
+        <h1 id="auth-title" className={styles.title}>{title}</h1>
+        <p className={styles.description}>{description}</p>
+        <div className={styles.content}>{children}</div>
+        <footer className={styles.footer}>{footer}</footer>
+      </div>
     </section>
   </main>
 }
