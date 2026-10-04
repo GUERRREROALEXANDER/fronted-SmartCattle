@@ -20,7 +20,15 @@ export type CameraStatus = 'online' | 'connecting' | 'offline' | 'error'
 export interface Camera { id: string; name: string; location: string; status: CameraStatus; lastSeenAt: Date | null }
 // Coordinates range from 0 to 1.
 export type NormalizedBounds = readonly [xMin: number, yMin: number, xMax: number, yMax: number]
-export interface SafeZone { id: string; cameraId: string; name: string; bounds: NormalizedBounds }
+export type NormalizedPoint = readonly [x: number, y: number]
+/** `outline` is an optional polygon; when present it defines the zone, and `bounds` is its bounding box. */
+export interface SafeZone { id: string; cameraId: string; name: string; bounds: NormalizedBounds; outline?: readonly NormalizedPoint[] }
+/** How a camera's picture reaches the browser. Only 'image' and 'mjpeg' are rendered today. */
+export type StreamSource =
+  | { kind: 'image'; url: string; width: number; height: number; synthetic: boolean }
+  | { kind: 'mjpeg'; url: string; width: number; height: number }
+  | { kind: 'hls'; url: string }
+  | { kind: 'none' }
 // Coordinates range from 0 to 1, with a top-left origin.
 export interface NormalizedBox { x: number; y: number; width: number; height: number }
 export interface Detection { id: string; label: string; confidence: number; box: NormalizedBox; insideSafeZone: boolean | null }

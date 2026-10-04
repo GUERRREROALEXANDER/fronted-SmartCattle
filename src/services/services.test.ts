@@ -121,12 +121,17 @@ describe('central mock data', () => {
     }
   })
   it('provides distinct camera zones with Spanish names', () => {
-    expect(mockSafeZones.map(({ cameraId, name, bounds }) => ({ cameraId, name, bounds }))).toEqual([
+    expect(mockSafeZones.filter(zone => !zone.outline).map(({ cameraId, name, bounds }) => ({ cameraId, name, bounds }))).toEqual([
       { cameraId: 'main-entrance', name: 'Zona segura acceso', bounds: [0.18, 0.30, 0.86, 0.96] },
       { cameraId: 'corral', name: 'Corral', bounds: [0.06, 0.10, 0.94, 0.92] },
       { cameraId: 'north-pasture', name: 'Lote 3', bounds: [0.04, 0.22, 0.88, 0.97] },
-      { cameraId: 'south-pasture', name: 'Lote 5', bounds: [0.10, 0.18, 0.84, 0.95] },
     ])
+    const south = mockSafeZones.find(zone => zone.cameraId === 'south-pasture')!
+    expect(south.name).toBe('Lote 5')
+    expect(south.outline).toHaveLength(4)
+    // Bounds are the bounding box of the outline.
+    expect(south.bounds[0]).toBeCloseTo(Math.min(...south.outline!.map(([x]) => x)))
+    expect(south.bounds[3]).toBeCloseTo(Math.max(...south.outline!.map(([, y]) => y)))
   })
   it('provides backend-capable mock services without fetching', async () => {
     const fetchImpl = vi.fn<typeof fetch>()
@@ -151,7 +156,8 @@ describe('central mock data', () => {
     expect(person.occurredAt.getHours()).toBe(14)
   })
   it('builds deterministic detections with valid geometry and zone membership', () => {
-    for (const camera of mockCameras) {
+    // The south pasture uses hand-placed boxes over the demo photo; it is tested separately below.
+    for (const camera of mockCameras.filter(item => item.id !== 'south-pasture')) {
       const frame = buildMockFrameDetections(camera.id, now)
       expect(frame).toEqual(buildMockFrameDetections(camera.id, now))
       expect(frame.detections).toEqual(buildMockFrameDetections(camera.id, new Date(now.getTime() + 1000)).detections)
@@ -179,10 +185,13 @@ describe('central mock data', () => {
         expect(detection.box.x + detection.box.width).toBeLessThanOrEqual(1)
         expect(detection.box.y + detection.box.height).toBeLessThanOrEqual(1)
       }
-      const outside = frame.detections.filter(item => !item.insideSafeZone)
-      expect(outside).toHaveLength(camera.id === 'south-pasture' ? 1 : 0)
-      if (outside.length) expect(outside[0].label).toBe('cow')
+      expect(frame.detections.filter(item => !item.insideSafeZone)).toHaveLength(0)
     }
+    const south = buildMockFrameDetections('south-pasture', now)
+    expect(south.detections).toHaveLength(6)
+    expect(south.detections.every(item => item.label === 'cow')).toBe(true)
+    const outside = south.detections.filter(item => !item.insideSafeZone)
+    expect(outside.map(item => item.id)).toEqual(['south-pasture-detection-6'])
     expect(buildMockFrameDetections('corral', now).detections).toHaveLength(9)
     expect(buildMockFrameDetections('north-pasture', now).detections).toHaveLength(7)
     expect(buildMockFrameDetections('south-pasture', now).detections.filter(item => !item.insideSafeZone)).toHaveLength(1)

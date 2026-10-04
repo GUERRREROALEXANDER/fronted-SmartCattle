@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildMockFarmEvents } from '../mocks/mockData'
-import { isWithinBounds, toFarmEvent } from './mappers'
+import { isInsideZone, isPointInPolygon, isWithinBounds, toFarmEvent } from './mappers'
 
 describe('toFarmEvent', () => {
   it('maps backend fields, parses dates and assigns catalog severity', () => {
@@ -25,5 +25,23 @@ describe('isWithinBounds', () => {
     [{ x: 0, y: 0, width: 1, height: 0.5 }, true],
   ] as const)('checks the bottom-center point of %o, including boundaries', (box, expected) => {
     expect(isWithinBounds(box, [0.25, 0.25, 0.75, 0.75])).toBe(expected)
+  })
+})
+
+describe('zone polygons', () => {
+  // A trapezoid wider at the bottom.
+  const outline = [[0.3, 0.2], [0.7, 0.2], [0.9, 0.8], [0.1, 0.8]] as const
+
+  it('detects points inside and outside a polygon', () => {
+    expect(isPointInPolygon([0.5, 0.5], outline)).toBe(true)
+    expect(isPointInPolygon([0.15, 0.25], outline)).toBe(false)
+    expect(isPointInPolygon([0.95, 0.5], outline)).toBe(false)
+  })
+
+  it('uses the outline when the zone has one, otherwise the bounds', () => {
+    const box = { x: 0.1, y: 0.1, width: 0.1, height: 0.15 } // bottom-center (0.15, 0.25)
+    const base = { id: 'z', cameraId: 'c', name: 'Z', bounds: [0.1, 0.2, 0.9, 0.8] as const }
+    expect(isInsideZone(box, base)).toBe(true)
+    expect(isInsideZone(box, { ...base, outline })).toBe(false)
   })
 })

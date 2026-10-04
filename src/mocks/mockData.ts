@@ -1,7 +1,8 @@
 // DEVELOPMENT MOCK DATA. Not backend data. Replace with real API responses when the backend supports them.
 import type { Camera, EventKind, Farm, FarmEvent, FrameDetections, SafeZone, SystemStatus } from '../types/domain'
 import { eventCatalog } from '../lib/eventCatalog'
-import { isWithinBounds } from '../services/mappers'
+import { isInsideZone, isWithinBounds } from '../services/mappers'
+import { demoFeedBoxes, demoFeedCameraId, demoFeedZoneOutline } from './mockCameraFeed'
 
 export const mockFarm: Farm = { id: 'farm-san-jose', name: 'San José' }
 export const mockRegisteredCattle = 144
@@ -16,7 +17,13 @@ export const mockSafeZones: SafeZone[] = [
   { id: 'main-entrance-safe-zone', cameraId: 'main-entrance', name: 'Zona segura acceso', bounds: [0.18, 0.30, 0.86, 0.96] },
   { id: 'corral-safe-zone', cameraId: 'corral', name: 'Corral', bounds: [0.06, 0.10, 0.94, 0.92] },
   { id: 'north-pasture-safe-zone', cameraId: 'north-pasture', name: 'Lote 3', bounds: [0.04, 0.22, 0.88, 0.97] },
-  { id: 'south-pasture-safe-zone', cameraId: 'south-pasture', name: 'Lote 5', bounds: [0.10, 0.18, 0.84, 0.95] },
+  {
+    id: 'south-pasture-safe-zone', cameraId: 'south-pasture', name: 'Lote 5', outline: demoFeedZoneOutline,
+    bounds: [
+      Math.min(...demoFeedZoneOutline.map(([x]) => x)), Math.min(...demoFeedZoneOutline.map(([, y]) => y)),
+      Math.max(...demoFeedZoneOutline.map(([x]) => x)), Math.max(...demoFeedZoneOutline.map(([, y]) => y)),
+    ],
+  },
 ]
 
 function seededRandom(cameraId: string) {
@@ -37,6 +44,14 @@ export function buildMockSystemStatus(now = new Date()): SystemStatus {
 export function buildMockFrameDetections(cameraId: string, now = new Date()): FrameDetections {
   const zone = mockSafeZones.find(item => item.cameraId === cameraId)
   if (!zone) return { cameraId, capturedAt: new Date(now), detections: [] }
+  // The demo photo camera uses boxes placed over the real animals in the picture.
+  if (cameraId === demoFeedCameraId) return {
+    cameraId, capturedAt: new Date(now),
+    detections: demoFeedBoxes.map((item, index) => ({
+      id: `${cameraId}-detection-${index + 1}`, label: item.label, confidence: item.confidence,
+      box: item.box, insideSafeZone: isInsideZone(item.box, zone),
+    })),
+  }
   const cowCount = cameraId === 'corral' ? 9 : cameraId === 'north-pasture' ? 6 : 4
   const count = cowCount + (cameraId === 'north-pasture' ? 1 : 0)
   const random = seededRandom(cameraId)
@@ -47,13 +62,12 @@ export function buildMockFrameDetections(cameraId: string, now = new Date()): Fr
   return {
     cameraId, capturedAt: new Date(now),
     detections: Array.from({ length: count }, (_, index) => {
-      const outside = cameraId === 'south-pasture' && index === 0
       const width = 0.07 + random() * 0.07
       const height = width * 16 / 9 * 0.55
       const clustered = index === 1 || index === 2
       const x = clustered ? herdX + random() * 0.035 : left + random() * (right - left - width)
       const y = clustered ? herdY + random() * 0.035 : top + random() * (bottom - top - height)
-      const box = { x: outside ? right + (1 - right - width) / 2 : x, y, width, height }
+      const box = { x, y, width, height }
       return {
         id: `${cameraId}-detection-${index + 1}`, label: index < cowCount ? 'cow' : 'person',
         confidence: Number((0.71 + ((index * 7) % 27) / 100).toFixed(2)),
