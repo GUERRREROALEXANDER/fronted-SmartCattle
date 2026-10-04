@@ -1,0 +1,115 @@
+.section { min-width: 0; }
+
+.heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.title { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.note { color: var(--color-ink-subtle); font-size: var(--text-xs); }
+
+.canvas {
+  overflow: hidden;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-raised);
+}
+
+.canvas svg { width: 100%; height: auto; }
+
+/* Terrain */
+.terrain path { fill: none; stroke: var(--color-rule); stroke-width: 1; }
+.trackBed { fill: none; stroke: var(--color-earth-surface); stroke-width: 12; stroke-linecap: round; stroke-linejoin: round; }
+.track { fill: none; stroke: var(--color-earth); stroke-width: 1; stroke-dasharray: 2 6; opacity: 0.6; }
+
+/* Lots and linderos (the signature boundary) */
+.lot { fill: color-mix(in srgb, var(--color-sage) 12%, transparent); }
+.lindero { fill: none; stroke: var(--color-brand); stroke-width: 1.5; stroke-dasharray: 8 6; }
+.vertex { fill: var(--color-brand); }
+.lotLabel {
+  fill: var(--color-earth-ink);
+  font-size: 13px;
+  font-weight: var(--weight-semibold);
+  font-stretch: var(--stretch-condensed);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+/* Hatching marks a lot with an alert without relying on color alone. */
+.hatchLine { stroke-width: 1.5; }
+.hatchLine.warning { stroke: var(--color-warning); }
+.hatchLine.critical { stroke: var(--color-critical); }
+.lotHatch { opacity: 0.35; }
+.lots .warning .lindero { stroke: var(--color-warning); }
+.lots .warning .vertex { fill: var(--color-warning); }
+.lots .critical .lindero { stroke: var(--color-critical); }
+.lots .critical .vertex { fill: var(--color-critical); }
+
+/* Observation points */
+.wedge { fill: color-mix(in srgb, var(--color-brand) 9%, transparent); }
+.pointRing { fill: var(--color-surface-raised); stroke-width: 2.5; }
+.pointLabel { fill: var(--color-ink); font-size: 13px; font-weight: var(--weight-semibold); paint-order: stroke; stroke: var(--color-surface-raised); stroke-width: 4px; stroke-linejoin: round; }
+.point.online .pointRing { stroke: var(--color-safe); }
+.point.online .pointDot { fill: var(--color-safe); }
+.point.connecting .pointRing { stroke: var(--color-warning); }
+.point.connecting .pointDot { fill: var(--color-warning); }
+.point.offline .pointRing, .point.error .pointRing { stroke: var(--color-inactive); }
+.point.offline .pointDot { fill: var(--color-inactive); }
+.point.error .pointDot { fill: var(--color-critical); }
+.point.offline .wedge, .point.error .wedge { fill: transparent; }
+
+.pulse { fill: none; stroke-width: 2; }
+.pulse.warning { stroke: var(--color-warning); }
+.pulse.critical { stroke: var(--color-critical); }
+
+/* The plan scales down on phones; SVG font sizes are in plan units, so enlarge them to stay legible. */
+@media (max-width: 599px) {
+  .lotLabel { font-size: 24px; }
+  .pointLabel { font-size: 24px; stroke-width: 6px; }
+}
+
+/* Camera legend */
+.legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 15rem), 1fr));
+  gap: var(--space-1) var(--space-4);
+  margin-top: var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--touch-min);
+  padding: var(--space-2) var(--space-2);
+  border-radius: var(--radius-md);
+  color: inherit;
+  text-decoration: none;
+  transition: background var(--duration-fast);
+}
+
+.legendItem:hover { background: color-mix(in srgb, var(--color-ink) 5%, transparent); }
+.legendDot { width: 10px; height: 10px; flex-shrink: 0; border-radius: var(--radius-full); border: 2px solid currentColor; }
+.legendDot.online { color: var(--color-safe); background: var(--color-safe); }
+.legendDot.connecting { color: var(--color-warning); }
+.legendDot.offline { color: var(--color-inactive); }
+.legendDot.error { color: var(--color-critical); }
+.legendText { display: grid; min-width: 0; flex: 1; }
+.legendName { font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+.legendMeta { overflow: hidden; color: var(--color-ink-subtle); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.legendMeta .warning { color: var(--color-warning-ink); }
+.legendMeta .critical { color: var(--color-critical); }
+.legendChevron { flex-shrink: 0; color: var(--color-ink-subtle); }
+
+/* Motion: the linderos draw in once; the alert point pulses three times. */
+@media (prefers-reduced-motion: no-preference) {
+  .lots { animation: reveal var(--duration-lindero-reveal) var(--ease-out) 120ms both; }
+  .pulse { transform-box: fill-box; transform-origin: center; animation: pulse 1.8s var(--ease-out) 700ms 3 both; }
+}
+@keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes pulse { from { opacity: 0.8; transform: scale(1); } to { opacity: 0; transform: scale(2.4); } }

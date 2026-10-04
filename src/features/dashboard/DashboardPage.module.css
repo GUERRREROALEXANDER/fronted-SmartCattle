@@ -1,0 +1,15 @@
+.page { display: grid; }
+
+.notice { margin-top: var(--space-6); }
+
+.grid {
+  display: grid;
+  gap: var(--space-8);
+  margin-top: var(--space-8);
+}
+
+.main, .aside { display: grid; align-content: start; gap: var(--space-6); min-width: 0; }
+
+@media (min-width: 1024px) {
+  .grid { grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr); gap: var(--space-10); }
+}
