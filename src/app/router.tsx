@@ -24,6 +24,14 @@ export const router = createBrowserRouter([{
   children: [
     ...navItems.map(item => ({ path: item.path, Component: pages[item.id], handle: { title: item.label } })),
     { path: profileItem.path, Component: ProfilePage, handle: { title: profileItem.label } },
+    ...(import.meta.env.DEV ? [{
+      path: '/dev/ui',
+      handle: { title: 'Componentes' },
+      lazy: async () => {
+        const { UiGalleryPage } = await import('../features/dev/UiGalleryPage')
+        return { Component: UiGalleryPage }
+      },
+    }] : []),
     { path: '*', Component: NotFoundPage, handle: { title: 'Página no encontrada' } },
   ],
 }])

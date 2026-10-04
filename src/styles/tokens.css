@@ -126,6 +126,15 @@
   --touch-min: 44px;
   --content-max: 1440px;
 
+  /* Base UI components */
+  --color-hover: rgb(23 32 26 / 0.05);
+  --control-sm: 36px;
+  --pill-padding-inline: 10px;
+  --duration-spin: 700ms;
+  --duration-shimmer: 1.4s;
+  --notice-content-min: 16rem;
+  --state-description-max: 42ch;
+
   /* Z-index */
   --z-rail: 20;
   --z-tabbar: 30;

@@ -1,0 +1,5 @@
+.state { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; padding: var(--space-10) var(--space-4); border: 1px dashed var(--color-rule-strong); border-radius: var(--radius-lg); overflow-wrap: anywhere; }
+.icon { color: var(--color-ink-subtle); }
+.title { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.description { font-size: var(--text-sm); color: var(--color-ink-muted); max-width: var(--state-description-max); }
+.action { max-width: 100%; }

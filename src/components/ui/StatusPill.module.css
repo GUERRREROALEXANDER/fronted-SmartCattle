@@ -1,0 +1,9 @@
+.pill { display: inline-flex; align-items: center; gap: var(--space-1); border-radius: var(--radius-full); font-weight: var(--weight-semibold); }
+.pill svg { flex-shrink: 0; }
+.sm { font-size: var(--text-xs); padding: var(--badge-padding-block) var(--space-2); }
+.md { font-size: var(--text-sm); padding: var(--space-1) var(--pill-padding-inline); }
+.safe { color: var(--color-safe); background: var(--color-safe-surface); }
+.warning { color: var(--color-warning-ink); background: var(--color-warning-surface); }
+.critical { color: var(--color-critical); background: var(--color-critical-surface); }
+.inactive { color: var(--color-inactive); background: var(--color-inactive-surface); }
+.info { color: var(--color-ink-muted); background: var(--color-surface); }
