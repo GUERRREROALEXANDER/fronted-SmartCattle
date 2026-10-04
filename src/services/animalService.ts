@@ -16,6 +16,9 @@ export async function getRegisteredCattleCount(options: ServiceOptions = {}): Pr
   return { data: response.total, source }
 }
 
-export function getDetectedCattleCount(options: ServiceOptions = {}): Promise<Sourced<number | null>> {
-  return resolveMockOnly(options, () => mockDetectedCattle)
+/** Farm-wide count from the vision service, with the time it was taken. Not the sum of what camera images show. */
+export interface HerdCount { count: number; countedAt: Date }
+
+export function getDetectedCattleCount(options: ServiceOptions = {}): Promise<Sourced<HerdCount | null>> {
+  return resolveMockOnly(options, now => ({ count: mockDetectedCattle, countedAt: new Date(now) }))
 }

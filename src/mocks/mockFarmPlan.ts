@@ -18,8 +18,8 @@ export interface PlanCamera {
   position: PlanPoint
   /** Direction the camera faces, in degrees (0 = east, 90 = south). */
   heading: number
-  /** Draw the name on the left of the point (for points near the right edge). */
-  labelLeft?: boolean
+  /** Where the camera name sits relative to the point, chosen so it never crosses a lindero. */
+  label: { side: 'left' | 'right'; dy: number }
 }
 
 export interface FarmPlan {
@@ -47,10 +47,10 @@ export const mockFarmPlan: FarmPlan = {
       boundary: [{ x: 362, y: 272 }, { x: 744, y: 282 }, { x: 726, y: 482 }, { x: 340, y: 472 }] },
   ],
   cameras: [
-    { cameraId: 'main-entrance', lotId: 'lot-access', position: { x: 196, y: 380 }, heading: 200 },
-    { cameraId: 'corral', lotId: 'lot-corral', position: { x: 284, y: 202 }, heading: 140 },
-    { cameraId: 'north-pasture', lotId: 'lot-3', position: { x: 372, y: 56 }, heading: 25 },
-    { cameraId: 'south-pasture', lotId: 'lot-5', position: { x: 728, y: 298 }, heading: 155, labelLeft: true },
+    { cameraId: 'main-entrance', lotId: 'lot-access', position: { x: 196, y: 380 }, heading: 200, label: { side: 'left', dy: 4 } },
+    { cameraId: 'corral', lotId: 'lot-corral', position: { x: 284, y: 202 }, heading: 140, label: { side: 'left', dy: 4 } },
+    { cameraId: 'north-pasture', lotId: 'lot-3', position: { x: 372, y: 56 }, heading: 25, label: { side: 'right', dy: 24 } },
+    { cameraId: 'south-pasture', lotId: 'lot-5', position: { x: 728, y: 298 }, heading: 155, label: { side: 'left', dy: 26 } },
   ],
   track: [{ x: 0, y: 432 }, { x: 236, y: 420 }, { x: 322, y: 300 }, { x: 330, y: 254 }, { x: 800, y: 260 }],
   contours: [

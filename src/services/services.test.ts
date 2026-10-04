@@ -85,7 +85,7 @@ describe('mock-only services', () => {
   it.each(['mock', 'hybrid'] as const)('returns mock-only data in %s mode', async mode => {
     const fetchImpl = vi.fn<typeof fetch>()
     const options = { mode, now, fetchImpl }
-    expect((await getDetectedCattleCount(options)).data).toBe(mockDetectedCattle)
+    expect((await getDetectedCattleCount(options)).data?.count).toBe(mockDetectedCattle)
     expect((await getCurrentFarm(options)).data).toEqual(mockFarm)
     const cameras = await listCameras(options)
     expect(cameras.source).toBe('mock')
