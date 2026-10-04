@@ -1,6 +1,7 @@
 import { mockFarm } from '../mocks/mockData'
 import { mockFarmPlan, mockSecurityHours, type FarmPlan } from '../mocks/mockFarmPlan'
-import type { Farm, Sourced } from '../types/domain'
+import { demoAccounts } from '../mocks/mockAuth'
+import type { Farm, Sourced, UserRole } from '../types/domain'
 import { resolveMockOnly, type ServiceOptions } from './options'
 
 export type { FarmPlan, PlanCamera, PlanLot, PlanPoint } from '../mocks/mockFarmPlan'
@@ -14,6 +15,13 @@ export function getCurrentFarm(options: ServiceOptions = {}): Promise<Sourced<Fa
 /** Schematic farm plan. The backend has no farm geometry yet. */
 export function getFarmPlan(options: ServiceOptions = {}): Promise<Sourced<FarmPlan | null>> {
   return resolveMockOnly(options, () => mockFarmPlan)
+}
+
+export interface FarmMember { id: string; name: string; email: string; role: UserRole }
+
+/** People associated with the farm. The backend has no users or invitations yet. */
+export function listFarmMembers(options: ServiceOptions = {}): Promise<Sourced<FarmMember[] | null>> {
+  return resolveMockOnly(options, () => demoAccounts.map(({ id, name, email, role }) => ({ id, name, email, role })))
 }
 
 /** Restricted hours for security rules. The backend has no such rule yet. */
