@@ -31,5 +31,8 @@ export function formatRelative(date: Date, now: Date = new Date()): string {
   if (minutes > -60) return relativeFormat.format(minutes, 'minute')
   const hours = Math.round(minutes / 60)
   if (hours > -24) return relativeFormat.format(hours, 'hour')
-  return relativeFormat.format(Math.round(hours / 24), 'day')
+  // Beyond a day, count calendar days so "ayer" always matches the day the event belongs to.
+  const startOf = (value: Date) => new Date(value.getFullYear(), value.getMonth(), value.getDate()).getTime()
+  const days = Math.round((startOf(date) - startOf(now)) / 86_400_000)
+  return relativeFormat.format(days, 'day')
 }
