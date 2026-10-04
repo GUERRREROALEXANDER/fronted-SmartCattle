@@ -4,7 +4,7 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–4 are complete: foundation, authentication, dashboard and live monitoring. The cameras, cattle, events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
+> **Status:** Phases 1–5 are complete: foundation, authentication, dashboard, live monitoring and cameras. The cattle, events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
 
 ![Dashboard with farm plan, herd summary and field log](docs/screenshots/dashboard-desktop.jpg)
 
@@ -487,6 +487,13 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 - Camera switcher (side list on desktop, scrollable strip on mobile), per-camera events and service status
 - Designed states: loading, connecting, live, no stream, unsupported format, offline, error, vision not configured, server offline
 
+**Phase 5: Cameras**
+- One card per camera (cameras are real objects, so they get cards): picture or a short placeholder, status, zone, last connection, detection counts, "Ver en vivo"
+- Cameras with recent alerts first, then cameras with connection problems
+- Owners see a note that adding or rezoning cameras needs backend support; no fake configuration controls
+
+![Cameras page](docs/screenshots/cameras-desktop.jpg)
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -495,8 +502,8 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 | 2 | Authentication | Done |
 | 3 | Dashboard: farm status line, farm plan with cameras and safe zones, registered vs. detected cattle, field log with 24 h band | Done |
 | 4 | Live monitoring: camera stage, detection and safe-zone overlays, status panels, all connection states | Done |
-| 5 | Cameras: list, states, live access | Next |
-| 6 | Cattle: registered vs. detected, recent detections, zone states | Pending |
+| 5 | Cameras: list, states, live access | Done |
+| 6 | Cattle: registered vs. detected, recent detections, zone states | Next |
 | 7 | Events & alerts: history, filters, detail with evidence | Pending |
 | 8 | Security: person detection, possible intrusion, restricted hours | Pending |
 | 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Pending |
