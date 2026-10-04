@@ -23,6 +23,9 @@
   /* Color - accents */
   --color-earth: #8A6A4A;
   --color-earth-surface: #EFE6DA;
+  --color-earth-ink: #6B5037;
+  --color-on-brand-surface: rgb(255 255 255 / 0.10);
+  --color-backdrop: rgb(23 32 26 / 0.35);
   --color-sage: #7C9A6E;
 
   /* Color - states */
@@ -78,6 +81,7 @@
   --weight-regular: 400;
   --weight-medium: 500;
   --weight-semibold: 600;
+  --weight-display: 650;
   --weight-bold: 700;
 
   /* Type - tracking */
@@ -115,6 +119,9 @@
 
   /* Layout */
   --rail-width: 232px;
+  --topbar-height: 56px;
+  --active-dot-size: 6px;
+  --badge-padding-block: 2px;
   --tabbar-height: 64px;
   --touch-min: 44px;
   --content-max: 1440px;
