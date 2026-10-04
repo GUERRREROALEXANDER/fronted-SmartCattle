@@ -9,6 +9,10 @@ import { SettingsPage } from '../features/settings/SettingsPage'
 import { ProfilePage } from '../features/profile/ProfilePage'
 import { NotFoundPage } from '../features/not-found/NotFoundPage'
 import { navItems, profileItem } from './navigation'
+import { RequireAuth } from './auth/RequireAuth'
+import { RedirectIfAuthenticated } from './auth/RedirectIfAuthenticated'
+import { LoginPage } from '../features/auth/LoginPage'
+import { RegisterPage } from '../features/auth/RegisterPage'
 
 const pages = {
   dashboard: DashboardPage,
@@ -20,6 +24,14 @@ const pages = {
 }
 
 export const router = createBrowserRouter([{
+  Component: RedirectIfAuthenticated,
+  children: [
+    { path: '/login', Component: LoginPage },
+    { path: '/register', Component: RegisterPage },
+  ],
+}, {
+  Component: RequireAuth,
+  children: [{
   Component: AppShell,
   children: [
     ...navItems.map(item => ({ path: item.path, Component: pages[item.id], handle: { title: item.label } })),
@@ -34,4 +46,5 @@ export const router = createBrowserRouter([{
     }] : []),
     { path: '*', Component: NotFoundPage, handle: { title: 'Página no encontrada' } },
   ],
+  }],
 }])

@@ -1,0 +1,3 @@
+.details { display: grid; gap: var(--space-5); margin: 0 0 var(--space-8); }
+.details dt { color: var(--color-ink-muted); font-size: var(--text-sm); }
+.details dd { margin: var(--space-1) 0 0; overflow-wrap: anywhere; }

@@ -2,9 +2,12 @@ import { NavLink } from 'react-router'
 import { navItems, profileItem } from '../../app/navigation'
 import { DataSourceBadge } from '../ui/DataSourceBadge'
 import styles from './SideRail.module.css'
+import { useAuth } from '../../app/auth/useAuth'
 
 export function SideRail() {
-  const ProfileIcon = profileItem.icon
+  const { session } = useAuth()
+  const user = session?.user
+  const initials = user?.name.trim().split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()
   return <aside className={styles.rail}>
     <span className={styles.wordmark}>SmartCattle</span>
     <nav aria-label="Principal" className={styles.navigation}>
@@ -16,7 +19,11 @@ export function SideRail() {
     <div className={styles.bottom}>
       <DataSourceBadge tone="on-brand" />
       <NavLink to={profileItem.path} className={styles.item}>
-        <ProfileIcon size={20} strokeWidth={1.75} aria-hidden="true" />{profileItem.label}
+        <span className={styles.avatar} aria-hidden="true">{initials}</span>
+        <span className={styles.identity}>
+          <span className={styles.name}>{user?.name}</span>
+          <span className={styles.role}>{user?.role === 'owner' ? 'Dueño' : 'Trabajador'}</span>
+        </span>
       </NavLink>
     </div>
   </aside>
