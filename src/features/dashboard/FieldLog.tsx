@@ -1,16 +1,13 @@
-import { CircleCheck, Info, OctagonAlert, TriangleAlert, type LucideIcon } from 'lucide-react'
+import { CircleCheck } from 'lucide-react'
 import { Link } from 'react-router'
 import { EmptyState, ErrorState, SkeletonText } from '../../components/ui'
-import { detectedObjectLabel, eventCatalog } from '../../lib/eventCatalog'
-import { formatConfidence, formatRelative, formatTime } from '../../lib/format'
+import { EventRow } from '../../components/events/EventRow'
 import type { ResourceState } from '../../lib/useResource'
 import type { SecurityHours } from '../../services'
-import type { Camera, FarmEvent, Severity } from '../../types/domain'
+import type { Camera, FarmEvent } from '../../types/domain'
 import { bandHourMarks, bandPosition, cameraName, restrictedSegments } from './dashboardModel'
 import styles from './FieldLog.module.css'
 
-const severityIcon: Record<Severity, LucideIcon> = { info: Info, warning: TriangleAlert, critical: OctagonAlert }
-const severityLabel: Record<Severity, string> = { info: 'Informativo', warning: 'Advertencia', critical: 'Crítico' }
 
 interface FieldLogProps {
   events: ResourceState<FarmEvent[]> & { reload: () => void }
@@ -42,27 +39,10 @@ export function FieldLog({ events, cameras, securityHours, now, limit = 5 }: Fie
     return <>
       <DayBand events={list} securityHours={securityHours} now={now} />
       <ol className={styles.list}>
-        {list.slice(0, limit).map(event => <LogEntry key={event.id} event={event} cameras={cameras} now={now} />)}
+        {list.slice(0, limit).map(event => <EventRow key={event.id} event={event} cameraLabel={cameraName(cameras, event.cameraId)} now={now} />)}
       </ol>
     </>
   }
-}
-
-function LogEntry({ event, cameras, now }: { event: FarmEvent; cameras: Camera[] | null; now: Date }) {
-  const Icon = severityIcon[event.severity]
-  const details = [
-    cameraName(cameras, event.cameraId),
-    event.detectedObject && detectedObjectLabel(event.detectedObject),
-    event.confidence !== null && `confianza ${formatConfidence(event.confidence)}`,
-  ].filter(Boolean).join(' · ')
-  return <li className={`${styles.entry} ${styles[event.severity]}`}>
-    <time className={`${styles.time} tabular`} dateTime={event.occurredAt.toISOString()}>{formatTime(event.occurredAt)}</time>
-    <Icon className={styles.icon} size={18} strokeWidth={1.75} aria-label={severityLabel[event.severity]} />
-    <div className={styles.body}>
-      <p className={styles.label}>{eventCatalog[event.kind].label}</p>
-      <p className={styles.meta}>{details} · {formatRelative(event.occurredAt, now)}</p>
-    </div>
-  </li>
 }
 
 /** The last 24 h drawn to true scale, with restricted hours shaded and one tick per event. */

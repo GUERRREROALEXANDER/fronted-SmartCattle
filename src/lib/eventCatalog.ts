@@ -11,6 +11,8 @@ export const eventCatalog: Record<EventKind, { label: string; category: EventCat
   ai_unavailable: { label: 'Servicio de visión no disponible', category: 'system', defaultSeverity: 'critical' },
 }
 
+export const severityLabel: Record<Severity, string> = { info: 'Informativo', warning: 'Advertencia', critical: 'Crítico' }
+
 export function detectedObjectLabel(value: string): string {
   switch (value) {
     case 'cow': return 'bovino'

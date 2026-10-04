@@ -9,7 +9,11 @@ export type ResourceState<T> =
 interface UseResourceOptions {
   /** Reload in the background every N ms. Previous data stays on screen while reloading. */
   refreshMs?: number
+  /** Changing the key starts a fresh load (e.g. when the selected camera changes). */
+  key?: string
 }
+
+const loading = { status: 'loading', data: null, source: null, error: null } as const
 
 /**
  * Loads one service call, cancels it on unmount and optionally polls it.
@@ -17,9 +21,9 @@ interface UseResourceOptions {
  */
 export function useResource<T>(
   load: (signal: AbortSignal) => Promise<Sourced<T>>,
-  { refreshMs }: UseResourceOptions = {},
+  { refreshMs, key = '' }: UseResourceOptions = {},
 ): ResourceState<T> & { reload: () => void } {
-  const [state, setState] = useState<ResourceState<T>>({ status: 'loading', data: null, source: null, error: null })
+  const [entry, setEntry] = useState<{ key: string; state: ResourceState<T> }>({ key, state: loading })
   const [attempt, setAttempt] = useState(0)
   const loadRef = useRef(load)
   useEffect(() => { loadRef.current = load })
@@ -32,10 +36,13 @@ export function useResource<T>(
       try {
         const result = await loadRef.current(controller.signal)
         if (controller.signal.aborted) return
-        setState({ status: 'success', data: result.data, source: result.source, error: null })
+        setEntry({ key, state: { status: 'success', data: result.data, source: result.source, error: null } })
       } catch (error) {
         if (controller.signal.aborted) return
-        setState(previous => ({ status: 'error', data: previous.data, source: previous.source, error }))
+        setEntry(previous => {
+          const last = previous.key === key ? previous.state : loading
+          return { key, state: { status: 'error', data: last.data, source: last.source, error } }
+        })
       }
       if (refreshMs && !controller.signal.aborted) timer = setTimeout(run, refreshMs)
     }
@@ -45,12 +52,14 @@ export function useResource<T>(
       controller.abort()
       if (timer) clearTimeout(timer)
     }
-  }, [attempt, refreshMs])
+  }, [attempt, refreshMs, key])
 
   const reload = useCallback(() => {
-    setState({ status: 'loading', data: null, source: null, error: null })
+    setEntry(previous => ({ key: previous.key, state: loading }))
     setAttempt(value => value + 1)
   }, [])
 
+  // Data loaded for a previous key is never shown for the new one.
+  const state = entry.key === key ? entry.state : loading
   return { ...state, reload }
 }
