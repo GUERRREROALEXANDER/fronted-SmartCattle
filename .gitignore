@@ -1,0 +1,17 @@
+node_modules/
+dist/
+*.local
+.env
+.env.*
+!.env.example
+logs/*.log
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+
+# Local AI tooling (not part of the repo)
+.agents/
+.claude/
+.codex/
+skills-lock.json
+.impeccable/
