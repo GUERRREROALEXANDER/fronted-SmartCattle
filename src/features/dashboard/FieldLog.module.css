@@ -16,7 +16,7 @@
   font-weight: var(--weight-semibold);
   text-decoration: none;
 }
-.all:hover { text-decoration: underline; }
+@media (hover: hover) { .all:hover { text-decoration: underline; } }
 
 /* 24 h band */
 .band { margin: 0 0 var(--space-4); }

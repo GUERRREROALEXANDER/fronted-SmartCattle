@@ -10,7 +10,7 @@
 .content, .footer { margin-top: var(--space-6); }
 .footer { font-size: var(--text-sm); text-align: center; }
 .footer a { color: var(--color-brand); font-weight: var(--weight-semibold); text-decoration: none; }
-.footer a:hover { text-decoration: underline; }
+@media (hover: hover) { .footer a:hover { text-decoration: underline; } }
 @media (min-width: 1024px) {
   /* Split layout: the scene keeps its full story visible beside the form column. */
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) clamp(440px, 36vw, 560px); height: 100dvh; }

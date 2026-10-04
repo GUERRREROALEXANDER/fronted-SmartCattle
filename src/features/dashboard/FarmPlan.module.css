@@ -93,7 +93,7 @@
   transition: background var(--duration-fast);
 }
 
-.legendItem:hover { background: color-mix(in srgb, var(--color-ink) 5%, transparent); }
+@media (hover: hover) { .legendItem:hover { background: color-mix(in srgb, var(--color-ink) 5%, transparent); } }
 .legendDot { width: 10px; height: 10px; flex-shrink: 0; border-radius: var(--radius-full); border: 2px solid currentColor; }
 .legendDot.online { color: var(--color-safe); background: var(--color-safe); }
 .legendDot.connecting { color: var(--color-warning); }

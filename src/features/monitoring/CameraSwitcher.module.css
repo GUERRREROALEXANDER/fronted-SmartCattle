@@ -26,7 +26,7 @@
   text-decoration: none;
   transition: background var(--duration-fast), border-color var(--duration-fast);
 }
-.item:hover { border-color: var(--color-rule-strong); }
+@media (hover: hover) { .item:hover { border-color: var(--color-rule-strong); } }
 .item.selected { border-color: var(--color-brand); background: color-mix(in srgb, var(--color-brand) 7%, var(--color-surface-raised)); box-shadow: inset 0 0 0 1px var(--color-brand); }
 
 .dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: var(--radius-full); }

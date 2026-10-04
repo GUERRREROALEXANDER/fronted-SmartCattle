@@ -16,5 +16,5 @@
   transition: background var(--duration-fast), transform var(--duration-fast) var(--ease-out);
 }
 
-.verify:hover { background: var(--color-brand-hover); }
+@media (hover: hover) { .verify:hover { background: var(--color-brand-hover); } }
 .verify:active { transform: scale(0.98); }

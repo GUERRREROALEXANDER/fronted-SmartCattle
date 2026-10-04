@@ -29,7 +29,7 @@
   cursor: pointer;
   transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
 }
-.tab:hover { border-color: var(--color-ink-subtle); }
+@media (hover: hover) { .tab:hover { border-color: var(--color-ink-subtle); } }
 .tab[aria-pressed='true'] { border-color: var(--color-brand); background: var(--color-brand); color: var(--color-on-brand); }
 .tabCount { padding: 1px 7px; border-radius: var(--radius-full); background: color-mix(in srgb, currentColor 14%, transparent); font-size: var(--text-xs); }
 
@@ -59,7 +59,7 @@
   appearance: none;
   cursor: pointer;
 }
-.select select:hover { border-color: var(--color-ink-subtle); }
+@media (hover: hover) { .select select:hover { border-color: var(--color-ink-subtle); } }
 
 .layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); }
 

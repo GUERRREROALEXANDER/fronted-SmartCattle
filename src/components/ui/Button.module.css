@@ -15,14 +15,14 @@
 .button svg { flex-shrink: 0; }
 .sm { min-height: var(--control-sm); padding-inline: var(--space-3); }
 .primary { background: var(--color-brand); color: var(--color-on-brand); }
-.primary:hover:not(:disabled) { background: var(--color-brand-hover); }
+@media (hover: hover) { .primary:hover:not(:disabled) { background: var(--color-brand-hover); } }
 .primary:active:not(:disabled) { background: var(--color-brand-strong); }
 .secondary { background: var(--color-surface-raised); color: var(--color-ink); border-color: var(--color-rule-strong); }
-.secondary:hover:not(:disabled) { background: var(--color-surface); }
+@media (hover: hover) { .secondary:hover:not(:disabled) { background: var(--color-surface); } }
 .ghost { background: transparent; color: var(--color-ink-muted); }
-.ghost:hover:not(:disabled) { background: var(--color-hover); }
+@media (hover: hover) { .ghost:hover:not(:disabled) { background: var(--color-hover); } }
 .danger { background: var(--color-critical); color: var(--color-surface-raised); }
-.danger:hover:not(:disabled) { filter: brightness(0.94); }
+@media (hover: hover) { .danger:hover:not(:disabled) { filter: brightness(0.94); } }
 .button:active:not(:disabled) { transform: scale(0.98); }
 .button:disabled { opacity: 0.55; cursor: not-allowed; }
 .spinner { animation: spin var(--duration-spin) linear infinite; }

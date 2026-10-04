@@ -17,7 +17,7 @@
   color: var(--color-ink-subtle);
   cursor: pointer;
 }
-.close:hover { background: color-mix(in srgb, var(--color-ink) 6%, transparent); color: var(--color-ink); }
+@media (hover: hover) { .close:hover { background: color-mix(in srgb, var(--color-ink) 6%, transparent); color: var(--color-ink); } }
 
 .caution {
   padding: var(--space-3) var(--space-4);
@@ -62,7 +62,7 @@
   text-decoration: none;
   transition: background var(--duration-fast);
 }
-.verify:hover { background: var(--color-brand-hover); }
+@media (hover: hover) { .verify:hover { background: var(--color-brand-hover); } }
 
 .meta { color: var(--color-ink-subtle); font-size: var(--text-xs); overflow-wrap: anywhere; }
 

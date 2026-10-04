@@ -7,7 +7,7 @@
 .sectionTitle { font-size: var(--text-md); font-weight: var(--weight-semibold); }
 .lead { max-width: 60ch; margin: var(--space-1) 0 var(--space-4); color: var(--color-ink-subtle); font-size: var(--text-sm); }
 .all { color: var(--color-brand); font-size: var(--text-sm); font-weight: var(--weight-semibold); text-decoration: none; }
-.all:hover { text-decoration: underline; }
+@media (hover: hover) { .all:hover { text-decoration: underline; } }
 
 .tableWrap { overflow-x: auto; border: 1px solid var(--color-rule); border-radius: var(--radius-lg); background: var(--color-surface-raised); }
 
@@ -17,7 +17,7 @@
 .table tbody tr + tr th, .table tbody tr + tr td { border-top: 1px solid var(--color-rule); }
 .table tbody th { font-weight: var(--weight-semibold); }
 .table tbody th a { color: var(--color-ink); text-decoration: none; }
-.table tbody th a:hover { color: var(--color-brand); text-decoration: underline; }
+@media (hover: hover) { .table tbody th a:hover { color: var(--color-brand); text-decoration: underline; } }
 .table tfoot th, .table tfoot td { border-top: 1px solid var(--color-rule-strong); font-weight: var(--weight-semibold); }
 .table tfoot th { color: var(--color-ink-muted); font-weight: var(--weight-medium); }
 

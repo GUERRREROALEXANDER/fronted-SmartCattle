@@ -39,7 +39,7 @@
 
 .close { min-width: var(--touch-min); justify-content: center; }
 .item { gap: var(--space-3); text-decoration: none; font-size: var(--text-base); color: var(--color-ink); }
-.close:hover, .item:hover { background: var(--color-earth-surface); color: var(--color-brand); }
+@media (hover: hover) { .close:hover, .item:hover { background: var(--color-earth-surface); color: var(--color-brand); } }
 .item[aria-current='page'] { color: var(--color-brand); font-weight: var(--weight-semibold); }
 
 @keyframes enter { from { transform: translateY(100%); } to { transform: translateY(0); } }

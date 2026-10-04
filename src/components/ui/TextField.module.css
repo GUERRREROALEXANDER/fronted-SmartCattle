@@ -7,9 +7,9 @@
   background: var(--color-surface-raised);
   border: 1px solid var(--color-rule-strong); border-radius: var(--radius-md);
 }
-.input:hover:not(:disabled) { border-color: var(--color-ink-subtle); }
+@media (hover: hover) { .input:hover:not(:disabled) { border-color: var(--color-ink-subtle); } }
 .input:focus-visible { border-color: var(--color-earth); }
-.input[aria-invalid='true'], .input[aria-invalid='true']:hover:not(:disabled), .input[aria-invalid='true']:focus-visible { border-color: var(--color-critical); }
+@media (hover: hover) { .input[aria-invalid='true'], .input[aria-invalid='true']:hover:not(:disabled), .input[aria-invalid='true']:focus-visible { border-color: var(--color-critical); } }
 .input:disabled, .toggle:disabled { opacity: 0.55; cursor: not-allowed; }
 .password { padding-inline-end: calc(var(--touch-min) + var(--space-2)); }
 .toggle {
@@ -18,7 +18,7 @@
   padding: 0; border: 0; border-radius: var(--radius-md); background: transparent;
   color: var(--color-ink-muted); cursor: pointer;
 }
-.toggle:hover:not(:disabled) { background: var(--color-hover); }
+@media (hover: hover) { .toggle:hover:not(:disabled) { background: var(--color-hover); } }
 .hint, .error { font-size: var(--text-sm); overflow-wrap: anywhere; }
 .hint { color: var(--color-ink-subtle); }
 .error { display: flex; align-items: flex-start; gap: var(--space-2); color: var(--color-critical); }

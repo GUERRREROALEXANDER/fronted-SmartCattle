@@ -82,4 +82,4 @@
   text-decoration: none;
   transition: background var(--duration-fast), border-color var(--duration-fast);
 }
-.action:hover { border-color: var(--color-brand); background: color-mix(in srgb, var(--color-brand) 6%, transparent); }
+@media (hover: hover) { .action:hover { border-color: var(--color-brand); background: color-mix(in srgb, var(--color-brand) 6%, transparent); } }
