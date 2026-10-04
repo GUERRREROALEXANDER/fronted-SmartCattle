@@ -47,6 +47,10 @@
 .lots .warning .vertex { fill: var(--color-warning); }
 .lots .critical .lindero { stroke: var(--color-critical); }
 .lots .critical .vertex { fill: var(--color-critical); }
+/* Breached: the same language as the video overlay (red lindero, hatched outside the boundary). */
+.lots .breached .lindero { stroke: var(--color-critical); stroke-width: 2; }
+.lots .breached .vertex { fill: var(--color-critical); }
+.outsideRing { fill: none; stroke-width: 26; stroke-linejoin: round; opacity: 0.6; }
 
 /* Observation points */
 .wedge { fill: color-mix(in srgb, var(--color-brand) 9%, transparent); }
@@ -59,7 +63,9 @@
 .point.offline .pointRing, .point.error .pointRing { stroke: var(--color-inactive); }
 .point.offline .pointDot { fill: var(--color-inactive); }
 .point.error .pointDot { fill: var(--color-critical); }
-.point.offline .wedge, .point.error .wedge { fill: transparent; }
+.point.offline .wedge, .point.error .wedge, .point.stale .wedge { fill: transparent; }
+.point.stale .pointRing { stroke: var(--color-inactive); stroke-dasharray: 3 3; }
+.point.stale .pointDot { fill: var(--color-inactive); }
 
 .pulse { fill: none; stroke-width: 2; }
 .pulse.warning { stroke: var(--color-warning); }
@@ -68,7 +74,7 @@
 /* The plan scales down on phones; SVG font sizes are in plan units, so enlarge them to stay legible. */
 @media (max-width: 599px) {
   .lotLabel { font-size: 24px; }
-  .pointLabel { font-size: 24px; stroke-width: 6px; }
+  .pointLabel { font-size: 20px; stroke-width: 6px; }
 }
 
 /* Camera legend */
@@ -99,6 +105,7 @@
 .legendDot.connecting { color: var(--color-warning); }
 .legendDot.offline { color: var(--color-inactive); }
 .legendDot.error { color: var(--color-critical); }
+.legendDot.stale { color: var(--color-inactive); border-style: dashed; }
 .legendText { display: grid; min-width: 0; flex: 1; }
 .legendName { font-size: var(--text-sm); font-weight: var(--weight-semibold); }
 .legendMeta { overflow: hidden; color: var(--color-ink-subtle); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }

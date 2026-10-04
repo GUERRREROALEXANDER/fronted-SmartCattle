@@ -28,7 +28,7 @@ export function CameraStage({ camera, stream, streamLoading, frame, zones, layer
   const media = state === 'live' && stream && (stream.kind === 'image' || stream.kind === 'mjpeg') ? stream : null
 
   return <section className={styles.stage} aria-label={camera ? `Cámara ${camera.name}` : 'Cámara'}>
-    <div className={styles.viewport}>
+    <div className={styles.viewport} style={media ? { aspectRatio: `${media.width} / ${media.height}` } : undefined}>
       {media && <div className={styles.frame} style={{ aspectRatio: `${media.width} / ${media.height}`, '--ar': media.width / media.height } as CSSProperties}>
         {/* MJPEG streams render through <img> as well; both keep the overlay registered to the picture. */}
         <img className={styles.media} src={media.url} alt="" />

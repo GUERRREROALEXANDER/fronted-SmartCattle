@@ -5,6 +5,8 @@
   position: relative;
   container-type: size;
   aspect-ratio: 16 / 9;
+  /* With a picture the stage takes its proportion; it never grows past the screen height. */
+  max-height: calc(100dvh - 11rem);
   overflow: hidden;
   border-radius: var(--radius-lg);
   background: var(--color-stage);

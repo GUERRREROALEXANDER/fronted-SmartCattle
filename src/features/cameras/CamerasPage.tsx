@@ -4,23 +4,11 @@ import { useAuth } from '../../app/auth/useAuth'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui'
 import { can } from '../../lib/permissions'
 import { useResource } from '../../lib/useResource'
-import { getCameraStream, getFrameDetections, listCameras, listEvents } from '../../services'
-import type { FrameDetections, Severity, Sourced, StreamSource } from '../../types/domain'
+import { listCameras, listEvents, loadCameraSnapshots } from '../../services'
+import type { Severity } from '../../types/domain'
 import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
 import { CameraCard } from './CameraCard'
 import styles from './CamerasPage.module.css'
-
-interface Snapshot { stream: StreamSource | null; frame: FrameDetections | null }
-
-/** Stream source and latest detections for every camera, loaded together. */
-async function loadSnapshots(ids: string[], signal: AbortSignal): Promise<Sourced<Record<string, Snapshot>>> {
-  const results = await Promise.all(ids.map(async id => {
-    const [stream, frame] = await Promise.all([getCameraStream(id, { signal }), getFrameDetections(id, { signal })])
-    return { id, stream, frame }
-  }))
-  const data = Object.fromEntries(results.map(({ id, stream, frame }) => [id, { stream: stream.data, frame: frame.data }]))
-  return { data, source: results[0]?.stream.source ?? 'unavailable' }
-}
 
 export function CamerasPage() {
   const { session } = useAuth()
@@ -33,7 +21,7 @@ export function CamerasPage() {
   const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 15_000 })
   const events = useResource(signal => listEvents({ signal }), { refreshMs: 15_000 })
   const ids = (cameras.data ?? []).map(camera => camera.id)
-  const snapshots = useResource(signal => loadSnapshots(ids, signal), { key: ids.join(','), refreshMs: 15_000 })
+  const snapshots = useResource(signal => loadCameraSnapshots(ids, signal), { key: ids.join(','), refreshMs: 15_000 })
 
   const alertByCamera = new Map<string, Severity>()
   for (const alert of recentAlerts(events.data ?? [], now)) {

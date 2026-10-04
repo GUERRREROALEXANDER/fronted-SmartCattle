@@ -4,28 +4,11 @@ import { EventRow } from '../../components/events/EventRow'
 import { EmptyState, ErrorState, PageHeader, SkeletonText } from '../../components/ui'
 import { formatCount, formatTime } from '../../lib/format'
 import { useResource } from '../../lib/useResource'
-import { getCameraStream, getDetectedCattleCount, getFrameDetections, getRegisteredCattleCount, listCameras, listEvents } from '../../services'
-import type { FrameDetections, Sourced } from '../../types/domain'
+import { getDetectedCattleCount, getRegisteredCattleCount, hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
 import { cameraName } from '../dashboard/dashboardModel'
 import { HerdSummary } from '../dashboard/HerdSummary'
 import { cattleEvents, herdByCamera, visibleTotals } from './cattleModel'
 import styles from './CattlePage.module.css'
-
-interface Frames { frames: Record<string, FrameDetections | null>; withPicture: string[] }
-
-async function loadFrames(ids: string[], signal: AbortSignal): Promise<Sourced<Frames>> {
-  const results = await Promise.all(ids.map(async id => {
-    const [stream, frame] = await Promise.all([getCameraStream(id, { signal }), getFrameDetections(id, { signal })])
-    return { id, stream, frame }
-  }))
-  return {
-    data: {
-      frames: Object.fromEntries(results.map(({ id, frame }) => [id, frame.data])),
-      withPicture: results.filter(({ stream }) => stream.data?.kind === 'image' || stream.data?.kind === 'mjpeg').map(({ id }) => id),
-    },
-    source: results[0]?.frame.source ?? 'unavailable',
-  }
-}
 
 export function CattlePage() {
   const [now, setNow] = useState(() => new Date())
@@ -39,10 +22,10 @@ export function CattlePage() {
   const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 15_000 })
   const events = useResource(signal => listEvents({ signal }), { refreshMs: 15_000 })
   const ids = (cameras.data ?? []).map(camera => camera.id)
-  const frames = useResource(signal => loadFrames(ids, signal), { key: ids.join(','), refreshMs: 15_000 })
+  const frames = useResource(signal => loadCameraSnapshots(ids, signal), { key: ids.join(','), refreshMs: 15_000 })
 
   const rows = frames.data && cameras.data
-    ? herdByCamera(cameras.data, frames.data.frames, id => frames.data!.withPicture.includes(id))
+    ? herdByCamera(cameras.data, Object.fromEntries(ids.map(id => [id, frames.data![id]?.frame ?? null])), id => hasPicture(frames.data![id]?.stream))
     : []
   const totals = visibleTotals(rows)
   const recent = cattleEvents(events.data ?? []).slice(0, 8)

@@ -11,9 +11,12 @@ interface FarmStatusHeaderProps {
   headline: string | null
   status: SystemStatus | null
   cameras: Camera[] | null
+  /** Number of cameras that deliver a picture; null while unknown. */
+  withVideo: number | null
 }
 
-export function FarmStatusHeader({ farmName, condition, headline, status, cameras }: FarmStatusHeaderProps) {
+export function FarmStatusHeader({ farmName, condition, headline, status, cameras, withVideo }: FarmStatusHeaderProps) {
+  const offline = status?.backend === 'offline'
   return <header className={styles.header}>
     <h1 className={styles.headline}>
       <span className={styles.farm}>{farmName ?? 'Tu finca'}</span>
@@ -25,7 +28,7 @@ export function FarmStatusHeader({ farmName, condition, headline, status, camera
     <ul className={styles.system} aria-label="Estado del sistema">
       <SystemItem>{backendPill(status)}</SystemItem>
       <SystemItem>{aiPill(status)}</SystemItem>
-      <SystemItem>{camerasPill(cameras)}</SystemItem>
+      <SystemItem>{camerasPill(cameras, offline, withVideo)}</SystemItem>
     </ul>
   </header>
 }
@@ -49,9 +52,11 @@ function aiPill(status: SystemStatus | null) {
     : <StatusPill tone="warning" label="Visión sin configurar" />
 }
 
-function camerasPill(cameras: Camera[] | null) {
-  if (!cameras) return <StatusPill tone="inactive" label="Cámaras: sin datos" />
+function camerasPill(cameras: Camera[] | null, offline: boolean, withVideo: number | null) {
+  // With the server offline the camera states are only the last known ones.
+  if (!cameras || offline) return <StatusPill tone="inactive" label="Cámaras: sin datos" />
   const online = onlineCameraCount(cameras)
-  const tone = online === cameras.length ? 'safe' : online === 0 ? 'critical' : 'warning'
-  return <StatusPill tone={tone} label={`Cámaras ${online}/${cameras.length} en línea`} />
+  const video = withVideo === null ? '' : ` · ${withVideo} con video`
+  const tone = online === 0 ? 'critical' : online < cameras.length || (withVideo !== null && withVideo < online) ? 'warning' : 'safe'
+  return <StatusPill tone={tone} label={`Cámaras ${online}/${cameras.length} conectadas${video}`} />
 }

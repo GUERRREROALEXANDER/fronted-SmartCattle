@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ErrorState, Notice, Skeleton } from '../../components/ui'
+import { hasPicture } from '../../services'
 import { AlertStrip } from './AlertStrip'
 import { farmCondition, recentAlerts, statusHeadline } from './dashboardModel'
 import { FarmPlan } from './FarmPlan'
@@ -37,7 +38,8 @@ export function DashboardPage() {
       condition={condition}
       headline={eventsReady ? statusHeadline(condition, alerts.length) : null}
       status={data.status.data ?? null}
-      cameras={cameras} />
+      cameras={cameras}
+      withVideo={data.snapshots.data ? Object.values(data.snapshots.data).filter(snapshot => hasPicture(snapshot.stream)).length : null} />
 
     {backendOffline && <Notice className={styles.notice} tone="critical" title="Sin conexión con el servidor">
       Se muestra la última información recibida. Se reintenta automáticamente cada 15 segundos.
@@ -47,13 +49,13 @@ export function DashboardPage() {
     <div className={styles.grid}>
       <div className={styles.main}>
         {data.plan.status === 'loading' && <Skeleton height="22rem" radius="var(--radius-lg)" />}
-        {data.plan.data && <FarmPlan plan={data.plan.data} cameras={cameras} alerts={alerts} />}
+        {data.plan.data && <FarmPlan plan={data.plan.data} cameras={cameras} alerts={alerts} stale={backendOffline} />}
         {data.plan.status === 'success' && !data.plan.data && <ErrorState
           title="Plano no disponible"
           description="El servidor todavía no ofrece la geometría de la finca ni la ubicación de las cámaras." />}
       </div>
       <div className={styles.aside}>
-        <HerdSummary registered={data.registered} detected={data.detected} />
+        <HerdSummary registered={data.registered} detected={data.detected} stale={backendOffline} />
         <FieldLog events={data.events} cameras={cameras} securityHours={data.securityHours.data ?? null} now={now} />
       </div>
     </div>

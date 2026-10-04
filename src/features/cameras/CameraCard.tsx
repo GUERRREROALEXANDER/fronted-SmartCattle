@@ -40,7 +40,7 @@ export function CameraCard({ camera, stream, frame, alert, now }: CameraCardProp
       <div className={styles.titleRow}>
         <h2 id={`camera-${camera.id}`} className={styles.name}>{camera.name}</h2>
         <span className={`${styles.status} ${styles[camera.status]}`}>
-          <span className={styles.dot} aria-hidden="true" />{statusLabel[camera.status]}
+          <span className={styles.dot} aria-hidden="true" />{statusLabel[camera.status]}{camera.status === 'online' && !picture ? ' · sin video' : ''}
         </span>
       </div>
       <dl className={styles.facts}>

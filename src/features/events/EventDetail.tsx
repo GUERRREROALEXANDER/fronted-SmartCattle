@@ -1,13 +1,12 @@
-import { ImageOff, Moon, Video, X } from 'lucide-react'
+import { ImageOff, Info, Moon, OctagonAlert, TriangleAlert, Video, X } from 'lucide-react'
 import { Link } from 'react-router'
-import { StatusPill } from '../../components/ui'
 import { detectedObjectLabel, eventCatalog, severityLabel } from '../../lib/eventCatalog'
 import { formatConfidence, formatRelative } from '../../lib/format'
 import type { FarmEvent } from '../../types/domain'
 import styles from './EventDetail.module.css'
 
 const fullDate = new Intl.DateTimeFormat('es-CO', { dateStyle: 'full', timeStyle: 'medium', hour12: false })
-const tone = { info: 'info', warning: 'warning', critical: 'critical' } as const
+const severityIcons = { info: Info, warning: TriangleAlert, critical: OctagonAlert } as const
 
 interface EventDetailProps {
   event: FarmEvent
@@ -22,12 +21,12 @@ interface EventDetailProps {
 export function EventDetail({ event, cameraLabel, restricted, now, onClose, headingId }: EventDetailProps) {
   const entry = eventCatalog[event.kind]
   const security = entry.category === 'security'
+  const SeverityIcon = severityIcons[event.severity]
   return <div className={styles.detail}>
     <header className={styles.header}>
-      <div className={styles.titles}>
-        <StatusPill tone={tone[event.severity]} label={severityLabel[event.severity]} />
-        <h2 id={headingId} className={styles.title}>{entry.label}</h2>
-      </div>
+      <h2 id={headingId} className={`${styles.title} ${styles[event.severity]}`}>
+        <SeverityIcon size={22} strokeWidth={1.75} role="img" aria-label={severityLabel[event.severity]} />{entry.label}
+      </h2>
       <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar detalle">
         <X size={20} strokeWidth={1.75} aria-hidden="true" />
       </button>

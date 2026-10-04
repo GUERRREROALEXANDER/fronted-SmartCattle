@@ -7,6 +7,9 @@
   stroke-dasharray: 10 7;
 }
 .zone rect { fill: var(--color-overlay-lindero); }
+.zone.breached polygon { fill: none; stroke: var(--color-overlay-outside); stroke-width: 2.5; }
+.zone.breached rect { fill: var(--color-overlay-outside); }
+.outsideArea { opacity: 0.55; }
 
 .box {
   stroke-width: 1.75;
@@ -18,6 +21,7 @@
 .box.person { stroke: var(--color-overlay-person); stroke-width: 2.25; stroke-dasharray: 7 4; }
 .box.outside { stroke: var(--color-overlay-outside); stroke-width: 2.25; }
 .hatch { stroke: var(--color-overlay-outside); stroke-opacity: 0.28; stroke-width: 2; }
+.zoneLabel.breached { color: var(--color-overlay-outside); }
 
 .label {
   position: absolute;

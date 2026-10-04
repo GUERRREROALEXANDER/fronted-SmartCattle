@@ -1,8 +1,11 @@
 .detail { display: grid; gap: var(--space-5); }
 
 .header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
-.titles { display: grid; justify-items: start; gap: var(--space-2); min-width: 0; }
-.title { font-size: var(--text-lg); font-stretch: var(--stretch-wide); font-weight: var(--weight-display); letter-spacing: var(--tracking-tight); }
+.title { display: flex; align-items: flex-start; gap: var(--space-2); min-width: 0; font-size: var(--text-lg); font-stretch: var(--stretch-wide); font-weight: var(--weight-display); letter-spacing: var(--tracking-tight); }
+.title svg { flex-shrink: 0; margin-top: 0.15em; }
+.info svg { color: var(--color-ink-subtle); }
+.warning svg { color: var(--color-warning); }
+.critical { color: var(--color-critical); }
 
 .close {
   display: grid;

@@ -23,6 +23,7 @@ const kindClass = (detection: Detection) =>
 export function DetectionOverlay({ width, height, detections, zones, layers }: DetectionOverlayProps) {
   const hatchId = `outside-hatch-${useId()}`
   const placement = placeLabels(detections)
+  const breached = detections.some(detection => detection.insideSafeZone === false)
   return <>
     <svg className={styles.svg} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
       <defs>
@@ -36,8 +37,12 @@ export function DetectionOverlay({ width, height, detections, zones, layers }: D
           [zone.bounds[2], zone.bounds[3]], [zone.bounds[0], zone.bounds[3]],
         ] as const
         const points = outline.map(([x, y]) => [x * width, y * height] as const)
-        return <g key={zone.id} className={styles.zone}>
-          <polygon points={points.map(point => point.join(',')).join(' ')} vectorEffect="non-scaling-stroke" />
+        const polygon = points.map(point => point.join(',')).join(' ')
+        // Signature move: when an animal leaves, the lindero turns critical and the outside is hatched.
+        return <g key={zone.id} className={`${styles.zone} ${breached ? styles.breached : ''}`}>
+          {breached && <path className={styles.outsideArea} fillRule="evenodd" fill={`url(#${hatchId})`}
+            d={`M0 0 H${width} V${height} H0 Z M${points.map(point => point.join(' ')).join(' L')} Z`} />}
+          <polygon points={polygon} vectorEffect="non-scaling-stroke" />
           {points.map(([x, y]) => <rect key={`${x}-${y}`} x={x - 6} y={y - 6} width="12" height="12" />)}
         </g>
       })}
@@ -64,7 +69,7 @@ export function DetectionOverlay({ width, height, detections, zones, layers }: D
       })}
       {layers.zones && zones.map(zone => {
         const [x, y] = (zone.outline ?? [[zone.bounds[0], zone.bounds[1]]])[0]
-        return <span key={zone.id} className={styles.zoneLabel} style={{ left: `${x * 100}%`, top: `${y * 100}%` }}>
+        return <span key={zone.id} className={`${styles.zoneLabel} ${breached ? styles.breached : ''}`} style={{ left: `${x * 100}%`, top: `${y * 100}%` }}>
           {zone.name}
         </span>
       })}
