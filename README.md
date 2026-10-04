@@ -4,7 +4,9 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phase 1 (foundation) and Phase 2 (authentication) are complete. The dashboard, monitoring, cameras, cattle, events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
+> **Status:** Phases 1–3 are complete: foundation, authentication and dashboard. The monitoring, cameras, cattle, events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
+
+![Dashboard with farm plan, herd summary and field log](docs/screenshots/dashboard-desktop.jpg)
 
 | Login (desktop) | Login (mobile) |
 |---|---|
@@ -26,6 +28,7 @@ This repository contains only the frontend. The REST API lives in the separate `
 - [Data sources and mock data](#data-sources-and-mock-data)
 - [Authentication](#authentication)
 - [Routing and navigation](#routing-and-navigation)
+- [Dashboard](#dashboard)
 - [Design system](#design-system)
 - [Accessibility](#accessibility)
 - [Testing and quality checks](#testing-and-quality-checks)
@@ -325,6 +328,42 @@ flowchart TB
 
 ---
 
+## Dashboard
+
+The dashboard answers "is everything OK on the farm right now?" first, then where and what happened.
+
+```mermaid
+flowchart TB
+    header["Status line<br/>San José · 1 alerta en la última hora<br/>+ server / vision / cameras status"]
+    alert["Alert strip<br/>most important recent alert → Verificar cámara"]
+    plan["Farm plan<br/>lots as linderos, cameras as observation points,<br/>alert lot hatched, camera list"]
+    herd["Cattle<br/>registered vs detected now"]
+    log["Field log<br/>24 h band + last 5 events"]
+    header --> alert --> plan
+    alert --> herd --> log
+```
+
+| Block | Source today | Notes |
+|---|---|---|
+| Server status | `GET /health`, `GET /api/status` | "Visión configurada" only means an AI URL is set |
+| Events, alert strip, field log | `GET /api/events` (demo in `mock` mode) | Polled every 15 s |
+| Registered cattle | `GET /api/animals` | Shows "Sin registros" while the backend list is empty |
+| Detected now, cameras, farm plan, restricted hours | demo data | The plan is labeled "Esquema ilustrativo" |
+
+Rules the dashboard follows:
+
+- **"Active" alerts.** The backend has no review state, so the dashboard shows warning and critical events from the **last hour** and says so ("1 alerta en la última hora").
+- **Never "all clear" without data.** If events fail to load or the server is offline, the headline reads **"Estado desconocido"**, not "Todo en orden".
+- **Registered ≠ detected.** The two numbers are shown side by side with a note that occlusion, camera angle or lighting can lower the detected count.
+- **Stale data stays visible.** A failed background refresh keeps the last data and shows the offline notice. Retries are automatic.
+- **Time to scale.** The 24 h band places each event at its real time and shades the restricted hours.
+
+| Server offline (hybrid mode) |
+|---|
+| ![Dashboard with the server offline](docs/screenshots/dashboard-offline-desktop.jpg) |
+
+---
+
 ## Design system
 
 The visual direction is **"farm survey plan"**: safe zones are drawn as survey boundaries (*linderos*, dashed lines with vertex marks), cameras are observation points and the history reads as a field log. It deliberately avoids generic grey KPI-card dashboards and cartoon farm imagery.
@@ -362,12 +401,12 @@ All values live as CSS custom properties in `src/styles/tokens.css`. Components 
 ## Testing and quality checks
 
 ```sh
-npm test        # 92 tests
+npm test        # 102 tests
 npm run lint
 npm run build
 ```
 
-Covered: configuration parsing, the HTTP client (success, HTTP error, network, timeout, invalid JSON), mappers, data-source resolution, every service in `api` and `mock` mode, the demo auth service, permissions, safe storage and form validation.
+Covered: configuration parsing, the HTTP client (success, HTTP error, network, timeout, invalid JSON), mappers, data-source resolution, every service in `api` and `mock` mode, the demo auth service, permissions, safe storage, form validation, date and number formatting, and the dashboard rules (recent alerts, unknown state, 24 h band positions and restricted hours across midnight).
 
 Each change is also reviewed with desktop (1440 px) and mobile (390 px) screenshots and an automated design detector before it is committed.
 
@@ -389,14 +428,22 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 - Demo auth service with owner and worker roles, session persistence, route guards
 - Signed-in user in the rail and logout from the profile page
 
+**Phase 3: Dashboard**
+- Status line with the farm name and condition, plus server, vision and camera status
+- Recent-alert strip with a direct link to verify the camera
+- Schematic farm plan: lots drawn as linderos, cameras as observation points with view wedges, the alert lot hatched, a pulse on the alert camera and a camera list
+- Registered vs. detected cattle with the occlusion note
+- Field log over a true-scale 24 h band with restricted hours
+- Loading, empty, error, offline and unknown states
+
 ## Roadmap
 
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Foundation | Done |
 | 2 | Authentication | Done |
-| 3 | Dashboard: farm status line, farm plan with cameras and safe zones, registered vs. detected cattle, field log with 24 h band | Next |
-| 4 | Live monitoring: camera stage, detection and safe-zone overlays, status panels, all connection states | Pending |
+| 3 | Dashboard: farm status line, farm plan with cameras and safe zones, registered vs. detected cattle, field log with 24 h band | Done |
+| 4 | Live monitoring: camera stage, detection and safe-zone overlays, status panels, all connection states | Next |
 | 5 | Cameras: list, states, live access | Pending |
 | 6 | Cattle: registered vs. detected, recent detections, zone states | Pending |
 | 7 | Events & alerts: history, filters, detail with evidence | Pending |
