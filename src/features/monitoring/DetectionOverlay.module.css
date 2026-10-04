@@ -1,0 +1,64 @@
+.svg, .labels { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+
+.zone polygon {
+  fill: color-mix(in srgb, var(--color-overlay-lindero) 7%, transparent);
+  stroke: var(--color-overlay-lindero);
+  stroke-width: 2;
+  stroke-dasharray: 10 7;
+}
+.zone rect { fill: var(--color-overlay-lindero); }
+
+.box {
+  stroke-width: 1.75;
+  /* Boxes glide between frames instead of jumping. */
+  transition: x var(--duration-base) var(--ease-out), y var(--duration-base) var(--ease-out),
+    width var(--duration-base) var(--ease-out), height var(--duration-base) var(--ease-out);
+}
+.box.cattle { stroke: var(--color-overlay-cattle); }
+.box.person { stroke: var(--color-overlay-person); stroke-width: 2.25; stroke-dasharray: 7 4; }
+.box.outside { stroke: var(--color-overlay-outside); stroke-width: 2.25; }
+.hatch { stroke: var(--color-overlay-outside); stroke-opacity: 0.28; stroke-width: 2; }
+
+.label {
+  position: absolute;
+  transform: translateY(calc(-100% - 2px));
+  padding: 3px 6px;
+  border-radius: 2px;
+  background: var(--color-stage-tag);
+  color: var(--color-stage-ink);
+  font-size: 12px;
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  white-space: nowrap;
+}
+.label.alignRight { transform: translate(-100%, calc(-100% - 2px)); }
+.label.below { transform: translateY(2px); }
+.label.below.alignRight { transform: translate(-100%, 2px); }
+.label.person { background: var(--color-overlay-person); color: var(--color-stage); }
+.label.outside { background: var(--color-stage-tag-outside); color: var(--color-surface-raised); }
+
+.zoneLabel {
+  position: absolute;
+  transform: translate(4px, -130%);
+  color: var(--color-overlay-lindero);
+  font-size: 11px;
+  font-weight: var(--weight-semibold);
+  font-stretch: var(--stretch-condensed);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.6);
+}
+
+@media (max-width: 599px) {
+  .label { font-size: 10px; padding: 2px 4px; }
+  .label:not(.outside):not(.person) { display: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .zone { animation: reveal var(--duration-lindero-reveal) var(--ease-out) both; }
+  .labels { animation: fade var(--duration-base) var(--ease-out) 300ms both; }
+}
+@keyframes reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }

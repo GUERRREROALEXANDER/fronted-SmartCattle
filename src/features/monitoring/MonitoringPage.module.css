@@ -1,0 +1,33 @@
+/* minmax(0, 1fr) keeps the scrollable camera strip from widening the page on phones. */
+.page { display: grid; grid-template-columns: minmax(0, 1fr); }
+.notice { margin-bottom: var(--space-4); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); }
+.main, .aside { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-4); min-width: 0; }
+.aside { gap: var(--space-8); }
+
+.switcherDesktop { display: none; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.synthetic { color: var(--color-ink-subtle); font-size: var(--text-xs); }
+
+.sectionTitle { margin-bottom: var(--space-3); font-size: var(--text-md); font-weight: var(--weight-semibold); }
+
+.events { padding: 0; list-style: none; }
+.empty { color: var(--color-ink-subtle); font-size: var(--text-sm); }
+
+.services { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0; list-style: none; }
+
+@media (min-width: 1024px) {
+  /* The camera owns the page; context sits in a narrow column beside it. */
+  .layout { grid-template-columns: minmax(0, 1fr) 19rem; gap: var(--space-8); }
+  .switcherMobile { display: none; }
+  .switcherDesktop { display: block; }
+}

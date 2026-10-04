@@ -1,0 +1,101 @@
+.stage { min-width: 0; }
+
+/* The viewfinder: dark, 16:9, picture letterboxed inside it. */
+.viewport {
+  position: relative;
+  container-type: size;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--color-stage);
+  color: var(--color-stage-ink);
+}
+
+.frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(100cqw, 100cqh * var(--ar));
+  transform: translate(-50%, -50%);
+}
+
+.media { display: block; width: 100%; height: 100%; object-fit: fill; }
+
+/* Bars float over the picture with a scrim so text stays legible on any frame. */
+.topBar, .bottomBar {
+  position: absolute;
+  inset-inline: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.topBar { top: 0; justify-content: space-between; background: linear-gradient(to bottom, var(--color-stage-scrim), transparent); }
+.bottomBar { bottom: 0; flex-wrap: wrap; background: linear-gradient(to top, var(--color-stage-scrim), transparent); }
+
+.identity { min-width: 0; }
+.name { font-size: var(--text-md); font-weight: var(--weight-semibold); font-stretch: var(--stretch-wide); }
+.location { color: var(--color-stage-ink-muted); font-size: var(--text-xs); }
+
+.connection {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-stage-tag);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+.connectionDot { width: 8px; height: 8px; border-radius: var(--radius-full); background: currentColor; }
+.connection.online .connectionDot { background: var(--color-safe); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-safe) 30%, transparent); }
+.connection.connecting .connectionDot { background: var(--color-warning); }
+.connection.offline .connectionDot { background: var(--color-inactive); }
+.connection.error .connectionDot { background: var(--color-critical); }
+
+.counts { font-size: var(--text-sm); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; }
+
+.outsideChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 3px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-stage-tag-outside);
+  color: var(--color-surface-raised);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
+.frameTime { margin-left: auto; color: var(--color-stage-ink-muted); font-size: var(--text-xs); }
+
+/* Empty and failure states inside the viewfinder. */
+.message {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-12) var(--space-6);
+  color: var(--color-stage-ink-muted);
+  text-align: center;
+}
+.messageTitle { color: var(--color-stage-ink); font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.messageText { max-width: 44ch; font-size: var(--text-sm); }
+
+.spinner { animation: spin 900ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 599px) {
+  .viewport { border-radius: var(--radius-md); }
+  .topBar, .bottomBar { padding: var(--space-2) var(--space-3); }
+  .name { font-size: var(--text-sm); }
+  .counts { font-size: var(--text-xs); }
+  .message { padding: var(--space-6) var(--space-4); }
+  .messageText { font-size: var(--text-xs); }
+}
+
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }

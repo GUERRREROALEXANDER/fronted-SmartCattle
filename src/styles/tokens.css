@@ -144,6 +144,11 @@
 }
 
 :root {
+  /* Camera stage overlays */
+  --color-stage-tag: rgb(18 22 20 / 0.72);
+  --color-stage-tag-outside: rgb(180 35 24 / 0.92);
+  --color-stage-scrim: rgb(18 22 20 / 0.6);
+
   /* Authentication scene */
   --color-auth-zone: rgb(237 234 224 / 0.06);
   --color-auth-tag: rgb(18 22 20 / 0.72);
