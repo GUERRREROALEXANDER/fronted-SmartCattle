@@ -4,14 +4,15 @@ import type { ResourceState } from '../../lib/useResource'
 import styles from './HerdSummary.module.css'
 
 interface HerdSummaryProps {
+  title?: string
   registered: ResourceState<number>
   detected: ResourceState<number | null>
 }
 
 /** Registered and currently detected cattle are different facts and are never merged into one number. */
-export function HerdSummary({ registered, detected }: HerdSummaryProps) {
+export function HerdSummary({ title = 'Ganado', registered, detected }: HerdSummaryProps) {
   return <section className={styles.section} aria-labelledby="herd-title">
-    <h2 id="herd-title" className={styles.title}>Ganado</h2>
+    <h2 id="herd-title" className={styles.title}>{title}</h2>
     <dl className={styles.figures}>
       <Figure label="Registrados" state={registered} emptyText="Sin registros" />
       <Figure label="Detectados ahora" state={detected} emptyText="Sin datos de detección" />

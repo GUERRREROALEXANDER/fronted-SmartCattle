@@ -1,0 +1,39 @@
+.page { display: grid; grid-template-columns: minmax(0, 1fr); }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-10); }
+.main, .aside { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-8); min-width: 0; }
+
+.heading { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-4); }
+.sectionTitle { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.lead { max-width: 60ch; margin: var(--space-1) 0 var(--space-4); color: var(--color-ink-subtle); font-size: var(--text-sm); }
+.all { color: var(--color-brand); font-size: var(--text-sm); font-weight: var(--weight-semibold); text-decoration: none; }
+.all:hover { text-decoration: underline; }
+
+.tableWrap { overflow-x: auto; border: 1px solid var(--color-rule); border-radius: var(--radius-lg); background: var(--color-surface-raised); }
+
+.table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.table th, .table td { padding: var(--space-3) var(--space-4); text-align: left; white-space: nowrap; }
+.table thead th { color: var(--color-ink-subtle); font-size: var(--text-xs); font-weight: var(--weight-semibold); border-bottom: 1px solid var(--color-rule); }
+.table tbody tr + tr th, .table tbody tr + tr td { border-top: 1px solid var(--color-rule); }
+.table tbody th { font-weight: var(--weight-semibold); }
+.table tbody th a { color: var(--color-ink); text-decoration: none; }
+.table tbody th a:hover { color: var(--color-brand); text-decoration: underline; }
+.table tfoot th, .table tfoot td { border-top: 1px solid var(--color-rule-strong); font-weight: var(--weight-semibold); }
+.table tfoot th { color: var(--color-ink-muted); font-weight: var(--weight-medium); }
+
+.num { text-align: right !important; font-variant-numeric: tabular-nums; }
+.muted { color: var(--color-ink-subtle); font-weight: var(--weight-regular); }
+.outside { color: var(--color-critical); }
+
+.events { padding: 0; margin-top: var(--space-3); list-style: none; }
+
+@media (min-width: 1024px) {
+  .layout { grid-template-columns: minmax(0, 3fr) minmax(19rem, 2fr); }
+}
+
+/* The footer label may wrap on narrow screens. */
+.totalLabel { white-space: normal !important; }
+@media (max-width: 599px) {
+  .wide { display: none; }
+  .table th, .table td { padding: var(--space-3); }
+}
