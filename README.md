@@ -4,7 +4,7 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–6 are complete: foundation, authentication, dashboard, live monitoring, cameras and cattle. The events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
+> **Status:** Phases 1–8 are complete: foundation, authentication, dashboard, live monitoring, cameras, cattle, events and security. Settings and the final quality pass remain. See [Roadmap](#roadmap).
 
 ![Dashboard with farm plan, herd summary and field log](docs/screenshots/dashboard-desktop.jpg)
 
@@ -445,7 +445,7 @@ All values live as CSS custom properties in `src/styles/tokens.css`. Components 
 ## Testing and quality checks
 
 ```sh
-npm test        # 108 tests
+npm test        # 115 tests
 npm run lint
 npm run build
 ```
@@ -502,6 +502,19 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 
 ![Cattle page](docs/screenshots/cattle-desktop.jpg)
 
+**Phases 7 and 8: Events, alerts and security**
+- Category tabs with counts: Todos, Seguridad, Ganado, Sistema (security is a tab, not a separate page, because security alerts are events)
+- Client-side filters for period, camera and minimum severity (the backend returns the latest 1000 events without query options), with a clear-filters action and an empty state for no matches
+- History grouped by day ("Hoy", "Ayer", full date); relative times count calendar days so they agree with the groups
+- Event detail answering what, when, where, which camera, how severe and what evidence exists. Severity says whether the server assigned it or the app estimated it; evidence says plainly that the server does not store images yet
+- Security tab: "Una detección de persona no indica intención", restricted hours shown, and security events during restricted hours marked "Horario restringido"
+- Labels follow the event catalog: "Persona detectada", "Posible intrusión", "Posible movimiento no autorizado de ganado". Never "thief" or "robbery"
+- Detail is a sticky side panel on desktop and a native `<dialog>` bottom sheet on phones; the selected event lives in the URL (`?event=<id>`)
+
+| Security tab with detail | All events |
+|---|---|
+| ![Security tab](docs/screenshots/events-security-desktop.jpg) | ![Events history](docs/screenshots/events-desktop.jpg) |
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -512,9 +525,9 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 | 4 | Live monitoring: camera stage, detection and safe-zone overlays, status panels, all connection states | Done |
 | 5 | Cameras: list, states, live access | Done |
 | 6 | Cattle: registered vs. detected, recent detections, zone states | Done |
-| 7 | Events & alerts: history, filters, detail with evidence | Next |
-| 8 | Security: person detection, possible intrusion, restricted hours | Pending |
-| 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Pending |
+| 7 | Events & alerts: history, filters, detail with evidence | Done |
+| 8 | Security: person detection, possible intrusion, restricted hours | Done |
+| 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Next |
 | 10 | Quality: accessibility and responsive audit, motion review, `DESIGN.md` | Pending |
 
 Pending on the backend side: authentication, cameras, streaming, detections, safe zones, severity and notifications. The frontend is ready to switch each capability from demo data to the API as it lands.
