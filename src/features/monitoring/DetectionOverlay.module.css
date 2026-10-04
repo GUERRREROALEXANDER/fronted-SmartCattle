@@ -9,7 +9,9 @@
 .zone rect { fill: var(--color-overlay-lindero); }
 .zone.breached polygon { fill: none; stroke: var(--color-overlay-outside); stroke-width: 2.5; }
 .zone.breached rect { fill: var(--color-overlay-outside); }
-.outsideArea { opacity: 0.55; }
+/* Strong enough to read over a dark frame: the outside of a breached zone. */
+.outsideArea { opacity: 1; }
+.hatchOutside { stroke: var(--color-overlay-outside); stroke-opacity: 0.5; stroke-width: 3; }
 
 .box {
   stroke-width: 1.75;

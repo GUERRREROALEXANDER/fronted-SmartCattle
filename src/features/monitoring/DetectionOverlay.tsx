@@ -30,6 +30,9 @@ export function DetectionOverlay({ width, height, detections, zones, layers }: D
         <pattern id={hatchId} width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
           <path d="M 0 0 V 12" className={styles.hatch} />
         </pattern>
+        <pattern id={`${hatchId}-outside`} width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+          <path d="M 0 0 V 14" className={styles.hatchOutside} />
+        </pattern>
       </defs>
       {layers.zones && zones.map(zone => {
         const outline = zone.outline ?? [
@@ -40,7 +43,7 @@ export function DetectionOverlay({ width, height, detections, zones, layers }: D
         const polygon = points.map(point => point.join(',')).join(' ')
         // Signature move: when an animal leaves, the lindero turns critical and the outside is hatched.
         return <g key={zone.id} className={`${styles.zone} ${breached ? styles.breached : ''}`}>
-          {breached && <path className={styles.outsideArea} fillRule="evenodd" fill={`url(#${hatchId})`}
+          {breached && <path className={styles.outsideArea} fillRule="evenodd" fill={`url(#${hatchId}-outside)`}
             d={`M0 0 H${width} V${height} H0 Z M${points.map(point => point.join(' ')).join(' L')} Z`} />}
           <polygon points={polygon} vectorEffect="non-scaling-stroke" />
           {points.map(([x, y]) => <rect key={`${x}-${y}`} x={x - 6} y={y - 6} width="12" height="12" />)}

@@ -8,6 +8,8 @@ interface CameraSwitcherProps {
   cameras: readonly Camera[]
   selectedId: string | null
   alertByCamera: ReadonlyMap<string, Severity>
+  /** Cameras that deliver a picture; others are labeled "sin video" when online. */
+  withVideo?: ReadonlySet<string>
 }
 
 const statusLabel: Record<Camera['status'], string> = {
@@ -15,7 +17,7 @@ const statusLabel: Record<Camera['status'], string> = {
 }
 
 /** Focus one camera while keeping the others in view. A list on desktop, a scrollable strip on phones. */
-export function CameraSwitcher({ cameras, selectedId, alertByCamera }: CameraSwitcherProps) {
+export function CameraSwitcher({ cameras, selectedId, alertByCamera, withVideo }: CameraSwitcherProps) {
   const listRef = useRef<HTMLUListElement>(null)
   // On the horizontal phone strip, bring the selected camera into view without scrolling the page.
   useEffect(() => {
@@ -36,7 +38,7 @@ export function CameraSwitcher({ cameras, selectedId, alertByCamera }: CameraSwi
             <span className={`${styles.dot} ${styles[camera.status]}`} aria-hidden="true" />
             <span className={styles.text}>
               <span className={styles.name}>{camera.name}</span>
-              <span className={styles.meta}>{camera.location} · {statusLabel[camera.status]}</span>
+              <span className={styles.meta}>{camera.location} · {statusLabel[camera.status]}{camera.status === 'online' && withVideo && !withVideo.has(camera.id) ? ' · sin video' : ''}</span>
             </span>
             {severity && <TriangleAlert className={`${styles.alert} ${styles[severity]}`} size={16} strokeWidth={2}
               role="img" aria-label="Con alerta reciente" />}

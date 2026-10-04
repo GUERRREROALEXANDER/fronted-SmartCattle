@@ -11,6 +11,8 @@ interface FarmPlanProps {
   alerts: FarmEvent[]
   /** The server is offline: camera states are the last known ones and must not read as live. */
   stale?: boolean
+  /** Cameras that deliver a picture; online cameras without one say "sin video". */
+  withVideo?: ReadonlySet<string>
 }
 
 const statusLabel: Record<CameraStatus, string> = {
@@ -32,7 +34,7 @@ function viewWedge({ position, heading }: PlanCamera): string {
   return `M ${position.x} ${position.y} L ${p1.x} ${p1.y} A ${radius} ${radius} 0 0 1 ${p2.x} ${p2.y} Z`
 }
 
-export function FarmPlan({ plan, cameras, alerts, stale = false }: FarmPlanProps) {
+export function FarmPlan({ plan, cameras, alerts, stale = false, withVideo }: FarmPlanProps) {
   const hatchId = `plan-hatch-${useId()}`
   const alertByCamera = new Map<string, Severity>()
   for (const alert of alerts) if (!alertByCamera.has(alert.cameraId)) alertByCamera.set(alert.cameraId, alert.severity)
@@ -114,7 +116,7 @@ export function FarmPlan({ plan, cameras, alerts, stale = false }: FarmPlanProps
             <span className={styles.legendText}>
               <span className={styles.legendName}>{camera.name}</span>
               <span className={styles.legendMeta}>
-                {camera.location} · {stale ? 'Sin datos actualizados' : statusLabel[camera.status]}
+                {camera.location} · {stale ? 'Sin datos actualizados' : statusLabel[camera.status]}{!stale && camera.status === 'online' && withVideo && !withVideo.has(camera.id) ? ' · sin video' : ''}
                 {severity && <strong className={styles[severity]}> · {outsideCameras.has(camera.id) ? 'Animal fuera de zona' : 'Con alerta'}</strong>}
               </span>
             </span>

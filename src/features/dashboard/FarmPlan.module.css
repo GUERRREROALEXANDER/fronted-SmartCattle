@@ -74,7 +74,8 @@
 /* The plan scales down on phones; SVG font sizes are in plan units, so enlarge them to stay legible. */
 @media (max-width: 599px) {
   .lotLabel { font-size: 24px; }
-  .pointLabel { font-size: 20px; stroke-width: 6px; }
+  /* Too small to read without colliding with linderos; the camera list right below names each point. */
+  .pointLabel { display: none; }
 }
 
 /* Camera legend */

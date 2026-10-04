@@ -4,7 +4,7 @@ import { useAuth } from '../../app/auth/useAuth'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui'
 import { can } from '../../lib/permissions'
 import { useResource } from '../../lib/useResource'
-import { listCameras, listEvents, loadCameraSnapshots } from '../../services'
+import { hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
 import type { Severity } from '../../types/domain'
 import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
 import { CameraCard } from './CameraCard'
@@ -33,8 +33,9 @@ export function CamerasPage() {
     alertByCamera.get(id) === 'critical' ? 0 : alertByCamera.has(id) ? 1 : status === 'error' || status === 'offline' ? 2 : 3
   const list = [...(cameras.data ?? [])].sort((a, b) => urgency(a.id, a.status) - urgency(b.id, b.status))
   const online = onlineCameraCount(list)
+  const videoCount = snapshots.data ? list.filter(camera => hasPicture(snapshots.data?.[camera.id]?.stream)).length : null
   const summary = cameras.data
-    ? `${online} de ${list.length} en línea${list.length - online > 0 ? ` · ${list.length - online} sin conexión` : ''}`
+    ? `${online} de ${list.length} conectadas · ${videoCount ?? '…'} con video${list.length - online > 0 ? ` · ${list.length - online} sin conexión` : ''}`
     : null
 
   return <>

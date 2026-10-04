@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router'
 import { EventRow } from '../../components/events/EventRow'
 import { EmptyState, ErrorState, Notice, PageHeader, StatusPill } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
-import { getCameraStream, getFrameDetections, getSystemStatus, listCameras, listEvents, listSafeZones } from '../../services'
+import { getCameraStream, getFrameDetections, getSystemStatus, hasPicture, listCameras, listEvents, listSafeZones, loadCameraSnapshots } from '../../services'
 import type { Severity } from '../../types/domain'
 import { recentAlerts } from '../dashboard/dashboardModel'
 import { CameraStage } from './CameraStage'
@@ -35,6 +35,9 @@ export function MonitoringPage() {
   const stream = useResource(signal => getCameraStream(cameraId, { signal }), { key: cameraId })
   const frame = useResource(signal => getFrameDetections(cameraId, { signal }), { key: cameraId, refreshMs: frameRefreshMs })
   const zones = useResource(signal => listSafeZones(cameraId, { signal }), { key: cameraId })
+  const ids = (cameras.data ?? []).map(item => item.id)
+  const snapshots = useResource(signal => loadCameraSnapshots(ids, signal), { key: ids.join(','), refreshMs: liveRefreshMs })
+  const withVideo = snapshots.data ? new Set(ids.filter(id => hasPicture(snapshots.data?.[id]?.stream))) : undefined
 
   const alertByCamera = new Map<string, Severity>()
   for (const alert of alerts) if (!alertByCamera.has(alert.cameraId)) alertByCamera.set(alert.cameraId, alert.severity)
@@ -68,7 +71,7 @@ export function MonitoringPage() {
     <div className={styles.layout}>
       <div className={styles.main}>
         <div className={styles.switcherMobile}>
-          {cameras.data && <CameraSwitcher cameras={cameras.data} selectedId={camera?.id ?? null} alertByCamera={alertByCamera} />}
+          {cameras.data && <CameraSwitcher cameras={cameras.data} selectedId={camera?.id ?? null} alertByCamera={alertByCamera} withVideo={withVideo} />}
         </div>
         <CameraStage camera={camera} stream={stream.data} streamLoading={stream.status === 'loading' || cameras.status === 'loading'}
           frame={frame.data} zones={zones.data ?? []} layers={layers}
@@ -82,7 +85,7 @@ export function MonitoringPage() {
       <aside className={styles.aside}>
         <section className={styles.switcherDesktop} aria-labelledby="cameras-title">
           <h2 id="cameras-title" className={styles.sectionTitle}>Cámaras</h2>
-          {cameras.data && <CameraSwitcher cameras={cameras.data} selectedId={camera?.id ?? null} alertByCamera={alertByCamera} />}
+          {cameras.data && <CameraSwitcher cameras={cameras.data} selectedId={camera?.id ?? null} alertByCamera={alertByCamera} withVideo={withVideo} />}
         </section>
 
         <section aria-labelledby="camera-events-title">

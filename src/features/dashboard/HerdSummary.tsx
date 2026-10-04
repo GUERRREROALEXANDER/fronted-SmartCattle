@@ -27,7 +27,7 @@ export function HerdSummary({ title = 'Ganado', registered, detected, stale = fa
         <span className={styles.part}>{registered.data === null || registered.data === undefined
           ? <span className={styles.empty}>Registros no disponibles</span>
           : <><strong className="tabular">{formatCount(registered.data)}</strong> registrados</>}</span>
-        <span className={styles.separator} aria-hidden="true">·</span>
+        {registered.data != null && count !== null && <span className={styles.separator} aria-hidden="true">·</span>}
         <span className={`${styles.part} ${stale ? styles.stale : ''}`}>{count === null
           ? <span className={styles.empty}>Sin datos de detección</span>
           : <><strong className="tabular">{formatCount(count.count)}</strong> {stale ? 'detectados en el último dato' : 'detectados ahora'}</>}</span>

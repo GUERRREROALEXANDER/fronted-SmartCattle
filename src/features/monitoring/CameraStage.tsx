@@ -42,7 +42,7 @@ export function CameraStage({ camera, stream, streamLoading, frame, zones, layer
           <p className={styles.location}>{camera.location}</p>
         </div>
         <p className={`${styles.connection} ${styles[camera.status]}`}>
-          <span className={styles.connectionDot} aria-hidden="true" />{connectionLabel[camera.status]}
+          <span className={styles.connectionDot} aria-hidden="true" />{connectionLabel[camera.status]}{camera.status === 'online' && !media && state !== 'loading' ? ' · sin video' : ''}
         </p>
       </div>}
 
