@@ -1,0 +1,128 @@
+:root {
+  color-scheme: light;
+
+  /* Color - surfaces */
+  --color-ground: #EDECE6;
+  --color-surface: #F8F7F3;
+  --color-surface-raised: #FFFFFF;
+  --color-rule: #D5D3CA;
+  --color-rule-strong: #B9B6AA;
+
+  /* Color - ink */
+  --color-ink: #17201A;
+  --color-ink-muted: #465049;
+  --color-ink-subtle: #5B645C;
+
+  /* Color - brand */
+  --color-brand: #2F4A36;
+  --color-brand-strong: #22362A;
+  --color-brand-hover: #3A5A42;
+  --color-on-brand: #F3F1EA;
+  --color-on-brand-muted: #B9C8B7;
+
+  /* Color - accents */
+  --color-earth: #8A6A4A;
+  --color-earth-surface: #EFE6DA;
+  --color-sage: #7C9A6E;
+
+  /* Color - states */
+  --color-safe: #2E7D4F;
+  --color-safe-surface: #E2EEE5;
+  --color-warning: #B7791F;
+  --color-warning-ink: #7A4E0F;
+  --color-warning-surface: #F5EAD6;
+  --color-critical: #B42318;
+  --color-critical-surface: #F7E1DE;
+  --color-inactive: #6F756F;
+  --color-inactive-surface: #E4E4DE;
+
+  /* Color - camera stage */
+  --color-stage: #121614;
+  --color-stage-raised: #1C211E;
+  --color-stage-ink: #E9ECE6;
+  --color-stage-ink-muted: #A9B1A9;
+  --color-overlay-cattle: #F1EBD8;
+  --color-overlay-person: #F2B84B;
+  --color-overlay-lindero: #EDEAE0;
+  --color-overlay-outside: #FF6B5A;
+
+  /* Focus */
+  --focus-ring: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-earth);
+
+  /* Hatch - outside-zone / critical pattern */
+  --hatch-critical: repeating-linear-gradient(135deg, var(--color-critical) 0 2px, transparent 2px 7px);
+  --hatch-warning: repeating-linear-gradient(135deg, var(--color-warning) 0 2px, transparent 2px 7px);
+
+  /* Type - family and stretch */
+  --font-sans: 'Archivo Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --stretch-wide: 115%;
+  --stretch-normal: 100%;
+  --stretch-condensed: 80%;
+
+  /* Type - sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-md: 1.125rem;
+  --text-lg: 1.375rem;
+  --text-xl: 1.75rem;
+  --text-2xl: 2.25rem;
+  --text-3xl: 3rem;
+
+  /* Type - line heights */
+  --leading-tight: 1.15;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+
+  /* Type - weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Type - tracking */
+  --tracking-tight: -0.02em;
+  --tracking-label: 0.04em;
+
+  /* Spacing - 4px base */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+
+  /* Radius */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-full: 999px;
+
+  /* Elevation */
+  --shadow-raised: 0 1px 2px rgb(23 32 26 / 0.06), 0 4px 14px rgb(23 32 26 / 0.07);
+  --shadow-overlay: 0 8px 30px rgb(23 32 26 / 0.18);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 140ms;
+  --duration-base: 220ms;
+  --duration-slow: 600ms;
+
+  /* Layout */
+  --rail-width: 232px;
+  --tabbar-height: 64px;
+  --touch-min: 44px;
+  --content-max: 1440px;
+
+  /* Z-index */
+  --z-rail: 20;
+  --z-tabbar: 30;
+  --z-banner: 40;
+  --z-overlay: 50;
+  --z-toast: 60;
+}
