@@ -4,7 +4,7 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–3 are complete: foundation, authentication and dashboard. The monitoring, cameras, cattle, events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
+> **Status:** Phases 1–4 are complete: foundation, authentication, dashboard and live monitoring. The cameras, cattle, events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
 
 ![Dashboard with farm plan, herd summary and field log](docs/screenshots/dashboard-desktop.jpg)
 
@@ -29,6 +29,7 @@ This repository contains only the frontend. The REST API lives in the separate `
 - [Authentication](#authentication)
 - [Routing and navigation](#routing-and-navigation)
 - [Dashboard](#dashboard)
+- [Live monitoring](#live-monitoring)
 - [Design system](#design-system)
 - [Accessibility](#accessibility)
 - [Testing and quality checks](#testing-and-quality-checks)
@@ -364,6 +365,49 @@ Rules the dashboard follows:
 
 ---
 
+## Live monitoring
+
+`/live?camera=<id>` shows one camera as the protagonist. Without a `camera` parameter it opens the camera with the most recent alert, so "Verificar cámara" on the dashboard lands on the evidence.
+
+![Live monitoring with detections and safe zone](docs/screenshots/live-desktop.jpg)
+
+The camera stage stacks independent layers over the picture. Overlay coordinates are normalized (0–1) and drawn in the picture's own pixel space, so boxes stay registered to the image at any size.
+
+```mermaid
+flowchart TB
+    subgraph Stage["CameraStage (dark 16:9 viewfinder)"]
+        direction TB
+        bars["Top and bottom bars<br/>name, location, connection, counts, frame time"]
+        labels["Labels (HTML, fixed 12 px)<br/>collision-aware placement"]
+        boxes["Detection boxes (SVG)<br/>cattle solid · persons dashed · outside red + hatched"]
+        zone["Safe zone (SVG)<br/>lindero polygon with vertex marks"]
+        media["Picture<br/>StreamSource: image / mjpeg (hls and none show a message)"]
+    end
+    bars --- labels --- boxes --- zone --- media
+```
+
+| Stage state | When | What the user sees |
+|---|---|---|
+| Loading / connecting | Camera or stream loading, or camera reports `connecting` | Spinner and text |
+| Live | `image` or `mjpeg` source | Picture with overlays, counts, layer toggles |
+| No stream | Source `none` (every camera except the demo one today) | "Sin transmisión disponible" |
+| Unsupported | Source `hls` (no player bundled yet) | "Formato de video no compatible" |
+| Offline / error | Camera status | Message, plus last signal time when offline |
+| Vision not configured | `ai_service.configured = false` | Warning notice; counts say there are no detections |
+| Server offline | `/health` fails | Critical notice; data refresh retries automatically |
+
+- **Demo picture.** No camera streams exist yet. The south pasture camera shows the illustrative dusk photo with hand-placed detections (one animal outside the zone), labeled "Imagen ilustrativa con detecciones simuladas".
+- **Polygon zones.** A safe zone may carry an `outline` polygon; zone membership then uses the polygon (bottom-center of each box, the same anchor as the prototype rule) instead of the bounding box.
+- **Layer toggles** (Detecciones, Zona segura, Etiquetas) only change the display. They never touch backend data.
+- **Polling:** detections every 5 s, cameras, events and status every 15 s. Changing camera never shows the previous camera's data.
+- **Mobile:** the camera strip scrolls horizontally and keeps the selected camera in view; persons and outside-zone labels stay, other labels hide on narrow screens to avoid clutter.
+
+| No stream |
+|---|
+| ![Camera without a stream](docs/screenshots/live-nostream-desktop.jpg) |
+
+---
+
 ## Design system
 
 The visual direction is **"farm survey plan"**: safe zones are drawn as survey boundaries (*linderos*, dashed lines with vertex marks), cameras are observation points and the history reads as a field log. It deliberately avoids generic grey KPI-card dashboards and cartoon farm imagery.
@@ -401,7 +445,7 @@ All values live as CSS custom properties in `src/styles/tokens.css`. Components 
 ## Testing and quality checks
 
 ```sh
-npm test        # 102 tests
+npm test        # 108 tests
 npm run lint
 npm run build
 ```
@@ -436,6 +480,13 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 - Field log over a true-scale 24 h band with restricted hours
 - Loading, empty, error, offline and unknown states
 
+**Phase 4: Live monitoring**
+- Camera stage with picture, lindero safe zone and detection boxes registered to the image
+- Distinct strokes for cattle, persons and outside-zone detections; collision-aware labels
+- Layer toggles, detection counts and an outside-zone chip
+- Camera switcher (side list on desktop, scrollable strip on mobile), per-camera events and service status
+- Designed states: loading, connecting, live, no stream, unsupported format, offline, error, vision not configured, server offline
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -443,8 +494,8 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 | 1 | Foundation | Done |
 | 2 | Authentication | Done |
 | 3 | Dashboard: farm status line, farm plan with cameras and safe zones, registered vs. detected cattle, field log with 24 h band | Done |
-| 4 | Live monitoring: camera stage, detection and safe-zone overlays, status panels, all connection states | Next |
-| 5 | Cameras: list, states, live access | Pending |
+| 4 | Live monitoring: camera stage, detection and safe-zone overlays, status panels, all connection states | Done |
+| 5 | Cameras: list, states, live access | Next |
 | 6 | Cattle: registered vs. detected, recent detections, zone states | Pending |
 | 7 | Events & alerts: history, filters, detail with evidence | Pending |
 | 8 | Security: person detection, possible intrusion, restricted hours | Pending |
