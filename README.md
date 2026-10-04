@@ -4,7 +4,7 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–8 are complete: foundation, authentication, dashboard, live monitoring, cameras, cattle, events and security. Settings and the final quality pass remain. See [Roadmap](#roadmap).
+> **Status:** Phases 1–9 are complete: every screen is built. The final quality pass (Phase 10) remains. See [Roadmap](#roadmap).
 
 ![Dashboard with farm plan, herd summary and field log](docs/screenshots/dashboard-desktop.jpg)
 
@@ -515,6 +515,13 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 |---|---|
 | ![Security tab](docs/screenshots/events-security-desktop.jpg) | ![Events history](docs/screenshots/events-desktop.jpg) |
 
+**Phase 9: Settings**
+- Account section for every user; farm, users, cameras and safe zones, security hours and alert classification for owners only (permissions from `src/lib/permissions.ts`)
+- Everything is read-only and each section says why: the backend has no endpoints to change settings, invite workers, change passwords or send notifications yet
+- Workers see their account and a note that the owner manages the rest
+
+![Settings page](docs/screenshots/settings-desktop.jpg)
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -527,8 +534,8 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 | 6 | Cattle: registered vs. detected, recent detections, zone states | Done |
 | 7 | Events & alerts: history, filters, detail with evidence | Done |
 | 8 | Security: person detection, possible intrusion, restricted hours | Done |
-| 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Next |
-| 10 | Quality: accessibility and responsive audit, motion review, `DESIGN.md` | Pending |
+| 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Done |
+| 10 | Quality: accessibility and responsive audit, motion review, `DESIGN.md` | Next |
 
 Pending on the backend side: authentication, cameras, streaming, detections, safe zones, severity and notifications. The frontend is ready to switch each capability from demo data to the API as it lands.
 
