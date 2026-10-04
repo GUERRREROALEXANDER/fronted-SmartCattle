@@ -1,8 +1,78 @@
-import { PageHeader } from '../../components/ui/PageHeader'
+import { useEffect, useState } from 'react'
+import { Cctv } from 'lucide-react'
+import { useAuth } from '../../app/auth/useAuth'
+import { EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui'
+import { can } from '../../lib/permissions'
+import { useResource } from '../../lib/useResource'
+import { getCameraStream, getFrameDetections, listCameras, listEvents } from '../../services'
+import type { FrameDetections, Severity, Sourced, StreamSource } from '../../types/domain'
+import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
+import { CameraCard } from './CameraCard'
+import styles from './CamerasPage.module.css'
+
+interface Snapshot { stream: StreamSource | null; frame: FrameDetections | null }
+
+/** Stream source and latest detections for every camera, loaded together. */
+async function loadSnapshots(ids: string[], signal: AbortSignal): Promise<Sourced<Record<string, Snapshot>>> {
+  const results = await Promise.all(ids.map(async id => {
+    const [stream, frame] = await Promise.all([getCameraStream(id, { signal }), getFrameDetections(id, { signal })])
+    return { id, stream, frame }
+  }))
+  const data = Object.fromEntries(results.map(({ id, stream, frame }) => [id, { stream: stream.data, frame: frame.data }]))
+  return { data, source: results[0]?.stream.source ?? 'unavailable' }
+}
 
 export function CamerasPage() {
+  const { session } = useAuth()
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 30_000)
+    return () => clearInterval(timer)
+  }, [])
+
+  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 15_000 })
+  const events = useResource(signal => listEvents({ signal }), { refreshMs: 15_000 })
+  const ids = (cameras.data ?? []).map(camera => camera.id)
+  const snapshots = useResource(signal => loadSnapshots(ids, signal), { key: ids.join(','), refreshMs: 15_000 })
+
+  const alertByCamera = new Map<string, Severity>()
+  for (const alert of recentAlerts(events.data ?? [], now)) {
+    if (!alertByCamera.has(alert.cameraId)) alertByCamera.set(alert.cameraId, alert.severity)
+  }
+
+  // Most urgent first: recent alerts, then connection problems, then the rest in their original order.
+  const urgency = (id: string, status: string) =>
+    alertByCamera.get(id) === 'critical' ? 0 : alertByCamera.has(id) ? 1 : status === 'error' || status === 'offline' ? 2 : 3
+  const list = [...(cameras.data ?? [])].sort((a, b) => urgency(a.id, a.status) - urgency(b.id, b.status))
+  const online = onlineCameraCount(list)
+  const summary = cameras.data
+    ? `${online} de ${list.length} en línea${list.length - online > 0 ? ` · ${list.length - online} sin conexión` : ''}`
+    : null
+
   return <>
-    <PageHeader title="Cámaras" />
-    <p>Esta sección se construirá en una próxima fase.</p>
+    <PageHeader title="Cámaras" actions={summary && <p className={styles.summary}>{summary}</p>} />
+
+    {cameras.status === 'loading' && <div className={styles.grid}>
+      {[0, 1, 2, 3].map(index => <Skeleton key={index} height="20rem" radius="var(--radius-lg)" />)}
+    </div>}
+
+    {cameras.status === 'error' && !cameras.data && <ErrorState description="No se pudo cargar la lista de cámaras." onRetry={cameras.reload} />}
+
+    {cameras.status === 'success' && !cameras.data && <ErrorState title="Cámaras no disponibles"
+      description="El servidor todavía no ofrece la lista de cámaras ni su estado." />}
+
+    {cameras.data && list.length === 0 && <EmptyState icon={Cctv} title="Aún no hay cámaras"
+      description="Cuando se registren cámaras de la finca, aparecerán aquí con su estado." />}
+
+    {list.length > 0 && <div className={styles.grid}>
+      {list.map(camera => <CameraCard key={camera.id} camera={camera}
+        stream={snapshots.data?.[camera.id]?.stream ?? null}
+        frame={snapshots.data?.[camera.id]?.frame ?? null}
+        alert={alertByCamera.get(camera.id)} now={now} />)}
+    </div>}
+
+    {session && can(session.user.role, 'cameras:configure') && list.length > 0 && <p className={styles.note}>
+      Agregar cámaras o cambiar su zona estará disponible cuando el servidor lo permita.
+    </p>}
   </>
 }
