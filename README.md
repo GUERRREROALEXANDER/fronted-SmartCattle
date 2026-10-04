@@ -4,7 +4,7 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–5 are complete: foundation, authentication, dashboard, live monitoring and cameras. The cattle, events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
+> **Status:** Phases 1–6 are complete: foundation, authentication, dashboard, live monitoring, cameras and cattle. The events, security and settings screens are placeholders that later phases will replace. See [Roadmap](#roadmap).
 
 ![Dashboard with farm plan, herd summary and field log](docs/screenshots/dashboard-desktop.jpg)
 
@@ -494,6 +494,14 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 
 ![Cameras page](docs/screenshots/cameras-desktop.jpg)
 
+**Phase 6: Cattle**
+- Herd figures: registered vs. detected now, with the occlusion note
+- Cattle visible per camera and outside-zone counts, labeled as a per-camera view (cameras cover only part of the farm, so rows are not a herd total)
+- Recent cattle movements (outside-zone exits, external animals)
+- No veterinary data: no vaccines, treatments, weights or collars
+
+![Cattle page](docs/screenshots/cattle-desktop.jpg)
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -503,8 +511,8 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 | 3 | Dashboard: farm status line, farm plan with cameras and safe zones, registered vs. detected cattle, field log with 24 h band | Done |
 | 4 | Live monitoring: camera stage, detection and safe-zone overlays, status panels, all connection states | Done |
 | 5 | Cameras: list, states, live access | Done |
-| 6 | Cattle: registered vs. detected, recent detections, zone states | Next |
-| 7 | Events & alerts: history, filters, detail with evidence | Pending |
+| 6 | Cattle: registered vs. detected, recent detections, zone states | Done |
+| 7 | Events & alerts: history, filters, detail with evidence | Next |
 | 8 | Security: person detection, possible intrusion, restricted hours | Pending |
 | 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Pending |
 | 10 | Quality: accessibility and responsive audit, motion review, `DESIGN.md` | Pending |
