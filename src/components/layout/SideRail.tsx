@@ -8,7 +8,7 @@ export function SideRail() {
   const { session } = useAuth()
   const user = session?.user
   const initials = user?.name.trim().split(/\s+/).map(part => part[0]).slice(0, 2).join('').toUpperCase()
-  return <aside className={styles.rail}>
+  return <header className={styles.rail}>
     <span className={styles.wordmark}>SmartCattle</span>
     <nav aria-label="Principal" className={styles.navigation}>
       {navItems.map(({ id, path, label, icon: Icon }) =>
@@ -26,5 +26,5 @@ export function SideRail() {
         </span>
       </NavLink>
     </div>
-  </aside>
+  </header>
 }

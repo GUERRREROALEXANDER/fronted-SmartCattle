@@ -30,6 +30,9 @@
 
   /* Color - states */
   --color-safe: #2E7D4F;
+  /* Text on tinted state surfaces needs a darker ink to reach 4.5:1. */
+  --color-safe-ink: #23623F;
+  --color-inactive-ink: #575D57;
   --color-safe-surface: #E2EEE5;
   --color-warning: #B7791F;
   --color-warning-ink: #7A4E0F;
