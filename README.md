@@ -57,7 +57,7 @@ No UI kit, CSS framework or state library is used. Server state will be added wi
 
 ## Getting started
 
-Requirements: Node.js 20.19+, 22.13+ or 24+ (required by Vite 8 and ESLint 10) and npm.
+Requirements: Node.js 22.22+ (required by React Router 8; declared in `engines`) and npm. Tested with Node 26.8.1.
 
 ```sh
 npm install
@@ -82,9 +82,11 @@ Copy `.env.example` to `.env`. Never commit `.env`.
 | Variable | Default | Purpose |
 |---|---|---|
 | `VITE_API_BASE_URL` | `http://localhost:8000` | Base URL of the SmartCattle FastAPI backend. Trailing slashes are removed. |
-| `VITE_DATA_SOURCE` | `mock` | `api`, `mock` or `hybrid`. See [Data sources](#data-sources-and-mock-data). Invalid values fall back to `mock`. |
+| `VITE_DATA_SOURCE` | `mock` (`.env.example` uses `hybrid`) | `api`, `mock` or `hybrid`. See [Data sources](#data-sources-and-mock-data). A missing or invalid value falls back to `mock`, which never contacts the backend. |
 
-The frontend holds no secrets. Do not put API keys in `VITE_*` variables: they are embedded in the client bundle.
+The frontend holds no secrets. Do not put API keys in `VITE_*` variables: they are embedded in the client bundle. `AI_API_KEY` belongs only to the backend and the AI service.
+
+For production, change only `VITE_API_BASE_URL` (for example `https://your-backend-domain.example`) and add the frontend origin to the backend's `ALLOWED_ORIGINS`. Vite reads these values at build time, so rebuild after changing them.
 
 ---
 
@@ -238,6 +240,10 @@ Rules:
 
 - All fictional data lives in `src/mocks/` and starts with a `DEVELOPMENT MOCK DATA` header.
 - Every service returns `{ data, source }`. When anything on screen comes from demo data, the UI shows a **"Datos de demostración"** badge.
+- In `mock` mode the backend is never contacted, so the server pill reads **"Servidor: modo demostración"**, never "en línea". Only a real `/health` reply with `status: "ok"` shows the server online.
+- A failed backend call is never replaced with demo data. Screens show the cause (no connection, timeout, HTTP 401/404/422/5xx or an unexpected response). If a background refresh fails, the last data stays on screen with a warning.
+- Backend responses are validated in `src/api/validate.ts`. Events with an `event_type` the frontend does not know are skipped with a console warning, so one new type does not hide the rest.
+- An empty `/api/animals` list is a normal state ("No hay animales registrados"), not an error.
 - Demo detections are deterministic (seeded per camera) so screenshots and tests are stable.
 - Event kinds that the backend does not emit yet (`person_detected`, `possible_intrusion`, ...) exist only in demo data.
 
