@@ -1,7 +1,7 @@
 import { dataMode } from '../api/config'
 import { getJson } from '../api/httpClient'
+import { parseAnimalsResponse } from '../api/validate'
 import { mockDetectedCattle, mockRegisteredCattle } from '../mocks/mockData'
-import type { ApiAnimalsResponse } from '../types/api'
 import type { Sourced } from '../types/domain'
 import { resolveSource } from './dataSource'
 import { resolveMockOnly, waitForMock, type ServiceOptions } from './options'
@@ -12,7 +12,7 @@ export async function getRegisteredCattleCount(options: ServiceOptions = {}): Pr
     await waitForMock(options)
     return { data: mockRegisteredCattle, source }
   }
-  const response = await getJson<ApiAnimalsResponse>('/api/animals', options)
+  const response = parseAnimalsResponse(await getJson<unknown>('/api/animals', options))
   return { data: response.total, source }
 }
 

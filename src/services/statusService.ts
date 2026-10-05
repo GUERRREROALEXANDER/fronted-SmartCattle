@@ -1,8 +1,8 @@
 import { dataMode } from '../api/config'
 import { ApiError } from '../api/errors'
 import { getJson } from '../api/httpClient'
+import { isHealthy, parseStatusResponse } from '../api/validate'
 import { buildMockSystemStatus } from '../mocks/mockData'
-import type { ApiHealth, ApiStatus } from '../types/api'
 import type { Sourced, SystemStatus } from '../types/domain'
 import { resolveSource } from './dataSource'
 import { waitForMock, type ServiceOptions } from './options'
@@ -15,12 +15,17 @@ export async function getSystemStatus(options: ServiceOptions = {}): Promise<Sou
   }
   const checkedAt = new Date(options.now ?? new Date())
   try {
-    await getJson<ApiHealth>('/health', options)
+    if (!isHealthy(await getJson<unknown>('/health', options))) return { data: { backend: 'offline', aiConfigured: null, version: null, storage: null, checkedAt }, source }
   } catch (error) {
     if (options.signal?.aborted) throw error
-    if (!(error instanceof ApiError) || !['network', 'timeout', 'http'].includes(error.kind)) throw error
+    if (!(error instanceof ApiError)) throw error
     return { data: { backend: 'offline', aiConfigured: null, version: null, storage: null, checkedAt }, source }
   }
-  const status = await getJson<ApiStatus>('/api/status', options)
-  return { data: { backend: 'online', aiConfigured: status.ai_service.configured, version: status.version, storage: status.storage, checkedAt }, source }
+  try {
+    const status = parseStatusResponse(await getJson<unknown>('/api/status', options))
+    return { data: { backend: 'online', aiConfigured: status.ai_service.configured, version: status.version, storage: status.storage, checkedAt }, source }
+  } catch (error) {
+    if (options.signal?.aborted || !(error instanceof ApiError)) throw error
+    return { data: { backend: 'online', aiConfigured: null, version: null, storage: null, checkedAt }, source }
+  }
 }

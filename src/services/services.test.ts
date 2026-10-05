@@ -47,9 +47,14 @@ describe('backend services', () => {
     await vi.advanceTimersByTimeAsync(8000)
     expect((await result).data.backend).toBe('offline')
   })
-  it('propagates malformed health JSON', async () => {
+  it('returns offline on malformed health JSON', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response('invalid'))
-    await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).rejects.toMatchObject({ kind: 'parse' })
+    expect((await getSystemStatus({ mode: 'api', fetchImpl, now })).data.backend).toBe('offline')
+  })
+  it('returns offline when health is not ok', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ status: 'degraded' }))
+    expect((await getSystemStatus({ mode: 'api', fetchImpl, now })).data.backend).toBe('offline')
+    expect(fetchImpl).toHaveBeenCalledOnce()
   })
   it('preserves caller cancellation', async () => {
     const signal = AbortSignal.abort()
@@ -66,9 +71,9 @@ describe('backend services', () => {
     await expect(getRegisteredCattleCount({ mode: 'api', fetchImpl, now })).resolves.toEqual({ data: 0, source: 'api' })
     expect(fetchImpl.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual(['/health', '/api/status', '/api/animals'])
   })
-  it('propagates status failure after successful health', async () => {
+  it('keeps backend online with unknown details after status failure', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json({ status: 'ok' })).mockRejectedValueOnce(new TypeError('Failed to fetch'))
-    await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).rejects.toMatchObject({ kind: 'network' })
+    await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({ source: 'api', data: { backend: 'online', aiConfigured: null, version: null, storage: null, checkedAt: now } })
   })
 })
 
@@ -138,7 +143,7 @@ describe('central mock data', () => {
     const options = { mode: 'mock' as const, now, fetchImpl }
     await expect(listEvents(options)).resolves.toEqual({ data: events, source: 'mock' })
     await expect(getRegisteredCattleCount(options)).resolves.toEqual({ data: mockRegisteredCattle, source: 'mock' })
-    expect((await getSystemStatus(options)).data).toMatchObject({ backend: 'online', aiConfigured: true, checkedAt: now })
+    expect((await getSystemStatus(options)).data).toMatchObject({ backend: 'not-checked', aiConfigured: null, version: null, storage: null, checkedAt: now })
     expect(fetchImpl).not.toHaveBeenCalled()
   })
   it('covers all event kinds in the last 48 hours, newest first', () => {

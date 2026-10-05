@@ -38,7 +38,7 @@ function seededRandom(cameraId: string) {
 }
 
 export function buildMockSystemStatus(now = new Date()): SystemStatus {
-  return { backend: 'online', aiConfigured: true, version: '0.0.0-mock', storage: 'memory', checkedAt: new Date(now) }
+  return { backend: 'not-checked', aiConfigured: null, version: null, storage: null, checkedAt: new Date(now) }
 }
 
 export function buildMockFrameDetections(cameraId: string, now = new Date()): FrameDetections {

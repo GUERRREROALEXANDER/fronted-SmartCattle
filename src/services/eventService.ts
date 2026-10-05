@@ -1,7 +1,7 @@
 import { dataMode } from '../api/config'
 import { getJson } from '../api/httpClient'
+import { parseEventsResponse } from '../api/validate'
 import { buildMockFarmEvents } from '../mocks/mockData'
-import type { ApiEventsResponse } from '../types/api'
 import type { FarmEvent, Sourced } from '../types/domain'
 import { resolveSource } from './dataSource'
 import { toFarmEvent } from './mappers'
@@ -13,6 +13,6 @@ export async function listEvents(options: ServiceOptions = {}): Promise<Sourced<
     await waitForMock(options)
     return { data: buildMockFarmEvents(options.now), source }
   }
-  const response = await getJson<ApiEventsResponse>('/api/events', options)
+  const response = parseEventsResponse(await getJson<unknown>('/api/events', options))
   return { data: response.items.map(toFarmEvent), source }
 }

@@ -34,7 +34,8 @@ export interface NormalizedBox { x: number; y: number; width: number; height: nu
 export interface Detection { id: string; label: string; confidence: number; box: NormalizedBox; insideSafeZone: boolean | null }
 export interface FrameDetections { cameraId: string; capturedAt: Date; detections: Detection[] }
 export interface SystemStatus {
-  backend: 'online' | 'offline'
+  // 'not-checked' means mock mode; the backend was never contacted.
+  backend: 'online' | 'offline' | 'not-checked'
   aiConfigured: boolean | null
   version: string | null
   storage: string | null
