@@ -2,7 +2,8 @@ import { useEffect, useId, useRef, useState, type ReactNode } from 'react'
 import { FilterX, ListChecks, Moon, ShieldAlert } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 import { EventRow } from '../../components/events/EventRow'
-import { Button, EmptyState, ErrorState, PageHeader, SkeletonText } from '../../components/ui'
+import { describeApiError } from '../../api/errors'
+import { Button, EmptyState, ErrorState, Notice, PageHeader, SkeletonText } from '../../components/ui'
 import { eventCatalog } from '../../lib/eventCatalog'
 import { useMediaQuery } from '../../lib/useMediaQuery'
 import { useResource } from '../../lib/useResource'
@@ -103,7 +104,10 @@ export function EventsPage() {
     <div className={styles.layout}>
       <section className={styles.list} aria-label="Lista de eventos">
         {events.status === 'loading' && <SkeletonText lines={8} />}
-        {events.status === 'error' && !events.data && <ErrorState description="No se pudieron cargar los eventos." onRetry={events.reload} />}
+        {events.status === 'error' && !events.data && <ErrorState {...describeApiError(events.error)} onRetry={events.reload} />}
+        {events.status === 'error' && events.data && <Notice tone="warning" title={describeApiError(events.error).title}>
+          Se muestran los últimos eventos recibidos. Se reintenta automáticamente.
+        </Notice>}
         {events.data && all.length === 0 && <EmptyState icon={ListChecks} title="Sin eventos registrados"
           description="Cuando el sistema de visión detecte algo, aparecerá aquí." />}
         {events.data && all.length > 0 && visible.length === 0 && <EmptyState icon={FilterX} title="Ningún evento coincide"

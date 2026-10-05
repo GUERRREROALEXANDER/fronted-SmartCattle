@@ -1,4 +1,5 @@
 .section { min-width: 0; }
+.notice { margin-bottom: var(--space-4); }
 
 .heading {
   display: flex;

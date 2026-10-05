@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { EventRow } from '../../components/events/EventRow'
+import { describeApiError } from '../../api/errors'
 import { EmptyState, ErrorState, PageHeader, SkeletonText } from '../../components/ui'
 import { formatCount, formatTime } from '../../lib/format'
 import { useResource } from '../../lib/useResource'
@@ -88,7 +89,7 @@ export function CattlePage() {
             <Link className={styles.all} to="/events">Ver todos</Link>
           </div>
           {events.status === 'loading' ? <SkeletonText lines={5} />
-            : events.status === 'error' && !events.data ? <ErrorState description="No se pudieron cargar los eventos." onRetry={events.reload} />
+            : events.status === 'error' && !events.data ? <ErrorState {...describeApiError(events.error)} onRetry={events.reload} />
               : recent.length === 0 ? <EmptyState title="Sin movimientos registrados" description="Las salidas de zona y los animales externos aparecerán aquí." />
                 : <ol className={styles.events}>
                   {recent.map(event => <EventRow key={event.id} event={event} cameraLabel={cameraName(cameras.data ?? null, event.cameraId)} now={now} />)}

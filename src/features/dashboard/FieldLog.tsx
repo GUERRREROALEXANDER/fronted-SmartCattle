@@ -1,7 +1,8 @@
 import { CircleCheck } from 'lucide-react'
 import { Link } from 'react-router'
-import { EmptyState, ErrorState, SkeletonText } from '../../components/ui'
+import { EmptyState, ErrorState, Notice, SkeletonText } from '../../components/ui'
 import { EventRow } from '../../components/events/EventRow'
+import { describeApiError } from '../../api/errors'
 import type { ResourceState } from '../../lib/useResource'
 import type { SecurityHours } from '../../services'
 import type { Camera, FarmEvent } from '../../types/domain'
@@ -29,14 +30,18 @@ export function FieldLog({ events, cameras, securityHours, now, limit = 5 }: Fie
   function renderBody() {
     if (events.status === 'loading') return <SkeletonText lines={5} />
     if (events.status === 'error' && !events.data) {
-      return <ErrorState description="Revisa la conexión con el servidor e inténtalo de nuevo." onRetry={events.reload} />
+      return <ErrorState {...describeApiError(events.error)} onRetry={events.reload} />
     }
     const list = events.data ?? []
+    const staleNotice = events.status === 'error' && events.data && <Notice className={styles.notice} tone="warning" title={describeApiError(events.error).title}>
+      Se muestran los últimos eventos recibidos. Se reintenta automáticamente.
+    </Notice>
     if (list.length === 0) {
-      return <EmptyState icon={CircleCheck} title="Sin eventos registrados"
-        description="Cuando el sistema de visión detecte algo, aparecerá aquí." />
+      return <>{staleNotice}<EmptyState icon={CircleCheck} title="Sin eventos registrados"
+        description="Cuando el sistema de visión detecte algo, aparecerá aquí." /></>
     }
     return <>
+      {staleNotice}
       <DayBand events={list} securityHours={securityHours} now={now} />
       <ol className={styles.list}>
         {list.slice(0, limit).map(event => <EventRow key={event.id} event={event} cameraLabel={cameraName(cameras, event.cameraId)} now={now} />)}
