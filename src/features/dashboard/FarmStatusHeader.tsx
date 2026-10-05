@@ -39,14 +39,14 @@ function SystemItem({ children }: { children: ReactNode }) {
 
 function backendPill(status: SystemStatus | null) {
   if (!status) return <StatusPill tone="inactive" label="Servidor: comprobando" />
-  return status.backend === 'online'
-    ? <StatusPill tone="safe" label="Servidor en línea" />
-    : <StatusPill tone="critical" label="Servidor sin conexión" />
+  if (status.backend === 'online') return <StatusPill tone="safe" label="Servidor en línea" />
+  if (status.backend === 'offline') return <StatusPill tone="critical" label="Servidor sin conexión" />
+  return <StatusPill tone="inactive" label="Servidor: modo demostración" />
 }
 
 function aiPill(status: SystemStatus | null) {
   // The API only reports whether an AI URL is configured, not whether the service is up.
-  if (!status || status.aiConfigured === null) return <StatusPill tone="inactive" label="Visión: sin datos" />
+  if (!status || status.backend === 'not-checked' || status.aiConfigured === null) return <StatusPill tone="inactive" label="Visión: sin datos" />
   return status.aiConfigured
     ? <StatusPill tone="safe" label="Visión configurada" />
     : <StatusPill tone="warning" label="Visión sin configurar" />
