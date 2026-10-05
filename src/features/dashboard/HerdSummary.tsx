@@ -26,14 +26,17 @@ export function HerdSummary({ title = 'Ganado', registered, detected, stale = fa
       : <p className={styles.line}>
         <span className={styles.part}>{registered.data === null || registered.data === undefined
           ? <span className={styles.empty}>Registros no disponibles</span>
+          : registered.data === 0 ? <span className={styles.empty}>No hay animales registrados</span>
           : <><strong className="tabular">{formatCount(registered.data)}</strong> registrados</>}</span>
-        {registered.data != null && count !== null && <span className={styles.separator} aria-hidden="true">·</span>}
+        {registered.data != null && registered.data !== 0 && count !== null && <span className={styles.separator} aria-hidden="true">·</span>}
         <span className={`${styles.part} ${stale ? styles.stale : ''}`}>{count === null
           ? <span className={styles.empty}>Sin datos de detección</span>
-          : <><strong className="tabular">{formatCount(count.count)}</strong> {stale ? 'detectados en el último dato' : 'detectados ahora'}</>}</span>
+          : <><strong className="tabular">{formatCount(count.count)}</strong> {stale ? 'detectados en el último dato' : 'detectados ahora'}{detected.source === 'mock' && ' (simulado)'}</>}</span>
       </p>}
     {count && <p className={styles.source}>
-      {stale
+      {detected.source === 'mock'
+        ? <>Conteo simulado de demostración: el servicio de visión aún no está conectado · <time className="tabular" dateTime={count.countedAt.toISOString()}>{formatTime(count.countedAt)}</time></>
+        : stale
         ? <>Último conteo recibido a las <time className="tabular" dateTime={count.countedAt.toISOString()}>{formatTime(count.countedAt)}</time>, antes de perder la conexión.</>
         : <>Conteo de toda la finca del servicio de visión · <time className="tabular" dateTime={count.countedAt.toISOString()}>{formatTime(count.countedAt)}</time></>}
     </p>}
