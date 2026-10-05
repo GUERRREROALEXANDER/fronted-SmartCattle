@@ -14,5 +14,7 @@ export async function listEvents(options: ServiceOptions = {}): Promise<Sourced<
     return { data: buildMockFarmEvents(options.now), source }
   }
   const response = parseEventsResponse(await getJson<unknown>('/api/events', options))
-  return { data: response.items.map(toFarmEvent), source }
+  // The backend orders by arrival; the UI shows detection time, so late-arriving events must not jump ahead.
+  const events = response.items.map(toFarmEvent).sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+  return { data: events, source }
 }

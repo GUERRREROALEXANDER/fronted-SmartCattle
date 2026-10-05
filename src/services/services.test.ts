@@ -25,6 +25,11 @@ describe('backend services', () => {
     expect(result).toEqual({ data: events.filter(event => event.kind === 'cattle_out_of_zone'), source: 'api' })
     expect(fetchImpl).toHaveBeenCalledWith(expect.stringMatching(/\/api\/events$/), expect.objectContaining({ method: 'GET' }))
   })
+  it('orders backend events by detection time, not arrival time', async () => {
+    const [newer, older] = [backendEvents[0], { ...backendEvents[1], received_at: new Date(now).toISOString() }]
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: [older, newer], total: 2 }))
+    expect((await listEvents({ mode: 'api', fetchImpl, now })).data.map(event => event.id)).toEqual([newer.id, older.id])
+  })
   it('propagates event errors without falling back to mock data', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
     await expect(listEvents({ mode: 'hybrid', fetchImpl, now })).rejects.toBeInstanceOf(ApiError)
