@@ -18,7 +18,7 @@ export function CamerasPage() {
     return () => clearInterval(timer)
   }, [])
 
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 15_000 })
+  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 5_000 })
   const events = useResource(signal => listEvents({ signal }), { refreshMs: 15_000 })
   const ids = (cameras.data ?? []).map(camera => camera.id)
   const snapshots = useResource(signal => loadCameraSnapshots(ids, signal), { key: ids.join(','), refreshMs: 15_000 })
@@ -50,8 +50,8 @@ export function CamerasPage() {
     {cameras.status === 'success' && !cameras.data && <ErrorState title="Cámaras no disponibles"
       description="El servidor todavía no ofrece la lista de cámaras ni su estado." />}
 
-    {cameras.data && list.length === 0 && <EmptyState icon={Cctv} title="Aún no hay cámaras"
-      description="Cuando se registren cámaras de la finca, aparecerán aquí con su estado." />}
+    {cameras.data && list.length === 0 && <EmptyState icon={Cctv} title="No hay cámaras conectadas"
+      description="Enciende la cámara y el servicio de visión en la PC de la finca. Aparecerá aquí sola, con su video." />}
 
     {list.length > 0 && <div className={styles.grid}>
       {list.map(camera => <CameraCard key={camera.id} camera={camera}

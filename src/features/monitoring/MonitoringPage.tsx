@@ -14,7 +14,8 @@ import { pickCamera } from './monitoringModel'
 import styles from './MonitoringPage.module.css'
 
 const liveRefreshMs = 15_000
-const frameRefreshMs = 5_000
+const frameRefreshMs = 2_000
+const cameraRefreshMs = 5_000
 
 export function MonitoringPage() {
   const [searchParams] = useSearchParams()
@@ -25,14 +26,16 @@ export function MonitoringPage() {
     return () => clearInterval(timer)
   }, [])
 
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: liveRefreshMs })
+  // Polled faster than the rest so a camera that connects or disconnects shows up within seconds.
+  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: cameraRefreshMs })
   const events = useResource(signal => listEvents({ signal }), { refreshMs: liveRefreshMs })
   const status = useResource(signal => getSystemStatus({ signal }), { refreshMs: liveRefreshMs })
 
   const alerts = recentAlerts(events.data ?? [], now)
   const camera = pickCamera(cameras.data ?? [], searchParams.get('camera'), alerts)
   const cameraId = camera?.id ?? ''
-  const stream = useResource(signal => getCameraStream(cameraId, { signal }), { key: cameraId })
+  // Polled so the video appears once the AI service starts, without reloading the page.
+  const stream = useResource(signal => getCameraStream(cameraId, { signal }), { key: cameraId, refreshMs: cameraRefreshMs })
   const frame = useResource(signal => getFrameDetections(cameraId, { signal }), { key: cameraId, refreshMs: frameRefreshMs })
   const zones = useResource(signal => listSafeZones(cameraId, { signal }), { key: cameraId })
   const ids = (cameras.data ?? []).map(item => item.id)
@@ -44,6 +47,7 @@ export function MonitoringPage() {
   const cameraEvents = (events.data ?? []).filter(event => event.cameraId === cameraId).slice(0, 5)
   const live = stream.data?.kind === 'image' || stream.data?.kind === 'mjpeg'
   const synthetic = stream.data?.kind === 'image' && stream.data.synthetic
+  const burnedIn = stream.data?.kind === 'mjpeg' && stream.data.annotated === true
 
   if (cameras.status === 'success' && !cameras.data) {
     return <>
@@ -55,7 +59,7 @@ export function MonitoringPage() {
   if (cameras.status === 'success' && cameras.data?.length === 0) {
     return <>
       <PageHeader title="En vivo" />
-      <EmptyState title="Aún no hay cámaras" description="Cuando se registren cámaras de la finca, podrás verlas aquí." />
+      <EmptyState title="No hay cámaras conectadas" description="Enciende la cámara y el servicio de visión en la PC de la finca. El video aparecerá aquí solo." />
     </>
   }
 
@@ -76,7 +80,7 @@ export function MonitoringPage() {
         <CameraStage camera={camera} stream={stream.data} streamLoading={stream.status === 'loading' || cameras.status === 'loading'}
           frame={frame.data} zones={zones.data ?? []} layers={layers}
           aiConfigured={status.data?.aiConfigured ?? null} now={now} />
-        {live && <div className={styles.toolbar}>
+        {live && !burnedIn && <div className={styles.toolbar}>
           <LayerToggles layers={layers} onChange={setLayers} disabled={false} />
           {synthetic && <p className={styles.synthetic}>Imagen ilustrativa con detecciones simuladas</p>}
         </div>}
