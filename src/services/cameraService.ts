@@ -5,7 +5,7 @@ import { mockCameras, mockSafeZones } from '../mocks/mockData'
 import { demoFeedCameraId, demoFeedSource } from '../mocks/mockCameraFeed'
 import type { Camera, SafeZone, Sourced, StreamSource } from '../types/domain'
 import { resolveSource } from './dataSource'
-import { getLiveStatus, liveVideoUrl } from './liveService'
+import { getLiveSource } from './liveService'
 import { toCamera } from './mappers'
 import { resolveMockOnly, waitForMock, type ServiceOptions } from './options'
 
@@ -36,7 +36,7 @@ export function listSafeZones(cameraId: string, options: ServiceOptions = {}): P
 export async function getCameraStream(cameraId: string, options: ServiceOptions = {}): Promise<Sourced<StreamSource | null>> {
   const source = resolveSource('backend', options.mode ?? dataMode)
   if (source === 'mock') return resolveMockOnly(options, (): StreamSource => cameraId === demoFeedCameraId ? demoFeedSource : { kind: 'none' })
-  const live = await getLiveStatus(options)
-  if (!live || live.camera_id !== cameraId || !live.width || !live.height) return { data: { kind: 'none' }, source }
-  return { data: { kind: 'mjpeg', url: liveVideoUrl(options), width: live.width, height: live.height, annotated: true }, source }
+  const live = await getLiveSource(cameraId, options)
+  if (!live?.status.width || !live.status.height) return { data: { kind: 'none' }, source }
+  return { data: { kind: 'mjpeg', url: `${live.baseUrl}/video.mjpg`, width: live.status.width, height: live.status.height, annotated: true }, source }
 }

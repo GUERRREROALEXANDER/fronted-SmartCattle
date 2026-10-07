@@ -59,9 +59,11 @@ export function parseCamerasResponse(body: unknown): ApiCamerasResponse {
   const items = body.items.map((item: unknown): ApiCamera => {
     if (!isObject(item) || typeof item.id !== 'string' || typeof item.status !== 'string' || !cameraStatuses.has(item.status) ||
       (item.last_online_at != null && !isTimestamp(item.last_online_at)) ||
-      !isSize(item.frame_width ?? null) || !isSize(item.frame_height ?? null)) return invalid('Invalid camera item')
+      !isSize(item.frame_width ?? null) || !isSize(item.frame_height ?? null) ||
+      (item.stream_url != null && (typeof item.stream_url !== 'string' || !/^https?:\/\//.test(item.stream_url)))) return invalid('Invalid camera item')
     return { id: item.id, status: item.status as ApiCamera['status'], last_online_at: (item.last_online_at as string | null | undefined) ?? null,
-      frame_width: (item.frame_width as number | null | undefined) ?? null, frame_height: (item.frame_height as number | null | undefined) ?? null }
+      frame_width: (item.frame_width as number | null | undefined) ?? null, frame_height: (item.frame_height as number | null | undefined) ?? null,
+      stream_url: (item.stream_url as string | null | undefined) ?? null }
   })
   return { items, total: body.total }
 }

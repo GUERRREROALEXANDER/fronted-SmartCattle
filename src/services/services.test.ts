@@ -113,6 +113,15 @@ describe('camera services', () => {
     })
     expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8090/status', expect.anything())
   })
+  it('uses the public stream URL the camera reported to the backend', async () => {
+    const tunnel = 'https://abc-def.trycloudflare.com'
+    const fetchImpl = vi.fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json({ items: [{ ...backendCamera, stream_url: tunnel }], total: 1 }))
+      .mockResolvedValueOnce(Response.json(live))
+    expect((await getCameraStream('camera-01', { mode: 'api', fetchImpl, now })).data)
+      .toEqual({ kind: 'mjpeg', url: `${tunnel}/video.mjpg`, width: 640, height: 352, annotated: true })
+    expect(fetchImpl.mock.calls.map(([url]) => String(url))).toEqual([expect.stringMatching(/\/api\/cameras$/), `${tunnel}/status`])
+  })
   it('reports no stream when the AI service is down, unset or serves another camera', async () => {
     const down = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
     expect((await getCameraStream('camera-01', { mode: 'api', fetchImpl: down, now, aiServiceUrl })).data).toEqual({ kind: 'none' })

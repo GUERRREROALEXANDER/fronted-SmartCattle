@@ -25,6 +25,7 @@ export interface ApiCamera {
   last_online_at: string | null // ISO timestamp in UTC.
   frame_width: number | null
   frame_height: number | null
+  stream_url: string | null // Public base URL of the AI service streaming this camera.
 }
 export interface ApiCamerasResponse { items: ApiCamera[]; total: number }
 /** GET /status on the local AI service (live.py). */
