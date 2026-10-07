@@ -1,5 +1,5 @@
 import { eventCatalog } from '../lib/eventCatalog'
-import type { ApiAnimalsResponse, ApiEvent, ApiEventsResponse, ApiStatus } from '../types/api'
+import type { ApiAnimalsResponse, ApiCamera, ApiCamerasResponse, ApiEvent, ApiEventsResponse, ApiLiveDetection, ApiLiveStatus, ApiStatus } from '../types/api'
 import { ApiError } from './errors'
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -48,4 +48,34 @@ export function parseEventsResponse(body: unknown): ApiEventsResponse {
   }
   if (unknownTypes.size) console.warn(`Unknown event types: ${[...unknownTypes].join(', ')}`)
   return { items, total: body.total }
+}
+
+const cameraStatuses = new Set(['online', 'offline', 'error'])
+const isTimestamp = (value: unknown) => typeof value === 'string' && !Number.isNaN(Date.parse(value))
+const isSize = (value: unknown) => value === null || (typeof value === 'number' && Number.isInteger(value) && value > 0)
+
+export function parseCamerasResponse(body: unknown): ApiCamerasResponse {
+  if (!isObject(body) || !Array.isArray(body.items) || typeof body.total !== 'number' || !Number.isFinite(body.total)) return invalid('Invalid cameras response')
+  const items = body.items.map((item: unknown): ApiCamera => {
+    if (!isObject(item) || typeof item.id !== 'string' || typeof item.status !== 'string' || !cameraStatuses.has(item.status) ||
+      (item.last_online_at != null && !isTimestamp(item.last_online_at)) ||
+      !isSize(item.frame_width ?? null) || !isSize(item.frame_height ?? null)) return invalid('Invalid camera item')
+    return { id: item.id, status: item.status as ApiCamera['status'], last_online_at: (item.last_online_at as string | null | undefined) ?? null,
+      frame_width: (item.frame_width as number | null | undefined) ?? null, frame_height: (item.frame_height as number | null | undefined) ?? null }
+  })
+  return { items, total: body.total }
+}
+
+export function parseLiveStatus(body: unknown): ApiLiveStatus {
+  if (!isObject(body) || typeof body.camera_id !== 'string' || typeof body.status !== 'string' ||
+    !isSize(body.width ?? null) || !isSize(body.height ?? null) ||
+    (body.captured_at != null && !isTimestamp(body.captured_at)) || !Array.isArray(body.detections)) return invalid('Invalid live status')
+  const detections = body.detections.map((item: unknown): ApiLiveDetection => {
+    if (!isObject(item) || typeof item.class !== 'string' || typeof item.confidence !== 'number' || !Number.isFinite(item.confidence) ||
+      !Array.isArray(item.bbox) || item.bbox.length !== 4 || item.bbox.some(value => typeof value !== 'number' || !Number.isFinite(value)) ||
+      !(item.inside_zone === null || item.inside_zone === undefined || typeof item.inside_zone === 'boolean')) return invalid('Invalid live detection')
+    return { class: item.class, confidence: item.confidence, bbox: item.bbox as ApiLiveDetection['bbox'], inside_zone: (item.inside_zone as boolean | null | undefined) ?? null }
+  })
+  return { camera_id: body.camera_id, status: body.status, width: (body.width as number | null | undefined) ?? null,
+    height: (body.height as number | null | undefined) ?? null, captured_at: (body.captured_at as string | null | undefined) ?? null, detections }
 }
