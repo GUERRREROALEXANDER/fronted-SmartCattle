@@ -26,7 +26,8 @@ export interface SafeZone { id: string; cameraId: string; name: string; bounds: 
 /** How a camera's picture reaches the browser. Only 'image' and 'mjpeg' are rendered today. */
 export type StreamSource =
   | { kind: 'image'; url: string; width: number; height: number; synthetic: boolean }
-  | { kind: 'mjpeg'; url: string; width: number; height: number }
+  // `annotated`: boxes and safe zone are already drawn into the video, so the overlay must not repeat them.
+  | { kind: 'mjpeg'; url: string; width: number; height: number; annotated?: boolean }
   | { kind: 'hls'; url: string }
   | { kind: 'none' }
 // Coordinates range from 0 to 1, with a top-left origin.

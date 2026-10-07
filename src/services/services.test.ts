@@ -3,7 +3,7 @@ import { ApiError } from '../api/errors'
 import { eventCatalog } from '../lib/eventCatalog'
 import { buildMockFarmEvents, buildMockFrameDetections, mockCameras, mockDetectedCattle, mockFarm, mockRegisteredCattle, mockSafeZones } from '../mocks/mockData'
 import type { ApiEvent } from '../types/api'
-import { getCurrentFarm, getDetectedCattleCount, getFrameDetections, getRegisteredCattleCount, getSystemStatus, listCameras, listEvents, listSafeZones } from './index'
+import { getCameraStream, getCurrentFarm, getDetectedCattleCount, getFrameDetections, getRegisteredCattleCount, getSystemStatus, listCameras, listEvents, listSafeZones } from './index'
 import { isWithinBounds } from './mappers'
 
 const now = new Date(2026, 9, 3, 16)
@@ -82,11 +82,75 @@ describe('backend services', () => {
   })
 })
 
+describe('camera services', () => {
+  const backendCamera = { id: 'camera-01', reported_status: 'online', status: 'online', last_report_at: now.toISOString(),
+    last_online_at: now.toISOString(), last_error: null, frame_width: 640, frame_height: 352, fps: 11 }
+  const live = { camera_id: 'camera-01', status: 'online', error: null, width: 640, height: 352, fps: 11, zone: [0.1, 0.1, 0.9, 0.9],
+    captured_at: now.toISOString(), detections: [
+      { class: 'cow', confidence: 0.9, bbox: [64, 35.2, 128, 70.4], inside_zone: false },
+      { class: 'person', confidence: 0.8, bbox: [0, 0, 320, 176], inside_zone: null },
+    ] }
+  const aiServiceUrl = 'http://localhost:8090'
+
+  it.each(['api', 'hybrid'] as const)('lists backend cameras in %s mode', async mode => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: [backendCamera], total: 1 }))
+    await expect(listCameras({ mode, fetchImpl, now })).resolves.toEqual({
+      source: 'api', data: [{ id: 'camera-01', name: 'Cámara 01', location: 'Cámara IP', status: 'online', lastSeenAt: now }],
+    })
+    expect(fetchImpl).toHaveBeenCalledWith(expect.stringMatching(/\/api\/cameras$/), expect.objectContaining({ method: 'GET' }))
+  })
+  it('hides cameras that are not connected right now', async () => {
+    const items = [backendCamera, { ...backendCamera, id: 'camera-02', status: 'offline' }, { ...backendCamera, id: 'camera-03', status: 'error' }]
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items, total: 3 }))
+    expect((await listCameras({ mode: 'api', fetchImpl, now })).data?.map(camera => camera.id)).toEqual(['camera-01'])
+    fetchImpl.mockResolvedValue(Response.json({ items: items.slice(1), total: 2 }))
+    expect((await listCameras({ mode: 'api', fetchImpl, now })).data).toEqual([])
+  })
+  it('streams the live camera as annotated MJPEG from the AI service', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json(live))
+    await expect(getCameraStream('camera-01', { mode: 'hybrid', fetchImpl, now, aiServiceUrl })).resolves.toEqual({
+      source: 'api', data: { kind: 'mjpeg', url: 'http://localhost:8090/video.mjpg', width: 640, height: 352, annotated: true },
+    })
+    expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8090/status', expect.anything())
+  })
+  it('reports no stream when the AI service is down, unset or serves another camera', async () => {
+    const down = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
+    expect((await getCameraStream('camera-01', { mode: 'api', fetchImpl: down, now, aiServiceUrl })).data).toEqual({ kind: 'none' })
+    const unset = vi.fn<typeof fetch>()
+    expect((await getCameraStream('camera-01', { mode: 'api', fetchImpl: unset, now, aiServiceUrl: '' })).data).toEqual({ kind: 'none' })
+    expect(unset).not.toHaveBeenCalled()
+    const other = vi.fn<typeof fetch>().mockResolvedValue(Response.json(live))
+    expect((await getCameraStream('camera-02', { mode: 'api', fetchImpl: other, now, aiServiceUrl })).data).toEqual({ kind: 'none' })
+  })
+  it('normalizes live detections', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json(live))
+    const frame = (await getFrameDetections('camera-01', { mode: 'api', fetchImpl, now, aiServiceUrl })).data
+    expect(frame?.capturedAt).toEqual(now)
+    expect(frame?.detections).toEqual([
+      { id: 'camera-01-0', label: 'cow', confidence: 0.9, insideSafeZone: false, box: { x: 0.1, y: 0.1, width: 0.1, height: 0.1 } },
+      { id: 'camera-01-1', label: 'person', confidence: 0.8, insideSafeZone: null, box: { x: 0, y: 0, width: 0.5, height: 0.5 } },
+    ])
+  })
+  it('returns no detections before the first live frame', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ ...live, width: null, height: null, captured_at: null, detections: [] }))
+    expect((await getFrameDetections('camera-01', { mode: 'api', fetchImpl, now, aiServiceUrl })).data).toBeNull()
+  })
+  it('keeps demo cameras, pictures and detections in mock mode', async () => {
+    const fetchImpl = vi.fn<typeof fetch>()
+    const cameraId = mockCameras[0].id
+    const cameras = await listCameras({ mode: 'mock', now, fetchImpl })
+    expect(cameras.source).toBe('mock')
+    expect(cameras.data).toHaveLength(4)
+    expect(cameras.data?.every(camera => camera.lastSeenAt?.getTime() === now.getTime())).toBe(true)
+    expect((await getFrameDetections(cameraId, { mode: 'mock', now, fetchImpl })).data).toEqual(buildMockFrameDetections(cameraId, now))
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+})
+
 describe('mock-only services', () => {
   const cameraId = mockCameras[0].id
-  const services = [getDetectedCattleCount, listCameras, getCurrentFarm,
-    (options: Parameters<typeof listCameras>[0]) => getFrameDetections(cameraId, options),
-    (options: Parameters<typeof listCameras>[0]) => listSafeZones(cameraId, options)]
+  const services = [getDetectedCattleCount, getCurrentFarm,
+    (options: Parameters<typeof listSafeZones>[1]) => listSafeZones(cameraId, options)]
   it.each(services)('returns unavailable in api mode without fetching', async service => {
     const fetchImpl = vi.fn<typeof fetch>()
     await expect(service({ mode: 'api', now, fetchImpl })).resolves.toEqual({ data: null, source: 'unavailable' })
@@ -97,11 +161,6 @@ describe('mock-only services', () => {
     const options = { mode, now, fetchImpl }
     expect((await getDetectedCattleCount(options)).data?.count).toBe(mockDetectedCattle)
     expect((await getCurrentFarm(options)).data).toEqual(mockFarm)
-    const cameras = await listCameras(options)
-    expect(cameras.source).toBe('mock')
-    expect(cameras.data).toHaveLength(4)
-    expect(cameras.data?.every(camera => camera.lastSeenAt?.getTime() === now.getTime())).toBe(true)
-    expect((await getFrameDetections(cameraId, options)).data).toEqual(buildMockFrameDetections(cameraId, now))
     expect((await listSafeZones(cameraId, options)).data).toEqual(mockSafeZones.filter(zone => zone.cameraId === cameraId))
     expect(fetchImpl).not.toHaveBeenCalled()
   })

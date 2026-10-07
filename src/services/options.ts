@@ -7,6 +7,8 @@ export interface ServiceOptions {
   signal?: AbortSignal
   fetchImpl?: typeof fetch
   now?: Date
+  /** Overrides VITE_AI_SERVICE_URL; an empty string disables live video. */
+  aiServiceUrl?: string
 }
 
 export async function waitForMock(options: ServiceOptions): Promise<void> {
