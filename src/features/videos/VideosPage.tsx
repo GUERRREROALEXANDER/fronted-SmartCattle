@@ -8,11 +8,11 @@ import { AnalysisNotice } from './AnalysisNotice'
 import { VideoCard } from './VideoCard'
 import { VideoDropzone } from './VideoDropzone'
 import { VideoPlayer } from './VideoPlayer'
-import { useVideoLibrary } from './useVideoLibrary'
+import { useVideoLibraryContext } from './useVideoLibraryContext'
 import styles from './VideosPage.module.css'
 
 export function VideosPage() {
-  const { videos, selected, addFiles, remove, assignCamera, select } = useVideoLibrary()
+  const { videos, selected, addFiles, remove, assignCamera, select } = useVideoLibraryContext()
   const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 60_000 })
   const desktop = useMediaQuery('(min-width: 1024px)')
 
