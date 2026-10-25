@@ -116,7 +116,7 @@ export function EventsPage() {
         {groups.map(group => <div key={group.key} className={styles.group}>
           <h2 className={styles.day}>{group.label}<span className={`${styles.dayCount} tabular`}>{group.events.length}</span></h2>
           <ol className={styles.rows}>
-            {group.events.map(event => <EventRow key={event.id} event={event} now={now}
+            {group.events.map((event, index) => <EventRow key={event.id} index={index} event={event} now={now}
               cameraLabel={cameraName(cameras.data ?? null, event.cameraId)}
               selected={event.id === selectedId} onSelect={select}
               badge={restricted(event) ? <span className={styles.nightBadge}><Moon size={12} strokeWidth={2} aria-hidden="true" />Horario restringido</span> : undefined} />)}
