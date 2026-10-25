@@ -1,0 +1,103 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-8) var(--space-4);
+  border: 2px dashed var(--color-rule-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--duration-fast), background var(--duration-fast), transform var(--duration-fast);
+}
+
+.zone:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.zone:hover {
+  border-color: var(--color-earth);
+  background: var(--color-surface-raised);
+}
+
+.dragging {
+  border-color: var(--color-brand);
+  background: var(--color-surface-raised);
+  animation: breathe 1.6s var(--ease-in-out) infinite;
+}
+
+.icon {
+  color: var(--color-ink-subtle);
+}
+
+.title {
+  font-weight: var(--weight-semibold);
+  color: var(--color-ink);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+  max-width: 42ch;
+}
+
+.button {
+  margin-top: var(--space-2);
+}
+
+.input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.rejects {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--touch-min);
+  min-height: var(--touch-min);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-ink-muted);
+  font-size: var(--text-lg);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.dismiss:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-md);
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); border-color: var(--color-brand); }
+  50% { transform: scale(1.005); border-color: var(--color-earth); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zone { transition: none; }
+  .dragging { animation: none; border-color: var(--color-brand); }
+}
