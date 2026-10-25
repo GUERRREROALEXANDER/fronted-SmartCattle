@@ -1,0 +1,95 @@
+.page { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); }
+
+.demo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--pill-padding-inline);
+  border: 1px solid var(--color-rule-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-earth-surface);
+  color: var(--color-earth-ink);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+
+.demo svg { flex-shrink: 0; }
+
+.intro {
+  max-width: 72ch;
+  margin-top: calc(-1 * var(--space-3));
+  margin-bottom: var(--space-5);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.layout {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-5);
+}
+
+.stage { display: grid; min-width: 0; gap: var(--space-3); }
+
+.canvas {
+  position: relative;
+  height: 420px;
+  overflow: hidden;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  touch-action: none;
+}
+
+.banner {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  right: var(--space-3);
+  z-index: 11;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-critical);
+  box-shadow: var(--shadow-overlay);
+  color: var(--color-surface-raised);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.banner svg { flex-shrink: 0; margin-top: 1px; }
+
+.pausedTag {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  z-index: 11;
+  padding: var(--badge-padding-block) var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-stage-tag);
+  color: var(--color-stage-ink);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  pointer-events: none;
+}
+
+.hint {
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+}
+
+.side { display: grid; min-width: 0; gap: var(--space-4); }
+
+@media (min-width: 760px) {
+  .canvas { height: max(420px, 60vh); }
+}
+
+@media (min-width: 1180px) {
+  .layout { grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem); }
+}
