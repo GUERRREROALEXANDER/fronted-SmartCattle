@@ -5,8 +5,10 @@ import {
   formatDuration,
   MAX_VIDEO_SIZE,
   validateVideoFile,
+  videoForCamera,
   videoResolution,
 } from './videosModel'
+import type { VideoItem } from './videosModel'
 
 describe('videosModel', () => {
   describe('validateVideoFile', () => {
@@ -81,6 +83,38 @@ describe('videosModel', () => {
 
     it('returns the dimension pair when available', () => {
       expect(videoResolution(1920, 1080)).toBe('1920×1080')
+    })
+  })
+
+  describe('videoForCamera', () => {
+    const item = (id: string, cameraId: string | null, addedAt: string, status: VideoItem['status'] = 'ready'): VideoItem => ({
+      id, fileName: `${id}.mp4`, size: 1, type: 'video/mp4', url: `blob:${id}`,
+      duration: 10, width: 1280, height: 720, thumbnail: null,
+      cameraId, addedAt: new Date(addedAt), status,
+    })
+
+    it('returns null when no video is assigned to the camera', () => {
+      expect(videoForCamera([], 'cam-1')).toBeNull()
+      expect(videoForCamera([item('a', 'cam-2', '2026-01-01T10:00:00Z'), item('b', null, '2026-01-01T11:00:00Z')], 'cam-1')).toBeNull()
+    })
+
+    it('returns the most recently added ready video for the camera', () => {
+      const videos = [
+        item('old', 'cam-1', '2026-01-01T10:00:00Z'),
+        item('new', 'cam-1', '2026-01-01T12:00:00Z'),
+        item('mid', 'cam-1', '2026-01-01T11:00:00Z'),
+      ]
+      expect(videoForCamera(videos, 'cam-1')?.id).toBe('new')
+    })
+
+    it('ignores videos that are still reading or failed', () => {
+      const videos = [
+        item('ready', 'cam-1', '2026-01-01T10:00:00Z'),
+        item('reading', 'cam-1', '2026-01-01T11:00:00Z', 'reading'),
+        item('error', 'cam-1', '2026-01-01T12:00:00Z', 'error'),
+      ]
+      expect(videoForCamera(videos, 'cam-1')?.id).toBe('ready')
+      expect(videoForCamera(videos.slice(1), 'cam-1')).toBeNull()
     })
   })
 })
