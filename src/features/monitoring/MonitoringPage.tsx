@@ -6,6 +6,8 @@ import { useResource } from '../../lib/useResource'
 import { getCameraStream, getFrameDetections, getSystemStatus, hasPicture, listCameras, listEvents, listSafeZones, loadCameraSnapshots } from '../../services'
 import type { Severity } from '../../types/domain'
 import { recentAlerts } from '../dashboard/dashboardModel'
+import { useVideoLibraryContext } from '../videos/useVideoLibraryContext'
+import { videoForCamera } from '../videos/videosModel'
 import { CameraStage } from './CameraStage'
 import { CameraSwitcher } from './CameraSwitcher'
 import type { OverlayLayers } from './DetectionOverlay'
@@ -19,6 +21,7 @@ const cameraRefreshMs = 5_000
 
 export function MonitoringPage() {
   const [searchParams] = useSearchParams()
+  const { videos } = useVideoLibraryContext()
   const [layers, setLayers] = useState<OverlayLayers>({ boxes: true, zones: true, labels: true })
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -48,6 +51,7 @@ export function MonitoringPage() {
   const live = stream.data?.kind === 'image' || stream.data?.kind === 'mjpeg'
   const synthetic = stream.data?.kind === 'image' && stream.data.synthetic
   const burnedIn = stream.data?.kind === 'mjpeg' && stream.data.annotated === true
+  const video = camera ? videoForCamera(videos, camera.id) : null
 
   if (cameras.status === 'success' && !cameras.data) {
     return <>
@@ -79,8 +83,8 @@ export function MonitoringPage() {
         </div>
         <CameraStage camera={camera} stream={stream.data} streamLoading={stream.status === 'loading' || cameras.status === 'loading'}
           frame={frame.data} zones={zones.data ?? []} layers={layers}
-          aiConfigured={status.data?.aiConfigured ?? null} now={now} />
-        {live && !burnedIn && <div className={styles.toolbar}>
+          aiConfigured={status.data?.aiConfigured ?? null} now={now} video={video} />
+        {live && !burnedIn && !video && <div className={styles.toolbar}>
           <LayerToggles layers={layers} onChange={setLayers} disabled={false} />
           {synthetic && <p className={styles.synthetic}>Imagen ilustrativa con detecciones simuladas</p>}
         </div>}
