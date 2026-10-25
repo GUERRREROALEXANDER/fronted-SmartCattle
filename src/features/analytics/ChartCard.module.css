@@ -1,0 +1,25 @@
+.item { display: flex; min-width: 0; }
+
+.card {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.caption { display: grid; gap: var(--space-1); }
+.title { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.insight { max-width: 65ch; color: var(--color-ink-muted); font-size: var(--text-sm); }
+.visual { display: flex; min-width: 0; flex: 1; flex-direction: column; justify-content: center; }
+
+.footnote {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-rule);
+  color: var(--color-ink-subtle);
+  font-size: var(--text-xs);
+}
