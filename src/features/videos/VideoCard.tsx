@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Play, Trash2 } from 'lucide-react'
+import { ChevronRight, Play, Trash2 } from 'lucide-react'
 import { motion } from 'motion/react'
+import { Link } from 'react-router'
 import { StaggerItem } from '../../motion'
 import type { Camera } from '../../types/domain'
 import { formatBytes, formatDuration, videoResolution } from './videosModel'
@@ -112,6 +113,16 @@ export function VideoCard({ video, index, cameras, selected, onSelect, onRemove,
               <span>{confirming ? '¿Seguro?' : ''}</span>
             </button>
           </div>
+
+          {video.cameraId && (
+            <Link
+              className={styles.liveLink}
+              to={`/live?camera=${encodeURIComponent(video.cameraId)}`}
+              onClick={event => event.stopPropagation()}
+            >
+              Ver en vivo<ChevronRight size={16} strokeWidth={1.75} aria-hidden="true" />
+            </Link>
+          )}
         </div>
       </motion.div>
     </StaggerItem>
