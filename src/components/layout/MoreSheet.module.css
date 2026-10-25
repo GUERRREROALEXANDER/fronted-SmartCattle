@@ -17,6 +17,7 @@
 }
 
 .sheet[open] { animation: enter var(--duration-base) var(--ease-out); }
+.sheet[open]::backdrop { animation: backdrop-in var(--duration-base) var(--ease-out); }
 .sheet::backdrop { background: var(--color-backdrop); }
 .header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
 .header h2 { font-size: var(--text-lg); }
@@ -42,5 +43,6 @@
 @media (hover: hover) { .close:hover, .item:hover { background: var(--color-earth-surface); color: var(--color-brand); } }
 .item[aria-current='page'] { color: var(--color-brand); font-weight: var(--weight-semibold); }
 
-@keyframes enter { from { transform: translateY(100%); } to { transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) { .sheet[open] { animation: none; } }
+@keyframes enter { from { opacity: 0; transform: translateY(100%); } to { opacity: 1; transform: translateY(0); } }
+@keyframes backdrop-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sheet[open], .sheet[open]::backdrop { animation: none; } }
