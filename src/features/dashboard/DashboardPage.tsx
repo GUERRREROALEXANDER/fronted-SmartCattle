@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ErrorState, Notice, Skeleton } from '../../components/ui'
 import { hasPicture } from '../../services'
+import { FadeUp, staggerDelay } from '../../motion'
 import { AlertStrip } from './AlertStrip'
 import { farmCondition, recentAlerts, statusHeadline } from './dashboardModel'
 import { FarmPlan } from './FarmPlan'
@@ -36,31 +37,35 @@ export function DashboardPage() {
     : undefined
 
   return <div className={styles.page}>
-    <FarmStatusHeader
-      farmName={data.farm.data?.name ?? null}
-      condition={condition}
-      headline={eventsReady ? statusHeadline(condition, alerts.length) : null}
-      status={data.status.data ?? null}
-      cameras={cameras}
-      withVideo={videoIds ? videoIds.size : null} />
+    <FadeUp>
+      <FarmStatusHeader
+        farmName={data.farm.data?.name ?? null}
+        condition={condition}
+        headline={eventsReady ? statusHeadline(condition, alerts.length) : null}
+        status={data.status.data ?? null}
+        cameras={cameras}
+        withVideo={videoIds ? videoIds.size : null} />
+    </FadeUp>
 
-    {backendOffline && <Notice className={styles.notice} tone="critical" title="Sin conexión con el servidor">
-      Se muestra la última información recibida. Se reintenta automáticamente cada 15 segundos.
-    </Notice>}
-    <AlertStrip alerts={alerts} cameras={cameras} now={now} />
+    <FadeUp delay={staggerDelay(1)}>
+      {backendOffline && <Notice className={styles.notice} tone="critical" title="Sin conexión con el servidor">
+        Se muestra la última información recibida. Se reintenta automáticamente cada 15 segundos.
+      </Notice>}
+      <AlertStrip alerts={alerts} cameras={cameras} now={now} />
+    </FadeUp>
 
     <div className={styles.grid}>
-      <div className={styles.main}>
+      <FadeUp delay={staggerDelay(2)} className={styles.main}>
         {data.plan.status === 'loading' && <Skeleton height="22rem" radius="var(--radius-lg)" />}
         {data.plan.data && <FarmPlan plan={data.plan.data} cameras={cameras} alerts={alerts} stale={backendOffline} withVideo={videoIds} />}
         {data.plan.status === 'success' && !data.plan.data && <ErrorState
           title="Plano no disponible"
           description="El servidor todavía no ofrece la geometría de la finca ni la ubicación de las cámaras." />}
-      </div>
-      <div className={styles.aside}>
+      </FadeUp>
+      <FadeUp delay={staggerDelay(3)} className={styles.aside}>
         <HerdSummary registered={data.registered} detected={data.detected} stale={backendOffline} />
         <FieldLog events={data.events} cameras={cameras} securityHours={data.securityHours.data ?? null} now={now} />
-      </div>
+      </FadeUp>
     </div>
   </div>
 }
