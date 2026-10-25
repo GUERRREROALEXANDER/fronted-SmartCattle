@@ -44,7 +44,8 @@ export function FieldLog({ events, cameras, securityHours, now, limit = 5 }: Fie
       {staleNotice}
       <DayBand events={list} securityHours={securityHours} now={now} />
       <ol className={styles.list}>
-        {list.slice(0, limit).map(event => <EventRow key={event.id} event={event} cameraLabel={cameraName(cameras, event.cameraId)} now={now} />)}
+        {list.slice(0, limit).map((event, index) => <EventRow key={event.id} index={index}
+          event={event} cameraLabel={cameraName(cameras, event.cameraId)} now={now} />)}
       </ol>
     </>
   }
