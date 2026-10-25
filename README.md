@@ -4,7 +4,7 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–9 are complete: every screen is built. The final quality pass (Phase 10) remains. See [Roadmap](#roadmap).
+> **Status:** Phases 1–9 are complete, plus a 3D pasture view, local video review and an analytics page with motion across the app. The final quality pass remains. See [Roadmap](#roadmap).
 
 ![Dashboard with farm plan, herd summary and field log](docs/screenshots/dashboard-desktop.jpg)
 
@@ -30,6 +30,10 @@ This repository contains only the frontend. The REST API lives in the separate `
 - [Routing and navigation](#routing-and-navigation)
 - [Dashboard](#dashboard)
 - [Live monitoring](#live-monitoring)
+- [3D pasture](#3d-pasture)
+- [Videos](#videos)
+- [Analytics](#analytics)
+- [Motion](#motion)
 - [Design system](#design-system)
 - [Accessibility](#accessibility)
 - [Testing and quality checks](#testing-and-quality-checks)
@@ -49,11 +53,14 @@ This repository contains only the frontend. The REST API lives in the separate `
 | Routing | React Router 8 | Data router with nested layout routes |
 | Styling | Plain CSS: CSS Modules + custom properties | No framework lock-in, tokens in one file |
 | Icons | lucide-react | Consistent stroke icons, tree-shaken |
+| 3D | three.js + @react-three/fiber + @react-three/drei | Declarative 3D scene in React, orbit controls, HTML labels |
+| Motion | motion (`motion/react`) | Layout animations, shared-element indicators, reduced-motion hook |
+| Charts | Recharts | Composable SVG charts that read colors from CSS tokens |
 | Font | Archivo Variable (self-hosted via Fontsource) | One family with a width axis for hierarchy |
 | Tests | Vitest | Same config as Vite, fast |
 | Lint | ESLint 10 + typescript-eslint | Flat config |
 
-No UI kit, CSS framework or state library is used. Server state will be added with a query library when the dashboard needs polling.
+No UI kit, CSS framework or state library is used. The 3D pasture, videos and analytics pages are lazy-loaded, so three.js and Recharts are only downloaded when those pages open.
 
 ## Getting started
 
@@ -161,6 +168,7 @@ src/
     ui/         Reusable UI primitives
   features/     One folder per section (auth, dashboard, monitoring, events, ...)
   lib/          Pure helpers: event catalog, permissions, safe storage
+  motion/       Motion presets and primitives: FadeUp, StaggerItem, CountUp, MaskedText
   mocks/        The only place with fictional data (clearly labeled)
   services/     Data access per capability, mappers, source resolution
   styles/       Design tokens, base styles, reduced-motion rules
@@ -321,6 +329,9 @@ flowchart TB
     shell --> m["/live En vivo"]
     shell --> e["/events Eventos"]
     shell --> c["/cattle Ganado"]
+    shell --> pa["/pasture Potrero 3D (lazy)"]
+    shell --> v["/videos Videos (lazy)"]
+    shell --> an["/analytics Análisis (lazy)"]
     shell --> cam["/cameras Cámaras"]
     shell --> s["/settings Ajustes"]
     shell --> p["/profile Perfil"]
@@ -330,7 +341,7 @@ flowchart TB
 - Anonymous visitors to a private route are redirected to `/login` and come back to the requested page after signing in.
 - The navigation is defined once in `src/app/navigation.ts`.
 - **Desktop (≥ 1024 px):** fixed farm-green side rail with the six sections, the demo badge and the signed-in user.
-- **Mobile:** top bar, a five-cell bottom tab bar (Inicio, En vivo, Eventos, Ganado, Más) and a native `<dialog>` sheet for Cámaras, Ajustes and Perfil.
+- **Mobile:** top bar, a five-cell bottom tab bar (Inicio, En vivo, Eventos, Ganado, Más) and a native `<dialog>` sheet for Potrero 3D, Videos, Análisis, Cámaras, Ajustes and Perfil.
 - "Security" is a tab inside Events rather than a separate page: security alerts are events, and a separate page would duplicate the list and filters.
 
 ---
@@ -414,6 +425,91 @@ flowchart TB
 
 ---
 
+## 3D pasture
+
+`/pasture` ("Potrero 3D") shows the farm as an interactive 3D scene. The user orbits, pans and zooms around the farm, sees the herd grazing inside the fenced lots, workers walking the farm track and the cameras on their poles. When a cow leaves its lot, that lot's fence and ground turn red, a label appears over the animal and the exit is announced and logged.
+
+![3D pasture with one lot breached](docs/screenshots/pasture-desktop.png)
+
+<img src="docs/screenshots/pasture-mobile.png" alt="3D pasture on a phone" width="320">
+
+The page is a **demo simulation**, labeled as such on screen. The backend has no animal positions yet, so the herd moves with a seeded simulation over the same farm plan the dashboard uses (`src/mocks/mockFarmPlan.ts`). When real detections with positions exist, the simulation can be replaced by that data without touching the scene.
+
+```mermaid
+flowchart LR
+    plan["mockFarmPlan<br/>lots, cameras, track"] --> sim["simulation/herdSimulation.ts<br/>pure TS, seeded RNG"]
+    sim --> hook["useHerdSimulation<br/>refs per frame, React state on change"]
+    hook --> scene["scene/PastureScene<br/>Canvas, lights, OrbitControls"]
+    hook --> ui["ui/ ZonePanel, ExitLog, SceneControls"]
+    kit["kit/ terrain, fences, animals,<br/>people, structures, nature"] --> scene
+```
+
+- **Modular asset kit.** Every 3D asset is procedural (no model files) and lives in its own family folder, like a modular asset library: `kit/terrain`, `kit/fences`, `kit/animals`, `kit/people`, `kit/structures`, `kit/nature`. Geometries and materials are shared, and colors come from one palette derived from the design tokens.
+- **Zone state.** Each lot is a safe zone. Membership is a point-in-polygon test on the lot boundary. A breached zone shows red, a pulsing outline, a label with the cow's name and the words "fuera de zona", so the state is never color-only.
+- **Controls.** Pause/resume, "Provocar salida" (forces one cow out to demo the alert), name labels on/off and camera presets (overview and one per lot). The zone panel lists cows inside each lot; the exit log keeps the session's exits and returns.
+- **Performance.** Positions update in refs inside the render loop; React state changes only when a zone's status changes. Device pixel ratio is capped at 2.
+- **Fallbacks.** Without WebGL the page explains it instead of showing an empty canvas. With `prefers-reduced-motion` the simulation starts paused and camera presets jump instead of flying.
+
+---
+
+## Videos
+
+`/videos` lets the user load farm recordings (drag and drop or "Elegir videos") and review them in the browser.
+
+![Videos page](docs/screenshots/videos-desktop.png)
+
+- Files are validated (video type, not empty, up to 1 GB). Rejected files get a reason.
+- Each video gets a thumbnail, duration and resolution read in the browser, and can be assigned to a camera.
+- **Assigned videos show on the camera.** A video assigned to a camera plays on that camera's card in Cámaras and on the En vivo stage, tagged "Video cargado · no es en vivo". No demo detections are drawn over it, because they would be fake.
+| Assigned video on the camera card | Assigned video on the live stage |
+|---|---|
+| ![Camera card playing a loaded video](docs/screenshots/cameras-video-desktop.png) | ![Live stage playing a loaded video](docs/screenshots/live-video-desktop.png) |
+
+- **Nothing is uploaded.** The backend has no upload endpoint, so videos stay in the browser as object URLs (released when removed) and the page says so. "Analizar con IA" is disabled with the reason written next to it.
+
+---
+
+## Analytics
+
+`/analytics` ("Análisis") turns the event history into percentages and trends for the last 24 hours, 7 days or 30 days.
+
+![Analytics page](docs/screenshots/analytics-desktop.png)
+
+| Chart | Question it answers |
+|---|---|
+| KPI row | How many events, what share were cattle outside the zone, what share were critical, busiest hour and camera |
+| Daily trend | How events evolve per day, stacked by category |
+| Category donut | Cattle vs. security vs. system, in percent |
+| Hour of day | When events happen |
+| Severity bar | Share of info, warning and critical |
+| Events per camera | Which camera reports the most |
+| Detector confidence | Distribution of the confidence the detector reported per event |
+
+- Percentages use largest-remainder rounding, so each chart adds up to exactly 100 %.
+- Every chart has a one-line insight computed from the data and a visually hidden data table for screen readers.
+- Confidence is labeled as the detector's per-event value, not model accuracy. A lower count is not presented as lost animals.
+- Data comes from `GET /api/events` (demo events in `mock` mode, marked with the demo badge).
+
+---
+
+## Motion
+
+Motion is short, calm and functional. Presets live in `src/motion/presets.ts` (ease-out curves, 140–600 ms) and mirror the CSS tokens.
+
+| Where | What moves |
+|---|---|
+| Route change | Content fades in with a short rise |
+| Side rail and mobile tab bar | The active marker slides between items (shared layout animation) |
+| Dashboard | Sections reveal in sequence; herd figures count up on first view |
+| Lists (events, field log, cattle, cameras, videos) | Items stagger in on first render, capped at 8 steps |
+| Login and register | The headline rises word by word; fields fade in in order |
+| Analytics | Range tabs slide their indicator; KPIs count up; charts draw in |
+| Buttons | Press feedback (`scale(0.97)`) |
+
+Only `transform` and `opacity` are animated. With `prefers-reduced-motion` every primitive falls back to a short fade or no motion.
+
+---
+
 ## Design system
 
 The visual direction is **"farm survey plan"**: safe zones are drawn as survey boundaries (*linderos*, dashed lines with vertex marks), cameras are observation points and the history reads as a field log. It deliberately avoids generic grey KPI-card dashboards and cartoon farm imagery.
@@ -436,7 +532,7 @@ All values live as CSS custom properties in `src/styles/tokens.css`. Components 
 - **Light app, dark camera stage.** Owners check the app outdoors in daylight, so the app is light; video sits on a dark viewfinder surface.
 - **Typography:** Archivo Variable. The wide cut is for headings, the condensed cut for dense labels, with tabular figures for counts and times.
 - **States** always combine an icon and a word, never color alone. Outside-zone areas are also hatched.
-- **Motion:** short ease-out transitions (140–600 ms) and one authored moment per screen (on the login, the safe zone draws in and the detections appear one by one). Everything respects `prefers-reduced-motion`.
+- **Motion:** short ease-out transitions (140–600 ms); see [Motion](#motion). Everything respects `prefers-reduced-motion`.
 - Text selection, focus rings, the caret and scrollbars are themed from the palette.
 
 ## Accessibility
@@ -451,7 +547,7 @@ All values live as CSS custom properties in `src/styles/tokens.css`. Components 
 ## Testing and quality checks
 
 ```sh
-npm test        # 115 tests
+npm test        # 189 tests
 npm run lint
 npm run build
 ```
@@ -528,6 +624,12 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 
 ![Settings page](docs/screenshots/settings-desktop.jpg)
 
+**3D pasture, videos, analytics and motion**
+- Interactive 3D pasture with a procedural asset kit, a seeded herd simulation and zones that turn red when a cow leaves them
+- Local video review with thumbnails and camera assignment; assigned videos play on the camera card and the live stage
+- Analytics page with percentage charts, KPIs and accessible data tables
+- App-wide motion: route transitions, sliding navigation marker, staggered lists, count-up figures, masked headlines
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -541,6 +643,7 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 | 7 | Events & alerts: history, filters, detail with evidence | Done |
 | 8 | Security: person detection, possible intrusion, restricted hours | Done |
 | 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Done |
+| — | 3D pasture, videos, analytics, motion | Done |
 | 10 | Quality: accessibility and responsive audit, motion review, `DESIGN.md` | Next |
 
 Pending on the backend side: authentication, cameras, streaming, detections, safe zones, severity and notifications. The frontend is ready to switch each capability from demo data to the API as it lands.
@@ -549,4 +652,6 @@ Pending on the backend side: authentication, cameras, streaming, detections, saf
 
 - Login photo: [Cows grazing in a field at sunset](https://unsplash.com/photos/cows-grazing-in-a-field-at-sunset-HaSohIaDVdI) by Uran Wang, [Unsplash License](https://unsplash.com/license). Used as an illustrative image, not farm footage. The detections drawn over it are simulated.
 - Icons: [Lucide](https://lucide.dev) (ISC License).
+- 3D: [three.js](https://threejs.org) and [React Three Fiber](https://docs.pmnd.rs/react-three-fiber) (MIT License). All 3D assets are procedural and original to this project.
+- Charts: [Recharts](https://recharts.org) (MIT License). Motion: [Motion](https://motion.dev) (MIT License).
 - Font: [Archivo](https://fonts.google.com/specimen/Archivo) by Omnibus-Type (SIL Open Font License).
