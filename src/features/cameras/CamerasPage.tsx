@@ -4,6 +4,7 @@ import { useAuth } from '../../app/auth/useAuth'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui'
 import { can } from '../../lib/permissions'
 import { useResource } from '../../lib/useResource'
+import { StaggerItem } from '../../motion'
 import { hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
 import type { Severity } from '../../types/domain'
 import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
@@ -54,10 +55,12 @@ export function CamerasPage() {
       description="Enciende la cámara y el servicio de visión en la PC de la finca. Aparecerá aquí sola, con su video." />}
 
     {list.length > 0 && <div className={styles.grid}>
-      {list.map(camera => <CameraCard key={camera.id} camera={camera}
-        stream={snapshots.data?.[camera.id]?.stream ?? null}
-        frame={snapshots.data?.[camera.id]?.frame ?? null}
-        alert={alertByCamera.get(camera.id)} now={now} />)}
+      {list.map((camera, index) => <StaggerItem key={camera.id} index={index}>
+        <CameraCard camera={camera}
+          stream={snapshots.data?.[camera.id]?.stream ?? null}
+          frame={snapshots.data?.[camera.id]?.frame ?? null}
+          alert={alertByCamera.get(camera.id)} now={now} />
+      </StaggerItem>)}
     </div>}
 
     {session && can(session.user.role, 'cameras:configure') && list.length > 0 && <p className={styles.note}>
