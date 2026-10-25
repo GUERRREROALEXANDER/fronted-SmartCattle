@@ -1,5 +1,6 @@
 ﻿import type { ReactNode } from 'react'
 import { useDocumentTitle } from '../../app/useDocumentTitle'
+import { MaskedText } from '../../motion'
 import { PastureScene } from './PastureScene'
 import styles from './AuthLayout.module.css'
 
@@ -10,7 +11,7 @@ export function AuthLayout({ title, description, children, footer }: AuthLayoutP
     <div className={styles.scene}><PastureScene /></div>
     <section className={styles.panel} aria-labelledby="auth-title">
       <div className={styles.panelInner}>
-        <h1 id="auth-title" className={styles.title}>{title}</h1>
+        <h1 id="auth-title" className={styles.title}><MaskedText text={title} /></h1>
         <p className={styles.description}>{description}</p>
         <div className={styles.content}>{children}</div>
         <footer className={styles.footer}>{footer}</footer>

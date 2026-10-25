@@ -23,5 +23,3 @@
   .title { font-size: var(--text-2xl); }
   .description { font-size: var(--text-base); }
 }
-@media (prefers-reduced-motion: no-preference) { .panelInner { animation: enter var(--duration-slow) var(--ease-out) 150ms both; } }
-@keyframes enter { from { opacity: 0; transform: translateY(var(--space-2)); } to { opacity: 1; transform: translateY(0); } }
