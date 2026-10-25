@@ -71,6 +71,16 @@ export function formatDuration(seconds: number): string {
   return `${minutes}:${paddedSeconds}`
 }
 
+/** The most recently added ready video assigned to a camera, or null. */
+export function videoForCamera(videos: readonly VideoItem[], cameraId: string): VideoItem | null {
+  let latest: VideoItem | null = null
+  for (const video of videos) {
+    if (video.cameraId !== cameraId || video.status !== 'ready') continue
+    if (!latest || video.addedAt.getTime() >= latest.addedAt.getTime()) latest = video
+  }
+  return latest
+}
+
 export function videoResolution(width: number | null, height: number | null): string | null {
   if (width && height) return `${width}×${height}`
   return null
