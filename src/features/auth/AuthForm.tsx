@@ -2,6 +2,7 @@
 import { useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../app/auth/useAuth'
 import { Button, Notice, TextField } from '../../components/ui'
+import { FadeUp, staggerDelay } from '../../motion'
 import { demoAccounts, demoPassword } from '../../mocks/mockAuth'
 import { AuthError } from '../../types/auth'
 import { validateEmail, validateName, validatePassword } from './validation'
@@ -88,26 +89,43 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     setEmailError(null)
     setNotice(null)
   }
+  const emailIndex = isRegistration ? 2 : 1
+  const passwordIndex = isRegistration ? 3 : 2
+  const submitIndex = isRegistration ? 4 : 3
   return <>
     <form ref={formRef} className={styles.form} noValidate onSubmit={handleSubmit} aria-busy={pending}>
-      {notice && <Notice ref={noticeRef} tabIndex={-1} tone={notice.tone} title={notice.title}>{notice.text}</Notice>}
-      {isRegistration && <TextField label="Nombre" autoComplete="name" {...fieldProps('name')} />}
-      <TextField label="Correo electrónico" type="email" autoComplete="email" inputMode="email" {...fieldProps('email')} />
-      <TextField label="Contraseña" type="password" autoComplete={isRegistration ? 'new-password' : 'current-password'}
-        hint={isRegistration ? 'Mínimo 8 caracteres.' : undefined} {...fieldProps('password')} />
-      <Button type="submit" variant="primary" fullWidth loading={pending}>
-        {isRegistration ? (pending ? 'Creando cuenta…' : 'Crear cuenta') : (pending ? 'Ingresando…' : 'Ingresar')}
-      </Button>
+      {notice && <FadeUp>
+        <Notice ref={noticeRef} tabIndex={-1} tone={notice.tone} title={notice.title}>{notice.text}</Notice>
+      </FadeUp>}
+      {isRegistration && <FadeUp delay={staggerDelay(1)}>
+        <TextField label="Nombre" autoComplete="name" {...fieldProps('name')} />
+      </FadeUp>}
+      <FadeUp delay={staggerDelay(emailIndex)}>
+        <TextField label="Correo electrónico" type="email" autoComplete="email" inputMode="email" {...fieldProps('email')} />
+      </FadeUp>
+      <FadeUp delay={staggerDelay(passwordIndex)}>
+        <TextField label="Contraseña" type="password" autoComplete={isRegistration ? 'new-password' : 'current-password'}
+          hint={isRegistration ? 'Mínimo 8 caracteres.' : undefined} {...fieldProps('password')} />
+      </FadeUp>
+      <FadeUp delay={staggerDelay(submitIndex)}>
+        <Button type="submit" variant="primary" fullWidth loading={pending}>
+          {isRegistration ? (pending ? 'Creando cuenta…' : 'Crear cuenta') : (pending ? 'Ingresando…' : 'Ingresar')}
+        </Button>
+      </FadeUp>
     </form>
-    {!isRegistration && isDemo && <div className={styles.supplement}>
-      <Notice tone="info" title="Modo demostración">
-        <p>La autenticación es simulada mientras el backend no la ofrezca. Contraseña de prueba: {demoPassword}.</p>
-        <div className={styles.demoActions}>
-          <Button variant="secondary" size="sm" disabled={pending} onClick={() => fillDemo('owner')}>Entrar como dueño</Button>
-          <Button variant="secondary" size="sm" disabled={pending} onClick={() => fillDemo('worker')}>Entrar como trabajador</Button>
-        </div>
-      </Notice>
-    </div>}
-    {isRegistration && <p className={styles.note}>Las cuentas de trabajador se crean por invitación del dueño de la finca. Esa función llegará cuando el backend la ofrezca.</p>}
+    {!isRegistration && isDemo && <FadeUp delay={staggerDelay(submitIndex + 1)}>
+      <div className={styles.supplement}>
+        <Notice tone="info" title="Modo demostración">
+          <p>La autenticación es simulada mientras el backend no la ofrezca. Contraseña de prueba: {demoPassword}.</p>
+          <div className={styles.demoActions}>
+            <Button variant="secondary" size="sm" disabled={pending} onClick={() => fillDemo('owner')}>Entrar como dueño</Button>
+            <Button variant="secondary" size="sm" disabled={pending} onClick={() => fillDemo('worker')}>Entrar como trabajador</Button>
+          </div>
+        </Notice>
+      </div>
+    </FadeUp>}
+    {isRegistration && <FadeUp delay={staggerDelay(submitIndex + 1)}>
+      <p className={styles.note}>Las cuentas de trabajador se crean por invitación del dueño de la finca. Esa función llegará cuando el backend la ofrezca.</p>
+    </FadeUp>}
   </>
 }
