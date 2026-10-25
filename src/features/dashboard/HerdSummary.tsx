@@ -1,6 +1,7 @@
 import { Skeleton } from '../../components/ui'
 import { formatCount, formatTime } from '../../lib/format'
 import type { ResourceState } from '../../lib/useResource'
+import { CountUp } from '../../motion'
 import type { HerdCount } from '../../services/animalService'
 import styles from './HerdSummary.module.css'
 
@@ -27,11 +28,11 @@ export function HerdSummary({ title = 'Ganado', registered, detected, stale = fa
         <span className={styles.part}>{registered.data === null || registered.data === undefined
           ? <span className={styles.empty}>Registros no disponibles</span>
           : registered.data === 0 ? <span className={styles.empty}>No hay animales registrados</span>
-          : <><strong className="tabular">{formatCount(registered.data)}</strong> registrados</>}</span>
+          : <><strong className="tabular"><CountUp value={registered.data} format={formatCount} /></strong> registrados</>}</span>
         {registered.data != null && registered.data !== 0 && count !== null && <span className={styles.separator} aria-hidden="true">·</span>}
         <span className={`${styles.part} ${stale ? styles.stale : ''}`}>{count === null
           ? <span className={styles.empty}>Sin datos de detección</span>
-          : <><strong className="tabular">{formatCount(count.count)}</strong> {stale ? 'detectados en el último dato' : 'detectados ahora'}{detected.source === 'mock' && ' (simulado)'}</>}</span>
+          : <><strong className="tabular"><CountUp value={count.count} format={formatCount} /></strong> {stale ? 'detectados en el último dato' : 'detectados ahora'}{detected.source === 'mock' && ' (simulado)'}</>}</span>
       </p>}
     {count && <p className={styles.source}>
       {detected.source === 'mock'
