@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router'
 import { motion, useReducedMotion } from 'motion/react'
 import { useDocumentTitle } from '../../app/useDocumentTitle'
 import { duration, ease } from '../../motion'
+import { VideoLibraryProvider } from '../../features/videos/VideoLibraryProvider'
 import { SideRail } from './SideRail'
 import { TopBar } from './TopBar'
 import { MobileTabBar } from './MobileTabBar'
@@ -11,7 +12,8 @@ export function AppShell() {
   const { pathname } = useLocation()
   const reduce = useReducedMotion()
   useDocumentTitle()
-  return <div className={styles.shell}>
+  // The video library lives here so loaded videos survive navigation while signed in.
+  return <VideoLibraryProvider><div className={styles.shell}>
     <a className={styles.skipLink} href="#main-content">Saltar al contenido</a>
     <SideRail />
     <TopBar />
@@ -24,5 +26,5 @@ export function AppShell() {
       </motion.div>
     </main>
     <MobileTabBar />
-  </div>
+  </div></VideoLibraryProvider>
 }
