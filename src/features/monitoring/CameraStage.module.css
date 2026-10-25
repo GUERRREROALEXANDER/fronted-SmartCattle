@@ -57,7 +57,23 @@
 .connection.offline .connectionDot { background: var(--color-inactive); }
 .connection.error .connectionDot { background: var(--color-critical); }
 
+/* Loaded recording: bars let clicks through and the counts sit above the native controls. */
+.passThrough { pointer-events: none; }
+.aboveControls { bottom: var(--space-16); background: none; pointer-events: none; }
+.tags { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.recordingTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  background: var(--color-stage-tag);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+
 .counts { font-size: var(--text-sm); font-weight: var(--weight-semibold); font-variant-numeric: tabular-nums; }
+.aboveControls .counts { padding: var(--space-1) var(--space-3); border-radius: var(--radius-full); background: var(--color-stage-tag); }
 
 .outsideChip {
   display: inline-flex;

@@ -1,7 +1,9 @@
 import type { CSSProperties } from 'react'
-import { Loader2, OctagonAlert, VideoOff, WifiOff, type LucideIcon } from 'lucide-react'
+import { Film, Loader2, OctagonAlert, VideoOff, WifiOff, type LucideIcon } from 'lucide-react'
+import { useReducedMotion } from 'motion/react'
 import { formatRelative, formatTime } from '../../lib/format'
 import type { Camera, FrameDetections, SafeZone, StreamSource } from '../../types/domain'
+import type { VideoItem } from '../videos/videosModel'
 import { DetectionOverlay, type OverlayLayers } from './DetectionOverlay'
 import { detectionSummaryText, stageState, summarizeDetections } from './monitoringModel'
 import styles from './CameraStage.module.css'
@@ -15,13 +17,17 @@ interface CameraStageProps {
   layers: OverlayLayers
   aiConfigured: boolean | null
   now: Date
+  /** A recording the user loaded on the Videos page for this camera; it replaces the picture but is never live. */
+  video?: VideoItem | null
 }
 
 const connectionLabel: Record<Camera['status'], string> = {
   online: 'En línea', connecting: 'Conectando', offline: 'Sin conexión', error: 'Con error',
 }
 
-export function CameraStage({ camera, stream, streamLoading, frame, zones, layers, aiConfigured, now }: CameraStageProps) {
+export function CameraStage({ camera, stream, streamLoading, frame, zones, layers, aiConfigured, now, video = null }: CameraStageProps) {
+  const reduce = useReducedMotion()
+  if (camera && video) return <RecordingStage camera={camera} video={video} zones={zones} layers={layers} autoPlay={!reduce} />
   const state = stageState(camera, stream, streamLoading)
   const detections = state === 'live' ? frame?.detections ?? [] : []
   const summary = summarizeDetections(detections)
@@ -59,6 +65,44 @@ export function CameraStage({ camera, stream, streamLoading, frame, zones, layer
           <time className="tabular" dateTime={frame.capturedAt.toISOString()}>{formatTime(frame.capturedAt)}</time>
         </p>}
       </div>}
+    </div>
+  </section>
+}
+
+/** Plays a loaded recording as the picture. Demo detections would be fake over it, so only the safe zone is drawn. */
+function RecordingStage({ camera, video, zones, layers, autoPlay }: {
+  camera: Camera
+  video: VideoItem
+  zones: readonly SafeZone[]
+  layers: OverlayLayers
+  autoPlay: boolean
+}) {
+  const width = video.width ?? 16
+  const height = video.height ?? 9
+  return <section className={styles.stage} aria-label={`Cámara ${camera.name}`}>
+    <div className={styles.viewport} style={{ aspectRatio: `${width} / ${height}` }}>
+      <div className={styles.frame} style={{ aspectRatio: `${width} / ${height}`, '--ar': width / height } as CSSProperties}>
+        <video key={video.id} className={styles.media} src={video.url} poster={video.thumbnail ?? undefined}
+          controls muted loop playsInline autoPlay={autoPlay} aria-label={`Video cargado: ${video.fileName}`} />
+        <DetectionOverlay width={width} height={height} detections={[]} zones={zones} layers={layers} />
+      </div>
+
+      <div className={`${styles.topBar} ${styles.passThrough}`}>
+        <div className={styles.identity}>
+          <p className={styles.name}>{camera.name}</p>
+          <p className={styles.location}>{camera.location}</p>
+        </div>
+        <div className={styles.tags}>
+          <p className={styles.recordingTag}><Film size={14} strokeWidth={2} aria-hidden="true" />Video cargado · no es en vivo</p>
+          <p className={`${styles.connection} ${styles[camera.status]}`}>
+            <span className={styles.connectionDot} aria-hidden="true" />{connectionLabel[camera.status]}
+          </p>
+        </div>
+      </div>
+
+      <div className={`${styles.bottomBar} ${styles.aboveControls}`}>
+        <p className={styles.counts}>Sin detecciones para videos cargados</p>
+      </div>
     </div>
   </section>
 }
