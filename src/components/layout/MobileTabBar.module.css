@@ -11,6 +11,7 @@
 }
 
 .cell {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -30,6 +31,16 @@
   transition: background var(--duration-fast), color var(--duration-fast);
 }
 
-@media (hover: hover) { .cell:hover { background: var(--color-earth-surface); } }
+.marker {
+  position: absolute;
+  inset: 2px;
+  border-radius: var(--radius-md);
+  background: var(--color-earth-surface);
+  pointer-events: none;
+  z-index: 0;
+}
+.cell > * { position: relative; z-index: 1; }
+
+@media (hover: hover) { .cell:hover:not([aria-current='page']):not(.active) { background: var(--color-earth-surface); } }
 .cell[aria-current='page'], .active { color: var(--color-brand); font-weight: var(--weight-semibold); }
 @media (min-width: 1024px) { .bar { display: none; } }
