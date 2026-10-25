@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
+import { motion, useReducedMotion } from 'motion/react'
 import { EventRow } from '../../components/events/EventRow'
 import { describeApiError } from '../../api/errors'
 import { EmptyState, ErrorState, PageHeader, SkeletonText } from '../../components/ui'
 import { formatCount, formatTime } from '../../lib/format'
 import { useResource } from '../../lib/useResource'
+import { duration, ease, staggerDelay } from '../../motion'
 import { getDetectedCattleCount, getRegisteredCattleCount, hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
 import { cameraName } from '../dashboard/dashboardModel'
 import { HerdSummary } from '../dashboard/HerdSummary'
@@ -12,6 +14,7 @@ import { cattleEvents, herdByCamera, visibleTotals } from './cattleModel'
 import styles from './CattlePage.module.css'
 
 export function CattlePage() {
+  const reduce = useReducedMotion()
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 30_000)
@@ -59,14 +62,17 @@ export function CattlePage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map(row => <tr key={row.camera.id}>
+                    {rows.map((row, index) => <motion.tr key={row.camera.id}
+                      initial={{ opacity: 0, y: reduce ? 0 : 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: reduce ? duration.micro : duration.state, ease: ease.out, delay: reduce ? 0 : staggerDelay(index) }}>
                       <th scope="row"><Link to={`/live?camera=${encodeURIComponent(row.camera.id)}`}>{row.camera.name}</Link></th>
                       <td className={styles.wide}>{row.camera.location}</td>
                       <td className={styles.num}>{row.visible === null ? <span className={styles.muted}>Sin imagen</span> : formatCount(row.visible)}</td>
                       <td className={styles.num}>{row.outside === null ? <span className={styles.muted}>—</span>
                         : row.outside > 0 ? <strong className={styles.outside}>{formatCount(row.outside)}</strong> : '0'}</td>
                       <td className={`${styles.num} ${styles.wide}`}>{row.capturedAt ? formatTime(row.capturedAt) : <span className={styles.muted}>—</span>}</td>
-                    </tr>)}
+                    </motion.tr>)}
                   </tbody>
                   <tfoot>
                     <tr>
@@ -92,7 +98,8 @@ export function CattlePage() {
             : events.status === 'error' && !events.data ? <ErrorState {...describeApiError(events.error)} onRetry={events.reload} />
               : recent.length === 0 ? <EmptyState title="Sin movimientos registrados" description="Las salidas de zona y los animales externos aparecerán aquí." />
                 : <ol className={styles.events}>
-                  {recent.map(event => <EventRow key={event.id} event={event} cameraLabel={cameraName(cameras.data ?? null, event.cameraId)} now={now} />)}
+                  {recent.map((event, index) => <EventRow key={event.id} index={index}
+                    event={event} cameraLabel={cameraName(cameras.data ?? null, event.cameraId)} now={now} />)}
                 </ol>}
         </section>
       </aside>
