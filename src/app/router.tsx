@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, type LazyRouteFunction, type RouteObject } from 'react-router'
 import { AppShell } from '../components/layout/AppShell'
 import { DashboardPage } from '../features/dashboard/DashboardPage'
 import { MonitoringPage } from '../features/monitoring/MonitoringPage'
@@ -23,6 +23,13 @@ const pages = {
   settings: SettingsPage,
 }
 
+// Heavy pages (3D scene, charts, video tooling) load on first visit so the shell stays light.
+const lazyPages: Record<string, LazyRouteFunction<RouteObject>> = {
+  pasture: async () => ({ Component: (await import('../features/pasture3d/PasturePage')).PasturePage }),
+  videos: async () => ({ Component: (await import('../features/videos/VideosPage')).VideosPage }),
+  analytics: async () => ({ Component: (await import('../features/analytics/AnalyticsPage')).AnalyticsPage }),
+}
+
 export const router = createBrowserRouter([{
   Component: RedirectIfAuthenticated,
   children: [
@@ -34,7 +41,9 @@ export const router = createBrowserRouter([{
   children: [{
   Component: AppShell,
   children: [
-    ...navItems.map(item => ({ path: item.path, Component: pages[item.id], handle: { title: item.label } })),
+    ...navItems.map(item => item.id in lazyPages
+      ? { path: item.path, lazy: lazyPages[item.id], handle: { title: item.label } }
+      : { path: item.path, Component: pages[item.id as keyof typeof pages], handle: { title: item.label } }),
     { path: profileItem.path, Component: ProfilePage, handle: { title: profileItem.label } },
     ...(import.meta.env.DEV ? [{
       path: '/dev/ui',
