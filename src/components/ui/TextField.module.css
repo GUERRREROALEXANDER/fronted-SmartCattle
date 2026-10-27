@@ -1,4 +1,4 @@
-.field { display: grid; gap: var(--space-2); min-width: 0; }
+.field { display: grid; align-content: start; gap: var(--space-2); min-width: 0; }
 .label { font-size: var(--text-sm); font-weight: var(--weight-medium); color: var(--color-ink); }
 .control { position: relative; }
 .input {
@@ -6,20 +6,36 @@
   padding: var(--space-2) var(--space-3);
   background: var(--color-surface-raised);
   border: 1px solid var(--color-rule-strong); border-radius: var(--radius-md);
+  transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
 }
-@media (hover: hover) { .input:hover:not(:disabled) { border-color: var(--color-ink-subtle); } }
-.input:focus-visible { border-color: var(--color-earth); }
-@media (hover: hover) { .input[aria-invalid='true'], .input[aria-invalid='true']:hover:not(:disabled), .input[aria-invalid='true']:focus-visible { border-color: var(--color-critical); } }
+@media (hover: hover) { .input:hover:not(:disabled) { border-color: var(--color-brand-strong); } }
+.input:focus-visible { border-color: var(--color-brand); box-shadow: var(--focus-ring), var(--shadow-glow-brand); }
+.input[aria-invalid='true'], .input[aria-invalid='true']:hover:not(:disabled), .input[aria-invalid='true']:focus-visible { border-color: var(--color-critical); }
+.input:disabled { background: var(--color-well); }
 .input:disabled, .toggle:disabled { opacity: 0.55; cursor: not-allowed; }
-.password { padding-inline-end: calc(var(--touch-min) + var(--space-2)); }
-.toggle {
+.hasTrailing { padding-inline-end: calc(var(--touch-min) + var(--space-2)); }
+.trailing {
   position: absolute; inset-inline-end: 0; top: 50%; transform: translateY(-50%);
-  display: grid; place-items: center; width: var(--touch-min); height: var(--touch-min);
-  padding: 0; border: 0; border-radius: var(--radius-md); background: transparent;
-  color: var(--color-ink-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
 }
-@media (hover: hover) { .toggle:hover:not(:disabled) { background: var(--color-hover); } }
+.toggle {
+  position: relative; display: grid; place-items: center; width: var(--touch-min); height: var(--touch-min);
+  padding: 0; border: 0; border-radius: var(--radius-md); background: transparent;
+  color: var(--color-brand-strong); cursor: pointer; transition: color var(--duration-fast);
+}
+/* The tint sits inside the 44px hit area so it never covers the input border. */
+.toggle::before {
+  content: ''; position: absolute; inset: var(--space-1); border-radius: var(--radius-sm);
+  background: transparent; transition: background-color var(--duration-fast);
+}
+.toggle svg { position: relative; }
+.toggle[aria-pressed='true']::before { background: var(--color-well); }
+@media (hover: hover) {
+  .toggle:hover:not(:disabled) { color: var(--color-mint-ink); }
+  .toggle:hover:not(:disabled)::before { background: var(--color-mint); }
+}
 .hint, .error { font-size: var(--text-sm); overflow-wrap: anywhere; }
 .hint { color: var(--color-ink-subtle); }
-.error { display: flex; align-items: flex-start; gap: var(--space-2); color: var(--color-critical); }
+.error { display: flex; align-items: flex-start; gap: var(--space-2); color: var(--color-critical-ink); }
 .error svg { flex-shrink: 0; margin-block-start: var(--badge-padding-block); }
+@media (prefers-reduced-motion: reduce) { .input, .toggle, .toggle::before { transition: none; } }

@@ -1,5 +1,13 @@
-.state { display: flex; flex-direction: column; align-items: center; gap: var(--space-3); text-align: center; padding: var(--space-10) var(--space-4); border: 1px dashed var(--color-rule-strong); border-radius: var(--radius-lg); overflow-wrap: anywhere; }
-.icon { color: var(--color-ink-subtle); }
-.title { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.state {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
+  text-align: center; padding: var(--space-10) var(--space-4);
+  border: 1px dashed var(--color-rule-strong); border-radius: var(--radius-xl);
+  background: var(--color-surface-raised); overflow-wrap: anywhere;
+}
+.icon {
+  box-sizing: content-box; padding: var(--space-3); border-radius: var(--radius-full);
+  background: var(--color-mint); color: var(--color-mint-ink);
+}
+.title { font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--color-ink); }
 .description { font-size: var(--text-sm); color: var(--color-ink-muted); max-width: var(--state-description-max); }
 .action { max-width: 100%; }

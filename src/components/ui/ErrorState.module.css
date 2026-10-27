@@ -1,2 +1,3 @@
 .error { min-width: 0; }
+.error > div > svg { background: var(--color-alarm-surface); color: var(--color-alarm-ink); }
 .error button { margin: var(--space-1); }
