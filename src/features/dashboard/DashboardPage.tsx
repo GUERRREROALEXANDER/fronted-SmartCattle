@@ -4,10 +4,10 @@ import { hasPicture } from '../../services'
 import { FadeUp, staggerDelay } from '../../motion'
 import { AlertStrip } from './AlertStrip'
 import { farmCondition, recentAlerts, statusHeadline } from './dashboardModel'
-import { FarmPlan } from './FarmPlan'
 import { FarmStatusHeader } from './FarmStatusHeader'
 import { FieldLog } from './FieldLog'
 import { HerdSummary } from './HerdSummary'
+import { LiveMonitor } from './LiveMonitor'
 import { useDashboardData } from './useDashboardData'
 import styles from './DashboardPage.module.css'
 
@@ -57,7 +57,8 @@ export function DashboardPage() {
     <div className={styles.grid}>
       <FadeUp delay={staggerDelay(2)} className={styles.main}>
         {data.plan.status === 'loading' && <Skeleton height="22rem" radius="var(--radius-lg)" />}
-        {data.plan.data && <FarmPlan plan={data.plan.data} cameras={cameras} alerts={alerts} stale={backendOffline} withVideo={videoIds} />}
+        {data.plan.data && <LiveMonitor plan={data.plan.data} cameras={cameras} alerts={alerts}
+          stale={backendOffline} withVideo={videoIds} />}
         {data.plan.status === 'success' && !data.plan.data && <ErrorState
           title="Plano no disponible"
           description="El servidor todavía no ofrece la geometría de la finca ni la ubicación de las cámaras." />}
