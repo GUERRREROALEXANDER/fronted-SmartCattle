@@ -30,7 +30,7 @@ html {
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
-  scrollbar-color: var(--color-rule-strong) transparent;
+  scrollbar-color: var(--color-brand) var(--color-ground);
 }
 
 body {
@@ -81,7 +81,7 @@ textarea {
 
 input,
 textarea {
-  caret-color: var(--color-earth);
+  caret-color: var(--color-brand);
 }
 
 a {
@@ -91,8 +91,8 @@ a {
 }
 
 ::selection {
-  background: var(--color-brand);
-  color: var(--color-on-brand);
+  background: var(--color-mint);
+  color: var(--color-mint-ink);
 }
 
 :focus-visible {
@@ -111,14 +111,14 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-rule-strong);
-  border: 3px solid transparent;
+  background: var(--color-brand);
+  border: 3px solid var(--color-ground);
   background-clip: padding-box;
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-ground);
 }
 
 .visually-hidden {

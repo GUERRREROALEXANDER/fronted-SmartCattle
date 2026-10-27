@@ -2,58 +2,77 @@
   color-scheme: light;
 
   /* Color - surfaces */
-  --color-ground: #EDECE6;
-  --color-surface: #F8F7F3;
+  --color-ground: #F7FCF8;
+  --color-surface: #FFFFFF;
   --color-surface-raised: #FFFFFF;
-  --color-rule: #D5D3CA;
-  --color-rule-strong: #B9B6AA;
+  --color-well: #ECF8EF;
+  --color-rule: #C7E4D0;
+  --color-rule-strong: #6B8574;
 
   /* Color - ink */
-  --color-ink: #17201A;
-  --color-ink-muted: #465049;
-  --color-ink-subtle: #5B645C;
+  --color-ink: #0F2418;
+  --color-ink-muted: #3D5446;
+  --color-ink-subtle: #5C7365;
 
   /* Color - brand */
-  --color-brand: #2F4A36;
-  --color-brand-strong: #22362A;
-  --color-brand-hover: #3A5A42;
-  --color-on-brand: #F3F1EA;
-  --color-on-brand-muted: #B9C8B7;
+  --color-brand: #16A34A;
+  --color-brand-strong: #15803D;
+  --color-brand-hover: #22C55E;
+  --color-on-brand: #FFFFFF;
+  --color-on-brand-muted: #DCFCE7;
 
-  /* Color - accents */
-  --color-earth: #8A6A4A;
-  --color-earth-surface: #EFE6DA;
-  --color-earth-ink: #6B5037;
-  --color-on-brand-surface: rgb(255 255 255 / 0.10);
-  --color-backdrop: rgb(23 32 26 / 0.35);
-  --color-sage: #7C9A6E;
+  /* Color - pastel accents (legacy earth tokens now carry the sky role) */
+  --color-mint: #C7F2D4;
+  --color-mint-ink: #14532D;
+  --color-sky: #CDEBFF;
+  --color-sky-ink: #075985;
+  --color-butter: #FFF1B8;
+  --color-butter-ink: #713F12;
+  --color-peach: #FFD9C7;
+  --color-peach-ink: #7C2D12;
+  --color-lilac: #E4DCFF;
+  --color-lilac-ink: #4C1D95;
+  --color-earth: #0284C7;
+  --color-earth-surface: #CDEBFF;
+  --color-earth-ink: #075985;
+  --color-on-brand-surface: rgb(255 255 255 / 0.14);
+  --color-backdrop: rgb(14 26 19 / 0.48);
+  --color-sage: #4ADE80;
 
   /* Color - states */
-  --color-safe: #2E7D4F;
+  --color-safe: #16A34A;
   /* Text on tinted state surfaces needs a darker ink to reach 4.5:1. */
-  --color-safe-ink: #23623F;
-  --color-inactive-ink: #575D57;
-  --color-safe-surface: #E2EEE5;
-  --color-warning: #B7791F;
-  --color-warning-ink: #7A4E0F;
-  --color-warning-surface: #F5EAD6;
-  --color-critical: #B42318;
-  --color-critical-surface: #F7E1DE;
-  --color-inactive: #6F756F;
-  --color-inactive-surface: #E4E4DE;
+  --color-safe-ink: #14532D;
+  --color-inactive-ink: #3D5446;
+  --color-safe-surface: #DCFCE7;
+  --color-warning: #D97706;
+  --color-warning-ink: #92400E;
+  --color-warning-surface: #FEF3C7;
+  --color-critical: #EF233C;
+  --color-critical-ink: #B3132B;
+  --color-critical-surface: #FFE4E8;
+  --color-alarm: #EF233C;
+  --color-alarm-hover: #C81E35;
+  --color-alarm-ink: #B3132B;
+  --color-alarm-surface: #FFE4E8;
+  --color-info: #0284C7;
+  --color-info-ink: #075985;
+  --color-info-surface: #E0F2FE;
+  --color-inactive: #5C7365;
+  --color-inactive-surface: #ECF8EF;
 
   /* Color - camera stage */
-  --color-stage: #121614;
-  --color-stage-raised: #1C211E;
-  --color-stage-ink: #E9ECE6;
-  --color-stage-ink-muted: #A9B1A9;
-  --color-overlay-cattle: #F1EBD8;
-  --color-overlay-person: #F2B84B;
-  --color-overlay-lindero: #EDEAE0;
-  --color-overlay-outside: #FF6B5A;
+  --color-stage: #0E1A13;
+  --color-stage-raised: #16251C;
+  --color-stage-ink: #F7FCF8;
+  --color-stage-ink-muted: #B9CFC0;
+  --color-overlay-cattle: #4ADE80;
+  --color-overlay-person: #FACC15;
+  --color-overlay-lindero: #FFFFFF;
+  --color-overlay-outside: #FF3355;
 
   /* Focus */
-  --focus-ring: 0 0 0 2px var(--color-surface), 0 0 0 4px var(--color-earth);
+  --focus-ring: 0 0 0 2px var(--color-surface-raised), 0 0 0 4px var(--color-brand);
 
   /* Hatch - outside-zone / critical pattern */
   --hatch-critical: repeating-linear-gradient(135deg, var(--color-critical) 0 2px, transparent 2px 7px);
@@ -104,14 +123,16 @@
   --space-16: 4rem;
 
   /* Radius */
-  --radius-sm: 3px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
   --radius-full: 999px;
 
   /* Elevation */
-  --shadow-raised: 0 1px 2px rgb(23 32 26 / 0.06), 0 4px 14px rgb(23 32 26 / 0.07);
-  --shadow-overlay: 0 8px 30px rgb(23 32 26 / 0.18);
+  --shadow-raised: 0 2px 4px rgb(15 36 24 / 0.04), 0 12px 28px rgb(22 163 74 / 0.08);
+  --shadow-overlay: 0 20px 50px rgb(15 36 24 / 0.16), 0 8px 24px rgb(22 163 74 / 0.08);
+  --shadow-glow-brand: 0 0 0 4px rgb(34 197 94 / 0.16), 0 8px 24px rgb(34 197 94 / 0.18);
 
   /* Motion */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -130,8 +151,8 @@
   --content-max: 1440px;
 
   /* Base UI components */
-  --color-hover: rgb(23 32 26 / 0.05);
-  --control-sm: 36px;
+  --color-hover: rgb(22 163 74 / 0.08);
+  --control-sm: 44px;
   --pill-padding-inline: 10px;
   --duration-spin: 700ms;
   --duration-shimmer: 1.4s;
@@ -148,16 +169,16 @@
 
 :root {
   /* Camera stage overlays */
-  --color-stage-tag: rgb(18 22 20 / 0.72);
-  --color-stage-tag-outside: rgb(180 35 24 / 0.92);
-  --color-stage-scrim: rgb(18 22 20 / 0.6);
+  --color-stage-tag: rgb(14 26 19 / 0.78);
+  --color-stage-tag-outside: rgb(179 19 43 / 0.94);
+  --color-stage-scrim: rgb(14 26 19 / 0.64);
 
   /* Authentication scene */
-  --color-auth-zone: rgb(237 234 224 / 0.06);
-  --color-auth-tag: rgb(18 22 20 / 0.72);
-  --color-auth-outside-tag: rgb(180 35 24 / 0.9);
-  --color-auth-pill: rgb(18 22 20 / 0.55);
-  --color-auth-shade: rgb(18 22 20 / 0.65);
+  --color-auth-zone: rgb(199 242 212 / 0.12);
+  --color-auth-tag: rgb(14 26 19 / 0.78);
+  --color-auth-outside-tag: rgb(179 19 43 / 0.94);
+  --color-auth-pill: rgb(14 26 19 / 0.62);
+  --color-auth-shade: rgb(14 26 19 / 0.68);
   --auth-scene-min-height: 220px;
   --duration-pasture-drift: 28s;
   --duration-lindero-reveal: 900ms;
