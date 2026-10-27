@@ -1,0 +1,27 @@
+.ring {
+  position: relative;
+  display: inline-flex;
+  border-radius: inherit;
+  --pulse-color: var(--color-alarm);
+}
+
+.alarm { --pulse-color: var(--color-alarm); }
+.brand { --pulse-color: var(--color-brand); }
+
+.pulse {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--pulse-color);
+  border-radius: inherit;
+  pointer-events: none;
+  animation: alarm-pulse var(--duration-outside-pulse) var(--ease-out) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse {
+    inset: calc(-1 * var(--space-1));
+    animation: none;
+    opacity: 0.55;
+    transform: none;
+  }
+}
