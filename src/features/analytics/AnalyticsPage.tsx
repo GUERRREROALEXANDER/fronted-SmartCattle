@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { CalendarSearch, Info } from 'lucide-react'
 import { DataSourceBadge, EmptyState, ErrorState, Notice, PageHeader, Skeleton } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
-import { FadeUp } from '../../motion'
 import { listCameras, listEvents } from '../../services'
-import { buildAnalyticsModel, type AnalyticsRange } from './analyticsModel'
+import { buildAnalyticsModel, previousPeriodDeltas, type AnalyticsRange } from './analyticsModel'
 import { CameraBars } from './CameraBars'
 import { CategoryDonut } from './CategoryDonut'
 import { ChartCard } from './ChartCard'
@@ -23,7 +22,14 @@ const rangeDescriptions: Record<AnalyticsRange, string> = {
   '30d': 'los últimos 30 días',
 }
 
-const hourFormat = (value: number) => `${String(Math.round(value)).padStart(2, '0')}:00`
+const previousDescriptions: Record<AnalyticsRange, string> = {
+  '24h': 'las 24 horas anteriores',
+  '7d': 'los 7 días anteriores',
+  '30d': 'los 30 días anteriores',
+}
+
+const pointsFormat = (value: number) => `${Math.round(value)} p. p.`
+const hourFormat =(value: number) => `${String(Math.round(value)).padStart(2, '0')}:00`
 const percentFormat = (value: number) => formatPercentage(value)
 
 export function AnalyticsPage() {
@@ -41,6 +47,10 @@ export function AnalyticsPage() {
   const cameraData = cameras.data
   const model = useMemo(
     () => buildAnalyticsModel(eventData ?? [], cameraData ?? [], range, now),
+    [eventData, cameraData, range, now],
+  )
+  const deltas = useMemo(
+    () => previousPeriodDeltas(eventData ?? [], cameraData ?? [], range, now),
     [eventData, cameraData, range, now],
   )
   const loading = events.status === 'loading' || cameras.status === 'loading'
@@ -99,20 +109,22 @@ export function AnalyticsPage() {
 
       {!loading && !failed && model.events.length > 0 && <>
         <section aria-label="Indicadores principales">
-          <FadeUp>
-            <ul className={styles.kpis}>
-              <KpiTile label="Eventos registrados" value={model.kpis.totalEvents}
-                caption={`En ${rangeDescriptions[range]}`} />
-              <KpiTile label="Fuera de la zona segura" value={model.kpis.cattleOutOfZonePercentage}
-                format={percentFormat} caption="Porcentaje del total registrado" />
-              <KpiTile label="Severidad crítica" value={model.kpis.criticalPercentage}
-                format={percentFormat} caption="Porcentaje del total registrado" />
-              {busiestHour && <KpiTile label="Hora con más eventos" value={busiestHour.hour}
-                format={hourFormat} caption={`${busiestHour.count} eventos · ${formatPercentage(busiestHour.percentage)}`} />}
-              {busiestCamera && <KpiTile label="Eventos en la cámara más activa" value={busiestCamera.count}
-                caption={`${busiestCamera.name} · ${formatPercentage(busiestCamera.percentage)}`} />}
-            </ul>
-          </FadeUp>
+          {deltas && <p className="visually-hidden">Los cambios se comparan con {previousDescriptions[range]}.</p>}
+          <ul className={styles.kpis}>
+            <KpiTile index={0} tone="brand" label="Eventos registrados" value={model.kpis.totalEvents}
+              caption={`En ${rangeDescriptions[range]}`}
+              delta={deltas ? { value: deltas.totalEvents, goodWhen: 'down' } : undefined} />
+            <KpiTile index={1} tone="alarm" label="Fuera de la zona segura" value={model.kpis.cattleOutOfZonePercentage}
+              format={percentFormat} caption={deltas ? 'vs. periodo anterior' : 'Porcentaje del total registrado'}
+              delta={deltas ? { value: deltas.cattleOutOfZonePercentage, goodWhen: 'down', format: pointsFormat } : undefined} />
+            <KpiTile index={2} tone="warning" label="Severidad crítica" value={model.kpis.criticalPercentage}
+              format={percentFormat} caption={deltas ? 'vs. periodo anterior' : 'Porcentaje del total registrado'}
+              delta={deltas ? { value: deltas.criticalPercentage, goodWhen: 'down', format: pointsFormat } : undefined} />
+            {busiestHour && <KpiTile index={3} tone="info" label="Hora con más eventos" value={busiestHour.hour}
+              format={hourFormat} caption={`${busiestHour.count} eventos · ${formatPercentage(busiestHour.percentage)}`} />}
+            {busiestCamera && <KpiTile index={4} tone="lilac" label="Eventos en la cámara más activa" value={busiestCamera.count}
+              caption={`${busiestCamera.name} · ${formatPercentage(busiestCamera.percentage)}`} />}
+          </ul>
         </section>
 
         <section className={styles.grid} aria-label="Gráficas del periodo">

@@ -12,7 +12,7 @@ export function ConfidenceHistogram({ data }: { data: ConfidenceShare[] }) {
         <XAxis dataKey="shortLabel" interval={0} tick={{ ...axisTick, fontSize: 10 }} tickLine={false} axisLine={axisLine} />
         <YAxis width={28} allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} />
         <Tooltip {...tooltipStyles} cursor={{ fill: 'var(--color-hover)' }} />
-        <Bar dataKey="count" name="Eventos" radius={[3, 3, 0, 0]} isAnimationActive={animate} {...chartAnimation}>
+        <Bar dataKey="count" name="Eventos" radius={[8, 8, 0, 0]} maxBarSize={56} isAnimationActive={animate} {...chartAnimation}>
           {data.map(row => <Cell key={row.id} fill={confidenceColors[row.id]} />)}
           <LabelList dataKey="count" position="top" fill={chartColors.inkMuted} fontSize={11} />
         </Bar>

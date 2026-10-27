@@ -12,8 +12,8 @@ export function HourlyArea({ data }: { data: HourShare[] }) {
         <XAxis dataKey="label" interval={3} tick={axisTick} tickLine={false} axisLine={axisLine} />
         <YAxis width={30} allowDecimals={false} tick={axisTick} tickLine={false} axisLine={false} />
         <Tooltip {...tooltipStyles} cursor={{ stroke: chartColors.ruleStrong }} />
-        <Area type="linear" dataKey="count" name="Eventos" stroke={chartColors.brand}
-          fill={chartColors.brand} fillOpacity={0.16} strokeWidth={2} dot={false}
+        <Area type="monotone" dataKey="count" name="Eventos" stroke={chartColors.brand}
+          fill={chartColors.mint} fillOpacity={0.9} strokeWidth={2.5} dot={false}
           activeDot={{ r: 4, fill: chartColors.brand, stroke: chartColors.surface }}
           isAnimationActive={animate} {...chartAnimation} />
       </AreaChart>

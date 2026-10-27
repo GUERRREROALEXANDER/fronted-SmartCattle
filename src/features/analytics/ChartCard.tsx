@@ -25,15 +25,18 @@ export function ChartCard({ title, insight, footnote, table, index = 0, classNam
       </figcaption>
       <div className={styles.visual}>{children}</div>
       {footnote && <p className={styles.footnote}>{footnote}</p>}
-      <table className="visually-hidden">
-        <caption>{title}: datos de la gráfica</caption>
-        <thead><tr>{table.headers.map(header => <th key={header} scope="col">{header}</th>)}</tr></thead>
-        <tbody>{table.rows.map((row, rowIndex) => <tr key={rowIndex}>
-          {row.map((cell, cellIndex) => cellIndex === 0
-            ? <th key={cellIndex} scope="row">{cell}</th>
-            : <td key={cellIndex}>{cell}</td>)}
-        </tr>)}</tbody>
-      </table>
+      {/* A table ignores the 1px width of .visually-hidden, so the wrapper does the clipping. */}
+      <div className="visually-hidden">
+        <table>
+          <caption>{title}: datos de la gráfica</caption>
+          <thead><tr>{table.headers.map(header => <th key={header} scope="col">{header}</th>)}</tr></thead>
+          <tbody>{table.rows.map((row, rowIndex) => <tr key={rowIndex}>
+            {row.map((cell, cellIndex) => cellIndex === 0
+              ? <th key={cellIndex} scope="row">{cell}</th>
+              : <td key={cellIndex}>{cell}</td>)}
+          </tr>)}</tbody>
+        </table>
+      </div>
     </figure>
   </StaggerItem>
 }
