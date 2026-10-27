@@ -2,18 +2,45 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
   height: var(--topbar-height);
   padding-inline: var(--space-4);
-  background: var(--color-surface);
+  background: var(--color-surface-raised);
   border-bottom: 1px solid var(--color-rule);
 }
 
 .wordmark {
-  color: var(--color-brand);
+  color: var(--color-brand-strong);
   font-stretch: var(--stretch-wide);
   font-weight: var(--weight-display);
   font-size: var(--text-md);
 }
 
+.actions { display: flex; align-items: center; gap: var(--space-2); }
+.alarmRing { flex-shrink: 0; border-radius: var(--radius-full); }
+.alarm {
+  display: grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  padding: 0;
+  border: 1px solid var(--color-rule);
+  border-radius: var(--radius-full);
+  background: var(--color-well);
+  color: var(--color-brand-strong);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast),
+    border-color var(--duration-fast), color var(--duration-fast);
+}
+.alarmActive { background: var(--color-alarm); border-color: var(--color-alarm); color: var(--color-on-brand); }
+@media (hover: hover) {
+  .alarm:hover { transform: translateY(-1px); background: var(--color-mint); color: var(--color-mint-ink); }
+  .alarmActive:hover { background: var(--color-alarm-hover); color: var(--color-on-brand); }
+}
+.alarm:active { transform: scale(0.97); }
+@media (max-width: 420px) { .actions > :first-child > span { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .alarm { transition: none; }
+  .alarm:hover, .alarm:active { transform: none; }
+}
 @media (min-width: 1024px) { .bar { display: none; } }

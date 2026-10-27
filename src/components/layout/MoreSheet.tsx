@@ -1,8 +1,17 @@
 import { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import { NavLink } from 'react-router'
+import { motion, useReducedMotion } from 'motion/react'
 import { navItems, profileItem } from '../../app/navigation'
+import { duration, ease } from '../../motion'
 import styles from './MoreSheet.module.css'
+
+function ActiveMarker() {
+  const reduce = useReducedMotion()
+  if (reduce) return <span className={styles.marker} aria-hidden="true" />
+  return <motion.span className={styles.marker} layoutId="more-sheet-active"
+    transition={{ duration: duration.state, ease: ease.fluid }} aria-hidden="true" />
+}
 
 export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const dialogRef = useRef<HTMLDialogElement>(null)
@@ -43,7 +52,10 @@ export function MoreSheet({ open, onClose }: { open: boolean; onClose: () => voi
     <nav aria-label="Más opciones" className={styles.links}>
       {[...navItems.filter(item => !item.primaryOnMobile), profileItem].map(({ id, path, label, icon: Icon }) =>
         <NavLink key={id} to={path} className={styles.item} onClick={() => dialogRef.current?.close()}>
-          <Icon size={20} strokeWidth={1.75} aria-hidden="true" /><span>{label}</span>
+          {({ isActive }) => <>
+            {isActive && <ActiveMarker />}
+            <Icon size={20} strokeWidth={1.75} aria-hidden="true" /><span>{label}</span>
+          </>}
         </NavLink>)}
     </nav>
   </dialog>

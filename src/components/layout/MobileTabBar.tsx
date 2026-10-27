@@ -11,7 +11,7 @@ function ActiveMarker() {
   const reduce = useReducedMotion()
   if (reduce) return <span className={styles.marker} aria-hidden="true" />
   return <motion.span className={styles.marker} layoutId="tabbar-active"
-    transition={{ duration: duration.state, ease: ease.out }} aria-hidden="true" />
+    transition={{ duration: duration.state, ease: ease.fluid }} aria-hidden="true" />
 }
 
 export function MobileTabBar() {

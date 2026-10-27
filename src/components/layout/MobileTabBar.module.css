@@ -5,13 +5,15 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   min-height: calc(var(--tabbar-height) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--color-surface);
+  padding: var(--space-1) var(--space-1) env(safe-area-inset-bottom);
+  background: var(--color-surface-raised);
   border-top: 1px solid var(--color-rule);
+  box-shadow: var(--shadow-raised);
 }
 
 .cell {
   position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -21,26 +23,27 @@
   min-width: 0;
   padding: var(--space-2) var(--space-1);
   border: 0;
-  background: var(--color-surface);
+  border-radius: var(--radius-full);
+  background: transparent;
   color: var(--color-ink-subtle);
   font-size: var(--text-xs);
   text-decoration: none;
   cursor: pointer;
   touch-action: manipulation;
   user-select: none;
-  transition: background var(--duration-fast), color var(--duration-fast);
+  transition: background-color var(--duration-fast), color var(--duration-fast);
 }
 
 .marker {
   position: absolute;
-  inset: 2px;
-  border-radius: var(--radius-md);
-  background: var(--color-earth-surface);
+  inset: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-mint);
   pointer-events: none;
   z-index: 0;
 }
-.cell > * { position: relative; z-index: 1; }
+.cell > :not(.marker) { position: relative; z-index: 1; }
 
-@media (hover: hover) { .cell:hover:not([aria-current='page']):not(.active) { background: var(--color-earth-surface); } }
-.cell[aria-current='page'], .active { color: var(--color-brand); font-weight: var(--weight-semibold); }
+@media (hover: hover) { .cell:hover:not([aria-current='page']):not(.active) { background: var(--color-well); } }
+.cell[aria-current='page'], .active { color: var(--color-mint-ink); font-weight: var(--weight-semibold); }
 @media (min-width: 1024px) { .bar { display: none; } }

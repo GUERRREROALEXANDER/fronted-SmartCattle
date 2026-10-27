@@ -10,7 +10,7 @@ function ActiveMarker() {
   const reduce = useReducedMotion()
   if (reduce) return <span className={styles.marker} aria-hidden="true" />
   return <motion.span className={styles.marker} layoutId="rail-active"
-    transition={{ duration: duration.state, ease: ease.out }} aria-hidden="true" />
+    transition={{ duration: duration.state, ease: ease.fluid }} aria-hidden="true" />
 }
 
 export function SideRail() {
@@ -24,7 +24,7 @@ export function SideRail() {
         <NavLink key={id} to={path} end={path === '/'} className={styles.item}>
           {({ isActive }) => <>
             {isActive && <ActiveMarker />}
-            <Icon size={20} strokeWidth={1.75} aria-hidden="true" />{label}
+            <Icon size={20} strokeWidth={1.75} aria-hidden="true" /><span>{label}</span>
           </>}
         </NavLink>)}
     </nav>
