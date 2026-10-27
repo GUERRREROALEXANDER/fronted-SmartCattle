@@ -2,8 +2,31 @@ import { describe, expect, it } from 'vitest'
 import type { Camera, FarmEvent } from '../../types/domain'
 import {
   byCamera, byHourOfDay, confidenceBuckets, dailyTrend, filterByRange, headlineKpis,
-  shareByCategory, shareByKind, shareBySeverity,
+  previousPeriodDeltas, shareByCategory, shareByKind, shareBySeverity,
 } from './analyticsModel'
+
+describe('previousPeriodDeltas', () => {
+  it('compares against the window of the same length right before, without double counting the boundary', () => {
+    const events = [
+      event('now-1', { occurredAt: hoursAgo(1), severity: 'critical' }),
+      event('now-2', { occurredAt: hoursAgo(3), kind: 'person_detected', severity: 'critical' }),
+      event('boundary', { occurredAt: hoursAgo(24) }),
+      event('before-1', { occurredAt: hoursAgo(30) }),
+      event('too-old', { occurredAt: hoursAgo(49) }),
+    ]
+    // Current: now-1, now-2, boundary (3 events, 2 out of zone = 67 %, 2 critical = 67 %).
+    // Previous: before-1 only (1 event, 100 % out of zone, 0 % critical).
+    expect(previousPeriodDeltas(events, cameras, '24h', now)).toEqual({
+      totalEvents: 2,
+      cattleOutOfZonePercentage: -33,
+      criticalPercentage: 67,
+    })
+  })
+
+  it('returns null when the earlier window is empty', () => {
+    expect(previousPeriodDeltas([event('only', { occurredAt: hoursAgo(1) })], cameras, '24h', now)).toBeNull()
+  })
+})
 
 const now = new Date('2026-10-04T15:00:00')
 

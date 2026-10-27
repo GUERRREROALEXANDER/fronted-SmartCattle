@@ -207,6 +207,34 @@ export function headlineKpis(events: readonly FarmEvent[], cameras: readonly Cam
   }
 }
 
+export interface KpiDeltas {
+  totalEvents: number
+  cattleOutOfZonePercentage: number
+  criticalPercentage: number
+}
+
+/**
+ * Change of the headline KPIs against the window of the same length right before the current one.
+ * Null when that earlier window has no events: a percentage change against nothing would mislead.
+ */
+export function previousPeriodDeltas(events: readonly FarmEvent[], cameras: readonly Camera[], range: AnalyticsRange, now: Date): KpiDeltas | null {
+  const currentStart = now.getTime() - rangeDuration[range]
+  const previousStart = currentStart - rangeDuration[range]
+  // The current window owns its start boundary, so the earlier one excludes it.
+  const previous = events.filter(event => {
+    const timestamp = event.occurredAt.getTime()
+    return timestamp >= previousStart && timestamp < currentStart
+  })
+  if (previous.length === 0) return null
+  const before = headlineKpis(previous, cameras)
+  const after = headlineKpis(filterByRange(events, range, now), cameras)
+  return {
+    totalEvents: after.totalEvents - before.totalEvents,
+    cattleOutOfZonePercentage: after.cattleOutOfZonePercentage - before.cattleOutOfZonePercentage,
+    criticalPercentage: after.criticalPercentage - before.criticalPercentage,
+  }
+}
+
 export function buildAnalyticsModel(events: readonly FarmEvent[], cameras: readonly Camera[], range: AnalyticsRange, now: Date) {
   const filtered = filterByRange(events, range, now)
   return {
