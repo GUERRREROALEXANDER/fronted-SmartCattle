@@ -7,7 +7,10 @@ import type { AuthService } from './authService'
 
 const usersKey = 'smartcattle.demo.users'
 const sessionKey = 'smartcattle.demo.session'
+export const MAX_LOGIN_ATTEMPTS = 5
+export const LOGIN_COOLDOWN_MS = 30_000
 interface StoredUser extends AuthUser { passwordHash: string }
+interface LoginAttempts { failures: number; lockedUntil: number }
 
 export async function hashPassword(password: string): Promise<string> {
   try {
@@ -16,27 +19,35 @@ export async function hashPassword(password: string): Promise<string> {
   } catch { throw new AuthError('unavailable') }
 }
 
-const normalizeEmail = (email: string) => email.trim().toLowerCase()
+const normalizeIdentifier = (identifier: string) => identifier.trim().toLowerCase()
 
 function isSession(value: unknown): value is Session {
   if (!value || typeof value !== 'object') return false
   const { user, issuedAt, source } = value as Partial<Session>
   return source === 'mock' && typeof issuedAt === 'string' && !Number.isNaN(Date.parse(issuedAt))
-    && !!user && typeof user.id === 'string' && typeof user.name === 'string'
+    && !!user && typeof user.id === 'string' && typeof user.username === 'string' && typeof user.name === 'string'
     && typeof user.email === 'string' && typeof user.farmId === 'string'
     && (user.role === 'owner' || user.role === 'worker')
 }
 
-export function createMockAuthService({ delayMs = 400, storage = safeStorage }: {
-  delayMs?: number; storage?: SafeStorage
+export function createMockAuthService({ delayMs = 400, storage = safeStorage, now = Date.now }: {
+  delayMs?: number; storage?: SafeStorage; now?: () => number
 } = {}): AuthService {
   const wait = () => delayMs === 0 ? Promise.resolve() : mockDelay(delayMs)
+  const attempts = new Map<string, LoginAttempts>()
 
   async function readUsers(): Promise<StoredUser[]> {
     // Hash before reading so concurrent calls cannot overwrite a newly registered user.
     const passwordHash = await hashPassword(demoPassword)
     const stored = storage.getJson<StoredUser[]>(usersKey)
-    if (Array.isArray(stored)) return stored
+    if (Array.isArray(stored)) {
+      return stored.map(user => ({
+        ...user,
+        username: typeof user.username === 'string' && user.username
+          ? normalizeIdentifier(user.username)
+          : demoAccounts.find(account => account.id === user.id)?.username ?? normalizeIdentifier(user.email.split('@')[0]),
+      }))
+    }
     const users = demoAccounts.map(user => ({ ...user, passwordHash }))
     storage.setJson(usersKey, users)
     return users
@@ -44,11 +55,32 @@ export function createMockAuthService({ delayMs = 400, storage = safeStorage }: 
 
   function saveSession(user: AuthUser): Session {
     const session: Session = {
-      user: { id: user.id, name: user.name, email: user.email, role: user.role, farmId: user.farmId },
+      user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, farmId: user.farmId },
       issuedAt: new Date().toISOString(), source: 'mock',
     }
     storage.setJson(sessionKey, session)
     return session
+  }
+
+  function assertCanLogin(key: string) {
+    const attempt = attempts.get(key)
+    if (!attempt?.lockedUntil) return
+    const remainingMs = attempt.lockedUntil - now()
+    if (remainingMs <= 0) {
+      attempts.delete(key)
+      return
+    }
+    if (attempt.lockedUntil) throw new AuthError('rate_limited', { retryAfterMs: remainingMs })
+  }
+
+  function recordFailure(key: string): never {
+    const failures = (attempts.get(key)?.failures ?? 0) + 1
+    if (failures >= MAX_LOGIN_ATTEMPTS) {
+      attempts.set(key, { failures: 0, lockedUntil: now() + LOGIN_COOLDOWN_MS })
+      throw new AuthError('rate_limited', { retryAfterMs: LOGIN_COOLDOWN_MS })
+    }
+    attempts.set(key, { failures, lockedUntil: 0 })
+    throw new AuthError('invalid_credentials')
   }
 
   return {
@@ -58,20 +90,26 @@ export function createMockAuthService({ delayMs = 400, storage = safeStorage }: 
     },
     async login(input) {
       await wait()
-      const passwordHash = await hashPassword(input.password)
+      const identifier = normalizeIdentifier(input.identifier)
       const users = await readUsers()
-      const user = users.find(user => normalizeEmail(user.email) === normalizeEmail(input.email))
-      if (!user || user.passwordHash !== passwordHash) throw new AuthError('invalid_credentials')
+      const user = users.find(user => normalizeIdentifier(user.email) === identifier || normalizeIdentifier(user.username) === identifier)
+      const attemptKey = user?.id ?? identifier
+      assertCanLogin(attemptKey)
+      const passwordHash = await hashPassword(input.password)
+      if (!user || user.passwordHash !== passwordHash) recordFailure(attemptKey)
+      attempts.delete(attemptKey)
       return saveSession(user)
     },
     async register(input) {
       await wait()
       const passwordHash = await hashPassword(input.password)
       const users = await readUsers()
-      const email = normalizeEmail(input.email)
-      if (users.some(user => normalizeEmail(user.email) === email)) throw new AuthError('email_taken')
+      const email = normalizeIdentifier(input.email)
+      const username = normalizeIdentifier(input.username)
+      if (users.some(user => normalizeIdentifier(user.email) === email)) throw new AuthError('email_taken')
+      if (users.some(user => normalizeIdentifier(user.username) === username)) throw new AuthError('username_taken')
       const user: StoredUser = {
-        id: crypto.randomUUID(), name: input.name.trim(), email, passwordHash,
+        id: crypto.randomUUID(), username, name: input.name?.trim() || username, email, passwordHash,
         role: 'owner', farmId: 'farm-san-jose',
       }
       storage.setJson(usersKey, [...users, user])
