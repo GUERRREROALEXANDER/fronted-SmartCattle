@@ -105,17 +105,17 @@ For production, change only `VITE_API_BASE_URL` (for example `https://your-backe
 flowchart LR
     user["Farm owner / worker<br/>(browser, phone or desktop)"]
     fe["SmartCattle Frontend<br/>React + Vite (this repo)"]
-    be["SmartCattle Backend<br/>FastAPI, in-memory storage"]
+    be["SmartCattle Backend<br/>FastAPI + PostgreSQL"]
     ai["SmartCattle AI<br/>OpenCV + YOLO"]
     cam["Farm cameras"]
 
     user --> fe
-    fe -- "REST / JSON (GET)" --> be
+    fe -- "REST / JSON" --> be
     ai -- "POST /api/ai/events" --> be
     cam --> ai
 ```
 
-The frontend only reads from the backend. It never calls the AI service directly and never posts AI events.
+The frontend reads from the backend and only writes video analysis summaries. It never calls the AI service directly and never posts AI events.
 
 ### Frontend layers
 
