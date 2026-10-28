@@ -521,6 +521,7 @@ flowchart LR
 - Every chart has a one-line insight computed from the data and a visually hidden data table for screen readers.
 - Confidence is labeled as the detector's per-event value, not model accuracy. A lower count is not presented as lost animals.
 - Data comes from `GET /api/events` (demo events in `mock` mode, marked with the demo badge).
+- Charts sit on glass cards with gradient fills, a shared glass tooltip and a range selector whose indicator slides between 24 h, 7 días and 30 días. KPI tiles count up and show their change.
 
 ---
 
