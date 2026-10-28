@@ -1,8 +1,23 @@
 .hud {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-3);
   min-width: 0;
+}
+
+/* Every block of the panel is its own glass card, stacked. */
+.card,
+.counter {
+  border: 1px solid var(--glass-border);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+
+.card {
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
 }
 
 .header {
@@ -17,7 +32,7 @@
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
-  color: var(--color-ink-subtle);
+  color: var(--color-ink-muted);
 }
 
 .model {
@@ -32,7 +47,7 @@
   gap: var(--space-2);
   padding: var(--space-1) var(--space-3);
   border-radius: var(--radius-full);
-  background: var(--color-well);
+  background: var(--glass-fill-strong);
   color: var(--color-ink-muted);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
@@ -40,6 +55,7 @@
 }
 
 .phaseDot {
+  position: relative;
   width: 8px;
   height: 8px;
   border-radius: var(--radius-full);
@@ -51,8 +67,13 @@
   color: var(--color-safe-ink);
 }
 
-.running .phaseDot {
-  animation: blink 1.2s var(--ease-in-out) infinite;
+.running .phaseDot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  animation: live-ping 1.6s var(--ease-out) infinite;
 }
 
 .paused {
@@ -68,28 +89,50 @@
 .counters {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
+  gap: var(--space-3);
   margin: 0;
 }
 
 .counter {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  min-width: 0;
   padding: var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-well);
-  border-left: 4px solid var(--color-rule);
+  border-radius: var(--radius-lg);
   transition: background-color var(--duration-base), border-color var(--duration-base);
 }
 
 .counter dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
   color: var(--color-ink-muted);
 }
 
+.iconBadge {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: var(--gradient-brand-soft);
+  box-shadow: var(--glass-highlight);
+  color: var(--color-brand-strong);
+}
+
+.people .iconBadge {
+  background: var(--color-sky);
+  color: var(--color-sky-ink);
+}
+
 .counter dd {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin: 0;
   font-size: var(--text-xl);
   font-weight: var(--weight-display);
@@ -98,27 +141,23 @@
   color: var(--color-ink);
 }
 
-.cattle {
-  border-left-color: var(--color-brand);
-}
-
-.people {
-  border-left-color: var(--color-overlay-person);
-}
-
 .danger {
+  border-color: color-mix(in srgb, var(--color-critical) 45%, var(--glass-border));
   background: var(--color-critical-surface);
-  border-left-color: var(--color-critical);
 }
 
+.danger .iconBadge {
+  background: var(--color-critical);
+  color: var(--color-surface-raised);
+}
+
+.danger dt,
 .danger dd {
   color: var(--color-critical-ink);
 }
 
 .tech {
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-md);
-  padding: 0 var(--space-3);
+  padding-block: 0;
 }
 
 .techSummary {
@@ -173,8 +212,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 35%, transparent);
+  border-radius: var(--radius-lg);
   background: var(--color-warning-surface);
   color: var(--color-warning-ink);
   font-size: var(--text-sm);
@@ -195,7 +235,7 @@
 .alertList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -207,10 +247,10 @@
   gap: var(--space-2);
   width: 100%;
   min-height: var(--touch-min);
-  padding: var(--space-1) var(--space-3);
-  border: 1px solid var(--color-rule);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+  border: 1px solid var(--glass-border-subtle);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: var(--glass-fill-strong);
   color: var(--color-ink);
   font-size: var(--text-sm);
   text-align: left;
@@ -230,29 +270,29 @@
   box-shadow: var(--focus-ring);
 }
 
-.iconCritical {
+.alertIcon {
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+}
+
+.iconCritical {
+  background: var(--color-critical-surface);
   color: var(--color-critical);
 }
 
 .iconWarning {
-  flex-shrink: 0;
-  color: var(--color-warning);
+  background: var(--color-warning-surface);
+  color: var(--color-warning-ink);
 }
 
 .time {
   margin-left: auto;
   font-variant-numeric: tabular-nums;
   color: var(--color-ink-muted);
-}
-
-@keyframes blink {
-  50% { opacity: 0.3; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .running .phaseDot { animation: none; }
-  .counter, .alertItem { transition: none; }
 }
 
 .ring {
@@ -266,13 +306,16 @@
   text-align: center;
 }
 
-.counter dd {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
 .delta {
   font-size: var(--text-xs);
 }
 
+@keyframes live-ping {
+  from { transform: scale(1); opacity: 0.75; }
+  to { transform: scale(2.8); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .running .phaseDot::after { animation: none; opacity: 0; }
+  .counter, .alertItem { transition: none; }
+}

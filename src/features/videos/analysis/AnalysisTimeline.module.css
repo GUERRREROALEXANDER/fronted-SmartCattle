@@ -17,13 +17,14 @@
   height: 6px;
   margin-top: -3px;
   border-radius: var(--radius-full);
-  background: var(--color-stage-raised);
+  background: var(--glass-dark-border);
   overflow: hidden;
 }
 
 .fill {
   height: 100%;
-  background: var(--color-sage);
+  border-radius: inherit;
+  background: var(--gradient-brand);
 }
 
 .range {

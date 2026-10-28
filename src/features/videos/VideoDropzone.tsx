@@ -72,7 +72,9 @@ export function VideoDropzone({ onAdd }: VideoDropzoneProps) {
         onDrop={onDrop}
         onClick={openInput}
       >
-        <Upload className={styles.icon} size={32} strokeWidth={1.5} aria-hidden="true" />
+        {/* Dashed outline drawn in SVG so it can march while a file is dragged over. */}
+        <svg className={styles.outline} aria-hidden="true" focusable="false"><rect className={styles.outlineRect} /></svg>
+        <span className={styles.iconBadge} aria-hidden="true"><Upload className={styles.icon} size={28} strokeWidth={1.75} /></span>
         <p className={styles.title}>Arrastra videos de las cámaras aquí</p>
         <p className={styles.hint}>MP4, WebM, QuickTime, Matroska. Máximo 1 GB cada uno.</p>
         <Button

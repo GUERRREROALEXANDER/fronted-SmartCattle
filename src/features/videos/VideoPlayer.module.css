@@ -3,10 +3,12 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-5);
-  border: 1px solid var(--color-rule);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-xl);
-  background: var(--color-surface-raised);
-  box-shadow: var(--shadow-raised);
+  background: var(--glass-fill-subtle);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   scroll-margin-top: calc(var(--topbar-height) + var(--space-4));
   min-width: 0;
 }
@@ -67,7 +69,8 @@
 }
 
 .close:hover {
-  background: var(--color-hover);
+  background: var(--glass-fill-strong);
+  color: var(--color-ink);
 }
 
 .close:focus-visible {

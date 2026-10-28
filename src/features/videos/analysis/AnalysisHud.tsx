@@ -1,4 +1,4 @@
-import { Activity, Cpu, Timer, TriangleAlert, UserRound } from 'lucide-react'
+import { Activity, BellRing, Cpu, Fence, PawPrint, Timer, TriangleAlert, UserRound, UsersRound } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { AnimatedNumber, DeltaChip, duration, ease, PulseRing } from '../../../motion'
 import type { AnalysisAlert } from '../detection/types'
@@ -36,7 +36,7 @@ export function AnalysisHud({ phase, hud, alerts, onSeek, compact = false }: Ana
 
   return (
     <section className={styles.hud} aria-label="Panel de detección">
-      <header className={styles.header}>
+      <header className={`${styles.card} ${styles.header}`}>
         <div>
           <p className={styles.eyebrow}>Modelo</p>
           <p className={styles.model}>{MODEL_LABEL}</p>
@@ -49,15 +49,15 @@ export function AnalysisHud({ phase, hud, alerts, onSeek, compact = false }: Ana
 
       <dl className={styles.counters}>
         <div className={`${styles.counter} ${styles.cattle}`}>
-          <dt>Vacas</dt>
+          <dt><span className={styles.iconBadge} aria-hidden="true"><PawPrint size={16} /></span>Vacas</dt>
           <dd><AnimatedNumber value={counts.cattle} /></dd>
         </div>
         <div className={`${styles.counter} ${styles.people}`}>
-          <dt>Personas</dt>
+          <dt><span className={styles.iconBadge} aria-hidden="true"><UsersRound size={16} /></span>Personas</dt>
           <dd><AnimatedNumber value={counts.people} /></dd>
         </div>
         <div className={`${styles.counter} ${counts.outside > 0 ? styles.danger : ''}`}>
-          <dt>Fuera del perímetro</dt>
+          <dt><span className={styles.iconBadge} aria-hidden="true"><Fence size={16} /></span>Fuera del perímetro</dt>
           <dd>
             <PulseRing active={alarmActive} className={styles.ring}>
               <AnimatedNumber value={counts.outside} className={styles.ringValue} />
@@ -65,7 +65,7 @@ export function AnalysisHud({ phase, hud, alerts, onSeek, compact = false }: Ana
           </dd>
         </div>
         <div className={`${styles.counter} ${alerts.length > 0 ? styles.danger : ''}`}>
-          <dt>Alertas</dt>
+          <dt><span className={styles.iconBadge} aria-hidden="true"><BellRing size={16} /></span>Alertas</dt>
           <dd>
             <AnimatedNumber value={alerts.length} />
             {recentAlerts > 0 && <DeltaChip value={recentAlerts} goodWhen="down" className={styles.delta} />}
@@ -73,7 +73,7 @@ export function AnalysisHud({ phase, hud, alerts, onSeek, compact = false }: Ana
         </div>
       </dl>
 
-      <details className={styles.tech} open={compact ? undefined : true}>
+      <details className={`${styles.card} ${styles.tech}`} open={compact ? undefined : true}>
         <summary className={styles.techSummary}>Rendimiento</summary>
         <dl className={styles.techList}>
           <div><dt><Activity size={16} aria-hidden="true" />FPS de análisis</dt><dd>{live || hud.fps > 0 ? oneDecimal(hud.fps) : '—'}</dd></div>
@@ -82,14 +82,23 @@ export function AnalysisHud({ phase, hud, alerts, onSeek, compact = false }: Ana
         </dl>
       </details>
 
-      {counts.peopleInside > 0 && (
-        <p className={styles.warning}>
-          <UserRound size={16} aria-hidden="true" />
-          {counts.peopleInside === 1 ? 'Hay una persona dentro del predio' : `Hay ${counts.peopleInside} personas dentro del predio`}
-        </p>
-      )}
+      <AnimatePresence initial={false}>
+        {counts.peopleInside > 0 && (
+          <motion.p
+            key="people-inside"
+            className={styles.warning}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: duration.state, ease: ease.out }}
+          >
+            <UserRound size={16} aria-hidden="true" />
+            {counts.peopleInside === 1 ? 'Hay una persona dentro del predio' : `Hay ${counts.peopleInside} personas dentro del predio`}
+          </motion.p>
+        )}
+      </AnimatePresence>
 
-      <div className={styles.alerts}>
+      <div className={`${styles.card} ${styles.alerts}`}>
         <p className={styles.eyebrow}>Últimas alertas</p>
         {recent.length === 0 ? (
           <p className={styles.empty}>Sin alertas por ahora.</p>
@@ -105,14 +114,16 @@ export function AnalysisHud({ phase, hud, alerts, onSeek, compact = false }: Ana
                   exit={{ opacity: 0 }}
                   transition={{ duration: duration.state, ease: ease.out }}
                 >
-                <button type="button" className={styles.alertItem} onClick={() => onSeek(alert.time_sec)}
-                  aria-label={`${alert.cls === 'cattle' ? 'Vaca' : 'Persona'} #${alert.track_id} salió del perímetro en ${formatClock(alert.time_sec)}. Ir a ese momento`}>
-                  <TriangleAlert size={16} aria-hidden="true" className={alert.cls === 'cattle' ? styles.iconCritical : styles.iconWarning} />
-                  <span>{alert.cls === 'cattle' ? 'Vaca' : 'Persona'} #{alert.track_id} fuera</span>
-                  <span className={styles.time}>{formatClock(alert.time_sec)}</span>
-                </button>
-              </motion.li>
-            ))}
+                  <button type="button" className={styles.alertItem} onClick={() => onSeek(alert.time_sec)}
+                    aria-label={`${alert.cls === 'cattle' ? 'Vaca' : 'Persona'} #${alert.track_id} salió del perímetro en ${formatClock(alert.time_sec)}. Ir a ese momento`}>
+                    <span className={`${styles.alertIcon} ${alert.cls === 'cattle' ? styles.iconCritical : styles.iconWarning}`} aria-hidden="true">
+                      <TriangleAlert size={14} />
+                    </span>
+                    <span>{alert.cls === 'cattle' ? 'Vaca' : 'Persona'} #{alert.track_id} fuera</span>
+                    <span className={styles.time}>{formatClock(alert.time_sec)}</span>
+                  </button>
+                </motion.li>
+              ))}
             </AnimatePresence>
           </ul>
         )}

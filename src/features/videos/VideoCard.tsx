@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type Ref } from 'react'
 import { ChevronRight, Play, Trash2 } from 'lucide-react'
-import { motion } from 'motion/react'
+import { motion, useReducedMotion } from 'motion/react'
 import { Link } from 'react-router'
-import { StaggerItem } from '../../motion'
+import { duration, ease, staggerDelay } from '../../motion'
 import type { Camera } from '../../types/domain'
 import { formatBytes, formatDuration, videoResolution } from './videosModel'
 import type { VideoItem } from './videosModel'
 import styles from './VideoCard.module.css'
 
 export interface VideoCardProps {
+  /** Forwarded by AnimatePresence (popLayout) to measure the card while it leaves. */
+  ref?: Ref<HTMLDivElement>
   video: VideoItem
   index: number
   cameras: Camera[] | null
@@ -18,7 +20,10 @@ export interface VideoCardProps {
   onAssignCamera: (id: string, cameraId: string | null) => void
 }
 
-export function VideoCard({ video, index, cameras, selected, onSelect, onRemove, onAssignCamera }: VideoCardProps) {
+const hoverSpring = { type: 'spring', stiffness: 380, damping: 30 } as const
+
+export function VideoCard({ ref, video, index, cameras, selected, onSelect, onRemove, onAssignCamera }: VideoCardProps) {
+  const reduce = useReducedMotion()
   const [confirming, setConfirming] = useState(false)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const resolution = videoResolution(video.width, video.height)
@@ -44,9 +49,19 @@ export function VideoCard({ video, index, cameras, selected, onSelect, onRemove,
   }
 
   return (
-    <StaggerItem index={index} className={styles.item}>
+    <motion.div
+      ref={ref}
+      className={styles.item}
+      layout={!reduce}
+      initial={{ opacity: 0, y: reduce ? 0 : 12 }}
+      animate={{ opacity: 1, y: 0, transition: { duration: reduce ? duration.micro : duration.state, ease: ease.out, delay: reduce ? 0 : staggerDelay(index) } }}
+      exit={{ opacity: 0, scale: reduce ? 1 : 0.96, transition: { duration: duration.micro } }}
+      transition={{ layout: { duration: duration.state, ease: ease.out } }}
+    >
       <motion.div
-        layout
+        whileHover={reduce ? undefined : { y: -2 }}
+        whileTap={reduce ? undefined : { scale: 0.98 }}
+        transition={hoverSpring}
         className={`${styles.card} ${selected ? styles.selected : ''} ${video.status === 'error' ? styles.error : ''}`}
         onClick={() => onSelect(video.id)}
       >
@@ -125,6 +140,6 @@ export function VideoCard({ video, index, cameras, selected, onSelect, onRemove,
           )}
         </div>
       </motion.div>
-    </StaggerItem>
+    </motion.div>
   )
 }

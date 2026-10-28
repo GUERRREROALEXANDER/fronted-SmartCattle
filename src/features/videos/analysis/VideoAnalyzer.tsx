@@ -129,6 +129,7 @@ export function VideoAnalyzer({ video, labelledBy }: VideoAnalyzerProps) {
   return (
     <div className={styles.analyzer}>
       <div className={styles.main}>
+        <div className={styles.stageFrame}>
         <div className={`${styles.stage} ${cattleOutside ? styles.alarm : ''}`}>
           <div className={styles.frame} style={{ aspectRatio: ratio, maxWidth: `calc(var(--stage-max-height) * ${ratio})` }}>
             <video
@@ -185,6 +186,7 @@ export function VideoAnalyzer({ video, labelledBy }: VideoAnalyzerProps) {
               {muted ? <VolumeX size={20} aria-hidden="true" /> : <Volume2 size={20} aria-hidden="true" />}
             </button>
           </div>
+        </div>
         </div>
 
         {compact && phase !== 'idle' && (
