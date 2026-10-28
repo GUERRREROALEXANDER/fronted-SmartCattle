@@ -477,7 +477,7 @@ flowchart LR
 
 `/videos` lets the user load farm recordings (drag and drop or "Elegir videos") and review them in the browser.
 
-![Videos page](docs/screenshots/videos-desktop.png)
+![Videos page with the glass library and drop zone](docs/screenshots/videos-desktop.png)
 
 - Files are validated (video type, not empty, up to 1 GB). Rejected files get a reason.
 - Each video gets a thumbnail, duration and resolution read in the browser, and can be assigned to a camera.
@@ -486,7 +486,8 @@ flowchart LR
 |---|---|
 | ![Camera card playing a loaded video](docs/screenshots/cameras-video-desktop.png) | ![Live stage playing a loaded video](docs/screenshots/live-video-desktop.png) |
 
-- **Nothing is uploaded.** The backend has no upload endpoint, so videos stay in the browser as object URLs (released when removed) and the page says so. "Analizar con IA" is disabled with the reason written next to it.
+- **Nothing is uploaded.** The backend has no upload endpoint, so videos stay in the browser as object URLs (released when removed) and the page says so.
+- **Sample clip.** Evaluators without footage can generate a sample pasture clip from the notice at the top of the page.
 
 ---
 
