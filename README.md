@@ -409,7 +409,7 @@ Rules the dashboard follows:
 
 `/live?camera=<id>` shows one camera as the protagonist. Without a `camera` parameter it opens the camera with the most recent alert, so "Verificar cámara" on the dashboard lands on the evidence.
 
-![Live monitoring with detections and safe zone](docs/screenshots/live-desktop.jpg)
+![Live monitoring with detections, safe zone and the glass camera switcher](docs/screenshots/live-desktop.png)
 
 The camera stage stacks independent layers over the picture. Overlay coordinates are normalized (0–1) and drawn in the picture's own pixel space, so boxes stay registered to the image at any size.
 
@@ -441,10 +441,7 @@ flowchart TB
 - **Layer toggles** (Detecciones, Zona segura, Etiquetas) only change the display. They never touch backend data.
 - **Polling:** detections every 5 s, cameras, events and status every 15 s. Changing camera never shows the previous camera's data.
 - **Mobile:** the camera strip scrolls horizontally and keeps the selected camera in view; persons and outside-zone labels stay, other labels hide on narrow screens to avoid clutter.
-
-| No stream |
-|---|
-| ![Camera without a stream](docs/screenshots/live-nostream-desktop.jpg) |
+- **Glass layout:** the dark stage sits in a glass frame; the camera switcher and status panels are glass cards, and switching camera animates the selection.
 
 ---
 
