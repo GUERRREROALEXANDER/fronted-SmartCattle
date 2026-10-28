@@ -546,22 +546,34 @@ Only `transform` and `opacity` are animated. With `prefers-reduced-motion` every
 
 ## Design system
 
-The visual direction is **"farm survey plan"**: safe zones are drawn as survey boundaries (*linderos*, dashed lines with vertex marks), cameras are observation points and the history reads as a field log. It deliberately avoids generic grey KPI-card dashboards and cartoon farm imagery.
+The visual direction is **"Dashboard V15"**: glass panels floating over a soft pastel-green gradient, natural greens and smooth, purposeful motion, on top of the original **"farm survey plan"** language (safe zones drawn as *linderos*, cameras as observation points, the history as a field log). It avoids cartoon farm imagery.
 
 All values live as CSS custom properties in `src/styles/tokens.css`. Components use tokens only.
 
 | Role | Token | Value |
 |---|---|---|
-| Ground | `--color-ground` | `#EDECE6` |
-| Surface | `--color-surface` | `#F8F7F3` |
-| Ink | `--color-ink` | `#17201A` |
-| Brand (rail, primary action) | `--color-brand` | `#2F4A36` |
-| Earth (selection, accents) | `--color-earth` | `#8A6A4A` |
-| Safe / connected | `--color-safe` | `#2E7D4F` |
-| Warning | `--color-warning` | `#B7791F` |
-| Critical | `--color-critical` | `#B42318` |
-| Inactive / disconnected | `--color-inactive` | `#6F756F` |
-| Camera stage | `--color-stage` | `#121614` |
+| Ground | `--color-ground` | `#F7FCF8` |
+| Surface | `--color-surface` | `#FFFFFF` |
+| Ink | `--color-ink` | `#0F2418` |
+| Brand (primary action, active item) | `--color-brand` | `#16A34A` |
+| Brand strong | `--color-brand-strong` | `#15803D` |
+| Safe / connected | `--color-safe` | `#16A34A` |
+| Warning | `--color-warning` | `#D97706` |
+| Critical / alarm | `--color-critical`, `--color-alarm` | `#EF233C` |
+| Info | `--color-info` | `#0284C7` |
+| Camera stage | `--color-stage` | `#0E1A13` |
+| Pastel accents | `--color-mint`, `-sky`, `-butter`, `-peach`, `-lilac` | each with an `-ink` text token |
+
+**Glass recipe.** Cards, rail, top bar and sheets share one recipe built from tokens:
+
+```css
+background: var(--glass-fill);              /* white at 62 % */
+border: 1px solid var(--glass-border);
+box-shadow: var(--glass-highlight), var(--glass-shadow);
+backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+```
+
+Variants: `--glass-fill-strong` for dense content, `--glass-fill-subtle` for nested wells, `--glass-fill-brand` for the active item and `--glass-dark-fill` over photos and the camera stage. The page backdrop is `--glass-backdrop` (mint, sky and butter radial gradients) and primary actions use `--gradient-brand`. The fills stay readable without `backdrop-filter`.
 
 - **Light app, dark camera stage.** Owners check the app outdoors in daylight, so the app is light; video sits on a dark viewfinder surface.
 - **Typography:** Archivo Variable. The wide cut is for headings, the condensed cut for dense labels, with tabular figures for counts and times.
