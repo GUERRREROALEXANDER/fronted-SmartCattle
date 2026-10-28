@@ -221,7 +221,7 @@ The backend's CORS policy allows `GET` and `POST`, the headers `Content-Type` an
 The frontend never invents endpoints. Until these capabilities exist, the UI uses labeled demo data or shows that the capability is unavailable:
 
 - Authentication, sessions, users, roles, farms and worker invitations
-- Camera list and status, video streaming, per-frame detections
+- Video streaming, per-frame detections and video uploads (analyses store only their summary)
 - Safe-zone geometry
 - Person or vehicle detection, day/night security rules
 - Event severity, zone, evidence and review state
