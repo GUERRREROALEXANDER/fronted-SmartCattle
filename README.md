@@ -186,15 +186,19 @@ Tests live next to the code they cover (`*.test.ts`).
 
 ## Backend connection
 
-The backend (`SmartCattle-Backend`) is a FastAPI service with in-memory storage. These are the **only** endpoints that exist today, and the only ones the frontend calls:
+The backend (`SmartCattle-Backend`) is a FastAPI service backed by PostgreSQL (SQLAlchemy + Alembic). These are the endpoints that exist today:
 
 | Method | Path | Response | Used for |
 |---|---|---|---|
 | GET | `/health` | `{ "status": "ok" }` | Backend online/offline indicator |
 | GET | `/api/status` | `version`, `ai_service.configured`, `storage` | System status. `configured` means an AI URL is set, **not** that the AI is online. |
-| GET | `/api/animals` | `{ items: [], total: 0 }` (always empty today) | Registered cattle count |
+| GET | `/api/animals` | `{ items, total }` | Registered cattle count |
 | GET | `/api/events` | Latest 1000 events, newest first | Alerts and history |
-| POST | `/api/ai/events` | — | AI service only. **The frontend never calls it.** |
+| GET | `/api/cameras` | `{ items, total }` | Camera list and status |
+| POST | `/api/videos/analyses` | Saved analysis | Stores the summary of a finished video analysis |
+| GET | `/api/videos/analyses`, `/api/videos/analyses/{id}` | Analyses list / one analysis | Analysis history |
+| GET | `/api/metrics/summary` | Aggregated counts | Metrics summary |
+| POST | `/api/ai/events`, PUT `/api/ai/cameras/{id}/status` | — | AI service only (API key). **The frontend never calls them.** |
 
 Event shape (mirrored in `src/types/api.ts`):
 
