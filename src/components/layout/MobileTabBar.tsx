@@ -3,7 +3,6 @@ import { Ellipsis } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router'
 import { motion, useReducedMotion } from 'motion/react'
 import { navItems, profileItem } from '../../app/navigation'
-import { duration, ease } from '../../motion'
 import { MoreSheet } from './MoreSheet'
 import styles from './MobileTabBar.module.css'
 
@@ -11,7 +10,7 @@ function ActiveMarker() {
   const reduce = useReducedMotion()
   if (reduce) return <span className={styles.marker} aria-hidden="true" />
   return <motion.span className={styles.marker} layoutId="tabbar-active"
-    transition={{ duration: duration.state, ease: ease.fluid }} aria-hidden="true" />
+    transition={{ type: 'spring', stiffness: 380, damping: 30 }} aria-hidden="true" />
 }
 
 export function MobileTabBar() {
