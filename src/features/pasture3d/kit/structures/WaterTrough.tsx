@@ -1,66 +1,43 @@
-import { unitBoxGeometry } from '../geometries'
-import { materials } from '../materials'
+import { getMaterials } from '../materials'
+import { heightAt } from '../terrain/heightfield'
 
 export interface WaterTroughProps {
-  position?: [number, number, number]
+  position: [number, number, number]
   heading?: number
-  scale?: number
 }
 
-export function WaterTrough({
-  position = [0, 0, 0],
-  heading = 0,
-  scale = 1,
-}: WaterTroughProps) {
+const L = 2.6
+const W = 0.9
+const H = 0.62
+const T = 0.09
+
+/** Cast-concrete trough with a float-valve box and supply pipe. */
+export function WaterTrough({ position, heading = 0 }: WaterTroughProps) {
+  const materials = getMaterials().structure
+  const ground = heightAt(position[0], position[2])
+  const walls: [number, number, number, number, number, number][] = [
+    [L, T, W, 0, T / 2, 0],
+    [L, H, T, 0, H / 2, W / 2 - T / 2],
+    [L, H, T, 0, H / 2, -W / 2 + T / 2],
+    [T, H, W, L / 2 - T / 2, H / 2, 0],
+    [T, H, W, -L / 2 + T / 2, H / 2, 0],
+  ]
   return (
-    <group position={position} rotation={[0, -heading, 0]} scale={scale}>
-      <mesh
-        geometry={unitBoxGeometry}
-        material={materials.structure.trough}
-        position={[0, 0.14, 0]}
-        scale={[2, 0.16, 0.82]}
-        castShadow
-        receiveShadow
-      />
-      {[-1, 1].map((side) => (
-        <group key={side}>
-          <mesh
-            geometry={unitBoxGeometry}
-            material={materials.structure.trough}
-            position={[0, 0.38, side * 0.43]}
-            scale={[2.1, 0.55, 0.1]}
-            castShadow
-            receiveShadow
-          />
-          <mesh
-            geometry={unitBoxGeometry}
-            material={materials.structure.trough}
-            position={[side, 0.38, 0]}
-            scale={[0.1, 0.55, 0.75]}
-            castShadow
-            receiveShadow
-          />
-        </group>
+    <group position={[position[0], ground - 0.05, position[2]]} rotation={[0, -heading, 0]}>
+      {walls.map(([w, h, d, x, y, z], index) => (
+        <mesh key={index} material={materials.concrete} position={[x, y, z]} castShadow receiveShadow>
+          <boxGeometry args={[w, h, d]} />
+        </mesh>
       ))}
-      {[-0.78, 0.78].flatMap((x) => [-0.28, 0.28].map((z) => (
-        <mesh
-          key={`${x}-${z}`}
-          geometry={unitBoxGeometry}
-          material={materials.structure.trough}
-          position={[x, 0.06, z]}
-          scale={[0.12, 0.12, 0.12]}
-          castShadow
-          receiveShadow
-        />
-      )))}
-      <mesh
-        geometry={unitBoxGeometry}
-        material={materials.structure.water}
-        position={[0, 0.47, 0]}
-        scale={[1.82, 0.025, 0.62]}
-        renderOrder={1}
-        receiveShadow
-      />
+      <mesh material={materials.water} position={[0, H - 0.1, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <planeGeometry args={[L - T * 2, W - T * 2]} />
+      </mesh>
+      <mesh material={materials.galvanized} position={[L / 2 - 0.35, H + 0.12, 0]} castShadow>
+        <boxGeometry args={[0.5, 0.22, W + 0.02]} />
+      </mesh>
+      <mesh material={materials.galvanized} position={[L / 2 + 0.05, 0.3, 0.25]} castShadow>
+        <cylinderGeometry args={[0.03, 0.03, 0.75, 10]} />
+      </mesh>
     </group>
   )
 }
