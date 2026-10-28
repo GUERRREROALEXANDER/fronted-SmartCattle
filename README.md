@@ -4,9 +4,9 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–9 are complete, plus a 3D pasture view, local video review and an analytics page with motion across the app. The final quality pass remains. See [Roadmap](#roadmap).
+> **Status:** Phases 1–9 are complete, plus a realistic 3D pasture, a video analyzer with simulated detection, an analytics page and the **Dashboard V15** redesign (glass panels and motion across the app). The final quality pass remains. See [Roadmap](#roadmap).
 
-![Dashboard with farm plan, herd summary and field log](docs/screenshots/dashboard-desktop.jpg)
+![Home dashboard with live metrics, the live herd monitor and the cattle summary](docs/screenshots/dashboard-desktop.png)
 
 | Login (desktop) | Login (mobile) |
 |---|---|
