@@ -464,7 +464,8 @@ flowchart LR
     kit["kit/ terrain, fences, animals,<br/>people, structures, nature"] --> scene
 ```
 
-- **Modular asset kit.** Every 3D asset is procedural (no model files) and lives in its own family folder, like a modular asset library: `kit/terrain`, `kit/fences`, `kit/animals`, `kit/people`, `kit/structures`, `kit/nature`. Geometries and materials are shared, and colors come from one palette derived from the design tokens.
+- **Modular asset kit.** Assets live in family folders, like a modular asset library: `kit/terrain`, `kit/environment`, `kit/fences`, `kit/animals`, `kit/people`, `kit/structures`, `kit/nature`. Cows use a CC0 glTF model (`public/models/cow.glb`) with coats (Holstein, criollo, black Brangus, zebu) generated at runtime; people, fences, barn, trees, rocks, grass, terrain and sky are procedural. Geometries and materials are shared.
+- **Glass wrapper.** The page header, controls, zone panel and exit log use the glass panels of the rest of the app; the scene itself is unchanged.
 - **Zone state.** Each lot is a safe zone. Membership is a point-in-polygon test on the lot boundary. A breached zone shows red, a pulsing outline, a label with the cow's name and the words "fuera de zona", so the state is never color-only.
 - **Controls.** Pause/resume, "Provocar salida" (forces one cow out to demo the alert), name labels on/off and camera presets (overview and one per lot). The zone panel lists cows inside each lot; the exit log keeps the session's exits and returns.
 - **Performance.** Positions update in refs inside the render loop; React state changes only when a zone's status changes. Device pixel ratio is capped at 2.
@@ -672,6 +673,6 @@ Pending on the backend side: authentication, cameras, streaming, detections, saf
 
 - Login photo: [Cows grazing in a field at sunset](https://unsplash.com/photos/cows-grazing-in-a-field-at-sunset-HaSohIaDVdI) by Uran Wang, [Unsplash License](https://unsplash.com/license). Used as an illustrative image, not farm footage. The detections drawn over it are simulated.
 - Icons: [Lucide](https://lucide.dev) (ISC License).
-- 3D: [three.js](https://threejs.org) and [React Three Fiber](https://docs.pmnd.rs/react-three-fiber) (MIT License). All 3D assets are procedural and original to this project.
+- 3D: [three.js](https://threejs.org) and [React Three Fiber](https://docs.pmnd.rs/react-three-fiber) (MIT License). Cow model: "Cow" from the [Ultimate Animated Animal Pack](https://quaternius.com/packs/ultimateanimatedanimals.html) by Quaternius (CC0 1.0); see `public/models/CREDITS.md`. All other 3D assets are procedural and original to this project.
 - Charts: [Recharts](https://recharts.org) (MIT License). Motion: [Motion](https://motion.dev) (MIT License).
 - Font: [Archivo](https://fonts.google.com/specimen/Archivo) by Omnibus-Type (SIL Open Font License).
