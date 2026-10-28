@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
 import { EventRow } from '../../components/events/EventRow'
 import { EmptyState, ErrorState, Notice, PageHeader, StatusPill } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
+import { FadeUp, staggerDelay } from '../../motion'
 import { getCameraStream, getFrameDetections, getSystemStatus, hasPicture, listCameras, listEvents, listSafeZones, loadCameraSnapshots } from '../../services'
 import type { Severity } from '../../types/domain'
 import { recentAlerts } from '../dashboard/dashboardModel'
@@ -18,6 +19,13 @@ import styles from './MonitoringPage.module.css'
 const liveRefreshMs = 15_000
 const frameRefreshMs = 2_000
 const cameraRefreshMs = 5_000
+
+function Header({ actions }: { actions?: ReactNode }) {
+  return <FadeUp className={styles.head}>
+    <PageHeader title="En vivo" actions={actions} />
+    <p className={styles.lead}>Mira cada cámara con sus detecciones y la zona segura, actualizadas cada pocos segundos.</p>
+  </FadeUp>
+}
 
 export function MonitoringPage() {
   const [searchParams] = useSearchParams()
@@ -54,21 +62,27 @@ export function MonitoringPage() {
   const video = camera ? videoForCamera(videos, camera.id) : null
 
   if (cameras.status === 'success' && !cameras.data) {
-    return <>
-      <PageHeader title="En vivo" />
-      <ErrorState title="Cámaras no disponibles"
-        description="El servidor todavía no ofrece la lista de cámaras ni sus transmisiones." />
-    </>
+    return <div className={styles.page}>
+      <Header />
+      <FadeUp delay={staggerDelay(1)} className={styles.card}>
+        <ErrorState title="Cámaras no disponibles"
+          description="El servidor todavía no ofrece la lista de cámaras ni sus transmisiones." />
+      </FadeUp>
+    </div>
   }
   if (cameras.status === 'success' && cameras.data?.length === 0) {
-    return <>
-      <PageHeader title="En vivo" />
-      <EmptyState title="No hay cámaras conectadas" description="Enciende la cámara y el servicio de visión en la PC de la finca. El video aparecerá aquí solo." />
-    </>
+    return <div className={styles.page}>
+      <Header />
+      <FadeUp delay={staggerDelay(1)} className={styles.card}>
+        <EmptyState title="No hay cámaras conectadas" description="Enciende la cámara y el servicio de visión en la PC de la finca. El video aparecerá aquí solo." />
+      </FadeUp>
+    </div>
   }
 
   return <div className={styles.page}>
-    <PageHeader title="En vivo" />
+    <Header actions={live && !video && <span className={styles.livePill}>
+      <span className={styles.liveDot} aria-hidden="true" />{synthetic ? 'Demostración en vivo' : 'Transmisión en vivo'}
+    </span>} />
     {status.data?.backend === 'offline' && <Notice className={styles.notice} tone="critical" title="Sin conexión con el servidor">
       Las alertas y eventos pueden estar desactualizados. Se reintenta automáticamente.
     </Notice>}
@@ -77,49 +91,57 @@ export function MonitoringPage() {
     </Notice>}
 
     <div className={styles.layout}>
-      <div className={styles.main}>
+      <FadeUp delay={staggerDelay(1)} className={styles.main}>
         <div className={styles.switcherMobile}>
           {cameras.data && <CameraSwitcher cameras={cameras.data} selectedId={camera?.id ?? null} alertByCamera={alertByCamera} withVideo={withVideo} />}
         </div>
-        <CameraStage camera={camera} stream={stream.data} streamLoading={stream.status === 'loading' || cameras.status === 'loading'}
-          frame={frame.data} zones={zones.data ?? []} layers={layers}
-          aiConfigured={status.data?.aiConfigured ?? null} now={now} video={video} />
-        {live && !burnedIn && !video && <div className={styles.toolbar}>
-          <LayerToggles layers={layers} onChange={setLayers} disabled={false} />
-          {synthetic && <p className={styles.synthetic}>Imagen ilustrativa con detecciones simuladas</p>}
-        </div>}
-      </div>
+        <div className={styles.stageFrame}>
+          <CameraStage camera={camera} stream={stream.data} streamLoading={stream.status === 'loading' || cameras.status === 'loading'}
+            frame={frame.data} zones={zones.data ?? []} layers={layers}
+            aiConfigured={status.data?.aiConfigured ?? null} now={now} video={video} />
+          {live && !burnedIn && !video && <div className={styles.toolbar}>
+            <LayerToggles layers={layers} onChange={setLayers} disabled={false} />
+            {synthetic && <p className={styles.synthetic}>Imagen ilustrativa con detecciones simuladas</p>}
+          </div>}
+        </div>
+      </FadeUp>
 
       <aside className={styles.aside}>
-        <section className={styles.switcherDesktop} aria-labelledby="cameras-title">
-          <h2 id="cameras-title" className={styles.sectionTitle}>Cámaras</h2>
-          {cameras.data && <CameraSwitcher cameras={cameras.data} selectedId={camera?.id ?? null} alertByCamera={alertByCamera} withVideo={withVideo} />}
-        </section>
+        <FadeUp delay={staggerDelay(2)} className={`${styles.card} ${styles.switcherDesktop}`}>
+          <section aria-labelledby="cameras-title">
+            <h2 id="cameras-title" className={styles.sectionTitle}>Cámaras</h2>
+            {cameras.data && <CameraSwitcher cameras={cameras.data} selectedId={camera?.id ?? null} alertByCamera={alertByCamera} withVideo={withVideo} />}
+          </section>
+        </FadeUp>
 
-        <section aria-labelledby="camera-events-title">
-          <h2 id="camera-events-title" className={styles.sectionTitle}>
-            Eventos{camera ? ` · ${camera.name}` : ''}
-          </h2>
-          {events.status === 'error' && !events.data
-            ? <ErrorState description="No se pudieron cargar los eventos." onRetry={events.reload} />
-            : cameraEvents.length === 0 && events.status === 'success'
-              ? <p className={styles.empty}>Sin eventos recientes en esta cámara.</p>
-              : <ol className={styles.events}>{cameraEvents.map(event => <EventRow key={event.id} event={event} now={now} />)}</ol>}
-        </section>
+        <FadeUp delay={staggerDelay(3)} className={styles.card}>
+          <section aria-labelledby="camera-events-title">
+            <h2 id="camera-events-title" className={styles.sectionTitle}>
+              Eventos{camera ? ` · ${camera.name}` : ''}
+            </h2>
+            {events.status === 'error' && !events.data
+              ? <ErrorState description="No se pudieron cargar los eventos." onRetry={events.reload} />
+              : cameraEvents.length === 0 && events.status === 'success'
+                ? <p className={styles.empty}>Sin eventos recientes en esta cámara.</p>
+                : <ol className={styles.events}>{cameraEvents.map(event => <EventRow key={event.id} event={event} now={now} />)}</ol>}
+          </section>
+        </FadeUp>
 
-        <section aria-labelledby="services-title">
-          <h2 id="services-title" className={styles.sectionTitle}>Servicios</h2>
-          <ul className={styles.services}>
-            <li>{!status.data ? <StatusPill tone="inactive" label="Servidor: comprobando" />
-              : status.data.backend === 'online' ? <StatusPill tone="safe" label="Servidor en línea" />
-                : <StatusPill tone="critical" label="Servidor sin conexión" />}</li>
-            <li>{status.data?.aiConfigured === true ? <StatusPill tone="safe" label="Visión configurada" />
-              : status.data?.aiConfigured === false ? <StatusPill tone="warning" label="Visión sin configurar" />
-                : <StatusPill tone="inactive" label="Visión: sin datos" />}</li>
-            <li>{live ? <StatusPill tone={synthetic ? 'info' : 'safe'} label={synthetic ? 'Video: demostración' : 'Video en vivo'} />
-              : <StatusPill tone="inactive" label="Video: sin transmisión" />}</li>
-          </ul>
-        </section>
+        <FadeUp delay={staggerDelay(4)} className={styles.card}>
+          <section aria-labelledby="services-title">
+            <h2 id="services-title" className={styles.sectionTitle}>Servicios</h2>
+            <ul className={styles.services}>
+              <li>{!status.data ? <StatusPill tone="inactive" label="Servidor: comprobando" />
+                : status.data.backend === 'online' ? <StatusPill tone="safe" label="Servidor en línea" />
+                  : <StatusPill tone="critical" label="Servidor sin conexión" />}</li>
+              <li>{status.data?.aiConfigured === true ? <StatusPill tone="safe" label="Visión configurada" />
+                : status.data?.aiConfigured === false ? <StatusPill tone="warning" label="Visión sin configurar" />
+                  : <StatusPill tone="inactive" label="Visión: sin datos" />}</li>
+              <li>{live ? <StatusPill tone={synthetic ? 'info' : 'safe'} label={synthetic ? 'Video: demostración' : 'Video en vivo'} />
+                : <StatusPill tone="inactive" label="Video: sin transmisión" />}</li>
+            </ul>
+          </section>
+        </FadeUp>
       </aside>
     </div>
   </div>

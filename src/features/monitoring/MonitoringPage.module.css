@@ -2,9 +2,60 @@
 .page { display: grid; grid-template-columns: minmax(0, 1fr); }
 .notice { margin-bottom: var(--space-4); }
 
-.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-8); }
+.head { margin-bottom: var(--space-6); }
+.head > header { margin-bottom: var(--space-1); }
+.lead { max-width: 64ch; color: var(--color-ink-muted); font-size: var(--text-sm); }
+
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--pill-padding-inline);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  color: var(--color-safe-ink);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
+.liveDot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--color-safe);
+}
+.liveDot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-safe);
+  animation: live-ping 1.6s var(--ease-out) infinite;
+}
+@keyframes live-ping { from { transform: scale(1); opacity: 0.7; } to { transform: scale(2.6); opacity: 0; } }
+
+.layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
 .main, .aside { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-4); min-width: 0; }
-.aside { gap: var(--space-8); }
+.aside { gap: var(--space-5); }
+
+/* Glass frame around the dark stage; the stage and its overlays stay as they are. */
+.stageFrame, .card {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
+.stageFrame { padding: var(--space-2); }
+.card { padding: var(--space-5); }
 
 .switcherDesktop { display: none; }
 
@@ -14,20 +65,30 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  padding: var(--space-1) var(--space-2) var(--space-2);
 }
 
-.synthetic { color: var(--color-ink-subtle); font-size: var(--text-xs); }
+.synthetic { color: var(--color-ink-muted); font-size: var(--text-xs); }
 
 .sectionTitle { margin-bottom: var(--space-3); font-size: var(--text-md); font-weight: var(--weight-semibold); }
 
 .events { padding: 0; list-style: none; }
-.empty { color: var(--color-ink-subtle); font-size: var(--text-sm); }
+.empty { color: var(--color-ink-muted); font-size: var(--text-sm); }
 
 .services { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0; list-style: none; }
 
+@media (max-width: 599px) {
+  .stageFrame { padding: var(--space-1); border-radius: var(--radius-lg); }
+  .card { padding: var(--space-4); border-radius: var(--radius-lg); }
+}
+
 @media (min-width: 1024px) {
   /* The camera owns the page; context sits in a narrow column beside it. */
-  .layout { grid-template-columns: minmax(0, 1fr) 19rem; gap: var(--space-8); }
+  .layout { grid-template-columns: minmax(0, 1fr) 20rem; gap: var(--space-6); }
   .switcherMobile { display: none; }
-  .switcherDesktop { display: block; }
+  .switcherDesktop { display: grid; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveDot::after { animation: none; opacity: 0; }
 }

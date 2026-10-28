@@ -4,7 +4,7 @@
   display: flex;
   gap: var(--space-2);
   margin: 0 calc(-1 * var(--space-4));
-  padding: 0 var(--space-4) var(--space-1);
+  padding: var(--space-1) var(--space-4) var(--space-2);
   overflow-x: auto;
   list-style: none;
   scroll-snap-type: x proximity;
@@ -14,30 +14,48 @@
 .list li { flex-shrink: 0; scroll-snap-align: start; }
 
 .item {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
   gap: var(--space-3);
   min-height: var(--touch-min);
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-rule);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
-  background: var(--color-surface-raised);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   color: inherit;
   text-decoration: none;
-  transition: background var(--duration-fast), border-color var(--duration-fast);
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
-@media (hover: hover) { .item:hover { border-color: var(--color-rule-strong); } }
-.item.selected { border-color: var(--color-brand); background: color-mix(in srgb, var(--color-brand) 7%, var(--color-surface-raised)); box-shadow: inset 0 0 0 1px var(--color-brand); }
+@media (hover: hover) {
+  .item:hover { transform: translateY(-2px); box-shadow: var(--glass-highlight), var(--glass-shadow-hover); }
+}
+.item:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.item.selected { border-color: color-mix(in srgb, var(--color-brand) 45%, var(--glass-border)); }
+
+/* Shared between items so it slides to the selected camera. */
+.indicator {
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--glass-fill-brand);
+  box-shadow: inset 0 0 0 1px var(--color-brand);
+}
 
 .dot { width: 10px; height: 10px; flex-shrink: 0; border-radius: var(--radius-full); }
-.dot.online { background: var(--color-safe); }
+.dot.online { background: var(--color-safe); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-safe) 22%, transparent); }
 .dot.connecting { background: var(--color-warning); }
 .dot.offline { background: transparent; box-shadow: inset 0 0 0 2px var(--color-inactive); }
 .dot.error { background: var(--color-critical); }
 
 .text { display: grid; min-width: 0; }
 .name { font-size: var(--text-sm); font-weight: var(--weight-semibold); white-space: nowrap; }
-.meta { color: var(--color-ink-subtle); font-size: var(--text-xs); white-space: nowrap; }
+.meta { color: var(--color-ink-muted); font-size: var(--text-xs); white-space: nowrap; }
 
 .alert { flex-shrink: 0; }
 .alert.warning { color: var(--color-warning); }
@@ -45,7 +63,12 @@
 
 @media (min-width: 1024px) {
   .list { flex-direction: column; margin: 0; padding: 0; overflow: visible; }
-  .item { width: 100%; }
+  .item { width: 100%; background: var(--glass-fill-subtle); box-shadow: var(--glass-highlight); }
   .name, .meta { overflow: hidden; text-overflow: ellipsis; }
   .alert { margin-left: auto; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .item { transition: none; }
+  .item:hover { transform: none; }
 }

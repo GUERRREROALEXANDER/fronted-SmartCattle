@@ -52,7 +52,16 @@
   font-weight: var(--weight-semibold);
 }
 .connectionDot { width: 8px; height: 8px; border-radius: var(--radius-full); background: currentColor; }
-.connection.online .connectionDot { background: var(--color-safe); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-safe) 30%, transparent); }
+.connection.online .connectionDot { position: relative; background: var(--color-safe); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-safe) 30%, transparent); }
+.connection.online .connectionDot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-safe);
+  animation: live-ping 1.6s var(--ease-out) infinite;
+}
+@keyframes live-ping { from { transform: scale(1); opacity: 0.75; } to { transform: scale(2.8); opacity: 0; } }
 .connection.connecting .connectionDot { background: var(--color-warning); }
 .connection.offline .connectionDot { background: var(--color-inactive); }
 .connection.error .connectionDot { background: var(--color-critical); }
@@ -116,4 +125,7 @@
   .messageText { font-size: var(--text-xs); }
 }
 
-@media (prefers-reduced-motion: reduce) { .spinner { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation: none; }
+  .connection.online .connectionDot::after { animation: none; opacity: 0; }
+}
