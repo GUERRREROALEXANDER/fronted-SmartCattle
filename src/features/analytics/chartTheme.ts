@@ -59,24 +59,10 @@ export const axisTick = {
 }
 
 export const axisLine = { stroke: chartColors.ruleStrong }
-export const gridLine = { stroke: chartColors.rule, strokeDasharray: '3 5', vertical: false }
+export const tooltipWrapper = { outline: 'none' }
+export const gridLine = { stroke: chartColors.rule, strokeOpacity: 0.7, strokeDasharray: '3 6', vertical: false }
 // Entrance and range changes share one ease-out tween inside the 600-900 ms band.
 export const chartAnimation = { animationBegin: 0, animationDuration: 800, animationEasing: 'ease-out' } as const
-
-export const tooltipStyles = {
-  contentStyle: {
-    backgroundColor: chartColors.surface,
-    border: `1px solid ${chartColors.ruleStrong}`,
-    borderRadius: 'var(--radius-md)',
-    boxShadow: 'var(--shadow-raised)',
-    color: chartColors.ink,
-    fontFamily: 'var(--font-sans)',
-    fontSize: 'var(--text-sm)',
-  },
-  itemStyle: { color: chartColors.inkMuted },
-  labelStyle: { color: chartColors.ink, fontWeight: 600 },
-  wrapperStyle: { outline: 'none' },
-}
 
 export function useChartAnimation(): boolean {
   return !useReducedMotion()

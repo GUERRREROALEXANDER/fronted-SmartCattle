@@ -1,6 +1,7 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, type PieLabelRenderProps } from 'recharts'
 import type { CategoryShare } from './analyticsModel'
-import { categoryColors, chartAnimation, chartColors, tooltipStyles, useChartAnimation } from './chartTheme'
+import { ChartTooltip } from './ChartTooltip'
+import { categoryColors, chartAnimation, chartColors, tooltipWrapper, useChartAnimation } from './chartTheme'
 import { formatPercentage } from './percent'
 import styles from './CategoryDonut.module.css'
 
@@ -24,7 +25,7 @@ export function CategoryDonut({ data }: { data: CategoryShare[] }) {
             isAnimationActive={animate} {...chartAnimation}>
             {data.map(row => <Cell key={row.category} fill={categoryColors[row.category]} />)}
           </Pie>
-          <Tooltip {...tooltipStyles} />
+          <Tooltip content={<ChartTooltip hideLabel />} wrapperStyle={tooltipWrapper} />
         </PieChart>
       </ResponsiveContainer>
       <div className={styles.center}>

@@ -1,5 +1,6 @@
 import { useId, type ReactNode } from 'react'
-import { StaggerItem } from '../../motion'
+import { GlassCard } from '../../components/ui'
+import { staggerDelay } from '../../motion'
 import styles from './ChartCard.module.css'
 
 export interface ChartTable {
@@ -17,7 +18,7 @@ export function ChartCard({ title, insight, footnote, table, index = 0, classNam
   children: ReactNode
 }) {
   const titleId = useId()
-  return <StaggerItem index={index} className={[styles.item, className].filter(Boolean).join(' ')}>
+  return <GlassCard padding="none" delay={staggerDelay(index)} className={[styles.item, className].filter(Boolean).join(' ')}>
     <figure className={styles.card} aria-labelledby={titleId}>
       <figcaption className={styles.caption}>
         <h2 id={titleId} className={styles.title}>{title}</h2>
@@ -38,5 +39,5 @@ export function ChartCard({ title, insight, footnote, table, index = 0, classNam
         </table>
       </div>
     </figure>
-  </StaggerItem>
+  </GlassCard>
 }

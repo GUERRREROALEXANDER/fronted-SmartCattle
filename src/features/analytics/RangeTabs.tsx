@@ -1,6 +1,5 @@
 import { useRef, type KeyboardEvent } from 'react'
 import { motion, useReducedMotion } from 'motion/react'
-import { duration, ease } from '../../motion'
 import type { AnalyticsRange } from './analyticsModel'
 import styles from './RangeTabs.module.css'
 
@@ -47,7 +46,7 @@ export function RangeTabs({ value, onChange }: {
         {selected && <motion.span
           className={styles.indicator}
           layoutId="analytics-range-selection"
-          transition={{ duration: reduce ? 0 : duration.state, ease: ease.out }}
+          transition={reduce ? { duration: 0 } : { type: 'spring', stiffness: 380, damping: 30 }}
           aria-hidden="true" />}
         <span className={styles.label}>{option.label}</span>
       </button>

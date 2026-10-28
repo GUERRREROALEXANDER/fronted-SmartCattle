@@ -1,47 +1,63 @@
-.tile {
+/* Element + class outranks the GlassCard defaults regardless of stylesheet order. */
+li.tile {
   --tone: var(--color-brand);
+  --tone-ink: var(--color-safe-ink);
   --tone-surface: var(--color-mint);
   display: grid;
-  min-width: 0;
+  overflow: hidden;
   align-content: start;
   gap: var(--space-1);
   padding: var(--space-4);
-  border: 1px solid color-mix(in srgb, var(--tone) 25%, var(--color-rule));
-  border-top: 4px solid var(--tone);
-  border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--tone-surface) 60%, var(--color-surface-raised)), var(--color-surface-raised) 75%);
-  box-shadow: var(--shadow-raised);
+  background:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--tone-surface) 55%, transparent), transparent 60%),
+    var(--glass-fill);
 }
 
-.brand { --tone: var(--color-brand); --tone-surface: var(--color-mint); }
-.alarm { --tone: var(--color-alarm); --tone-surface: var(--color-peach); }
-.info { --tone: var(--color-info); --tone-surface: var(--color-sky); }
-.warning { --tone: var(--color-warning); --tone-surface: var(--color-butter); }
-.lilac { --tone: var(--color-lilac-ink); --tone-surface: var(--color-lilac); }
+.brand { --tone: var(--color-brand); --tone-ink: var(--color-safe-ink); --tone-surface: var(--color-mint); }
+.alarm { --tone: var(--color-alarm); --tone-ink: var(--color-alarm-ink); --tone-surface: var(--color-peach); }
+.info { --tone: var(--color-info); --tone-ink: var(--color-sky-ink); --tone-surface: var(--color-sky); }
+.warning { --tone: var(--color-warning); --tone-ink: var(--color-butter-ink); --tone-surface: var(--color-butter); }
+.lilac { --tone: var(--color-lilac-ink); --tone-ink: var(--color-lilac-ink); --tone-surface: var(--color-lilac); }
+
+.top { display: flex; min-width: 0; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); }
+.badge {
+  display: grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--tone-ink);
+  background: linear-gradient(135deg, var(--tone-surface), color-mix(in srgb, var(--tone-surface) 35%, var(--color-surface-raised)));
+  box-shadow: var(--glass-highlight), 0 6px 14px -6px color-mix(in srgb, var(--tone) 45%, transparent);
+}
+.brand .badge { background: var(--gradient-brand-soft); }
 
 .label {
   color: var(--color-ink-muted);
   font-size: var(--text-xs);
-  font-weight: var(--weight-medium);
+  font-weight: var(--weight-semibold);
   line-height: var(--leading-snug);
 }
 
 .value {
   overflow-wrap: anywhere;
   color: var(--color-ink);
-  font-size: clamp(1.5rem, 4vw, 2rem);
-  font-stretch: var(--stretch-condensed);
+  font-size: clamp(1.625rem, 4vw, 2.125rem);
   font-variant-numeric: tabular-nums;
   font-weight: var(--weight-display);
   letter-spacing: var(--tracking-tight);
   line-height: var(--leading-tight);
 }
 
-.footer { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-2); }
-
 .caption {
   min-width: 0;
   color: var(--color-ink-subtle);
   font-size: var(--text-xs);
   line-height: var(--leading-snug);
+}
+
+@media (max-width: 420px) {
+  li.tile { padding: var(--space-3); }
 }
