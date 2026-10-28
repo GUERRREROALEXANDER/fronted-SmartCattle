@@ -1,10 +1,13 @@
 import { PageHeader } from '../../components/ui/PageHeader'
 import { useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { BadgeCheck, LogOut } from 'lucide-react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '../../app/auth/useAuth'
 import { Button } from '../../components/ui/Button'
+import { FadeUp, staggerDelay } from '../../motion'
 import styles from './ProfilePage.module.css'
+
+const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]!.toUpperCase()).join('')
 
 export function ProfilePage() {
   const { session, logout } = useAuth()
@@ -18,14 +21,32 @@ export function ProfilePage() {
     try { await logout() }
     finally { void navigate('/login', { replace: true }) }
   }
-  return <>
-    <PageHeader title="Perfil" />
-    <dl className={styles.details}>
-      <div><dt>Nombre</dt><dd>{user.name}</dd></div>
-      <div><dt>Correo electrónico</dt><dd>{user.email}</dd></div>
-      <div><dt>Rol</dt><dd>{user.role === 'owner' ? 'Dueño' : 'Trabajador'}</dd></div>
-      <div><dt>Identificador de finca</dt><dd>{user.farmId}</dd></div>
-    </dl>
-    <Button variant="secondary" icon={LogOut} loading={leaving} onClick={handleLogout}>Cerrar sesión</Button>
-  </>
+  const role = user.role === 'owner' ? 'Dueño' : 'Trabajador'
+  return <div className={styles.page}>
+    <FadeUp className={styles.head}>
+      <PageHeader title="Perfil" />
+      <p className={styles.lead}>Tu cuenta en SmartCattle y la finca a la que tienes acceso.</p>
+    </FadeUp>
+
+    <FadeUp delay={staggerDelay(1)} className={styles.card}>
+      <div className={styles.banner}>
+        <span className={styles.avatar} aria-hidden="true">{initials(user.name)}</span>
+        <div className={styles.identity}>
+          <p className={styles.name}>{user.name}</p>
+          <p className={styles.role}><BadgeCheck size={16} strokeWidth={1.75} aria-hidden="true" />{role}</p>
+        </div>
+      </div>
+
+      <dl className={styles.details}>
+        <div><dt>Nombre</dt><dd>{user.name}</dd></div>
+        <div><dt>Correo electrónico</dt><dd>{user.email}</dd></div>
+        <div><dt>Rol</dt><dd>{role}</dd></div>
+        <div><dt>Identificador de finca</dt><dd className="tabular">{user.farmId}</dd></div>
+      </dl>
+
+      <div className={styles.actions}>
+        <Button variant="secondary" icon={LogOut} loading={leaving} onClick={handleLogout}>Cerrar sesión</Button>
+      </div>
+    </FadeUp>
+  </div>
 }
