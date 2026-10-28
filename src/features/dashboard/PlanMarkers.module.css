@@ -1,0 +1,51 @@
+/* Cow and person markers. Tone variables are set by the plan (inside = green, outside = alarm red). */
+.shadow { pointer-events: none; }
+
+.halo, .body, .patch, .head, .ear, .tail, .tailTip, .blaze {
+  transition: fill var(--duration-fast) var(--ease-out), stroke var(--duration-fast) var(--ease-out);
+}
+
+/* Status ground ring: the state reads from the ring and the tag even at small sizes. */
+.halo {
+  fill: color-mix(in srgb, var(--cow-status, var(--color-safe)) 14%, transparent);
+  stroke: color-mix(in srgb, var(--cow-status, var(--color-safe)) 60%, transparent);
+  stroke-width: 1.3;
+}
+
+.body {
+  fill: var(--cow-body, var(--color-surface-raised));
+  stroke: var(--cow-outline, var(--color-ink));
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+}
+.patch { fill: var(--cow-patch, var(--color-ink)); }
+.sheen { pointer-events: none; }
+.tail { fill: none; stroke: var(--cow-patch, var(--color-ink)); stroke-width: 1.5; stroke-linecap: round; }
+.tailTip { fill: var(--cow-patch, var(--color-ink)); }
+.ear {
+  fill: var(--cow-patch, var(--color-ink));
+  stroke: var(--cow-outline, var(--color-ink));
+  stroke-width: 0.8;
+}
+.earInner { fill: var(--color-peach); opacity: 0.9; }
+.head {
+  fill: var(--cow-patch, var(--color-ink));
+  stroke: var(--cow-outline, var(--color-ink));
+  stroke-width: 1;
+  stroke-linejoin: round;
+}
+.blaze { fill: var(--cow-body, var(--color-surface-raised)); }
+.muzzle { fill: var(--color-peach); stroke: color-mix(in srgb, var(--color-peach-ink) 35%, transparent); stroke-width: 0.6; }
+.nostril { fill: var(--color-peach-ink); opacity: 0.65; }
+
+/* Person: yellow glass badge with a dark figure seen from above. */
+.badge {
+  fill: color-mix(in srgb, var(--color-overlay-person) 80%, transparent);
+  stroke: var(--color-surface-raised);
+  stroke-width: 1.8;
+}
+.badgeRing { fill: none; stroke: color-mix(in srgb, var(--color-butter-ink) 25%, transparent); stroke-width: 1; }
+.shoulders { fill: var(--color-butter-ink); }
+.hand { fill: var(--color-peach); stroke: var(--color-butter-ink); stroke-width: 0.8; }
+.personHead { fill: var(--color-ink); stroke: var(--color-butter); stroke-width: 1.2; }
+.facing { fill: var(--color-butter-ink); }
