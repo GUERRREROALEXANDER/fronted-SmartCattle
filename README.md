@@ -593,12 +593,12 @@ Variants: `--glass-fill-strong` for dense content, `--glass-fill-subtle` for nes
 ## Testing and quality checks
 
 ```sh
-npm test        # 189 tests
+npm test        # 251 tests in 26 files
 npm run lint
 npm run build
 ```
 
-Covered: configuration parsing, the HTTP client (success, HTTP error, network, timeout, invalid JSON), mappers, data-source resolution, every service in `api` and `mock` mode, the demo auth service, permissions, safe storage, form validation, date and number formatting, and the dashboard rules (recent alerts, unknown state, 24 h band positions and restricted hours across midnight).
+Covered: configuration parsing, the HTTP client (success, HTTP error, network, timeout, invalid JSON), mappers, data-source resolution, every service in `api` and `mock` mode, the demo auth service, permissions, safe storage, form validation, date and number formatting, the dashboard rules (recent alerts, unknown state, 24 h band positions and restricted hours across midnight), the live herd simulation and its metrics, the 3D herd simulation, the video analysis model, analytics percentages and the motion primitives.
 
 Each change is also reviewed with desktop (1440 px) and mobile (390 px) screenshots and an automated design detector before it is committed.
 
