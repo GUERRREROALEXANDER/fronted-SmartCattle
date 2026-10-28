@@ -6,7 +6,8 @@ export interface VideoLibrary {
   videos: VideoItem[]
   selectedId: string | null
   selected: VideoItem | null
-  addFiles: (files: FileList | File[] | null) => Promise<void>
+  /** With select, the first added video becomes the selected one right away. */
+  addFiles: (files: FileList | File[] | null, options?: { select?: boolean }) => Promise<void>
   remove: (id: string) => void
   assignCamera: (id: string, cameraId: string | null) => void
   select: (id: string | null) => void
@@ -50,10 +51,11 @@ export function useVideoLibrary(): VideoLibrary {
     }
   }, [])
 
-  const addFiles = useCallback(async (files: FileList | File[] | null) => {
+  const addFiles = useCallback(async (files: FileList | File[] | null, options: { select?: boolean } = {}) => {
     if (!files || files.length === 0) return
     const incoming = Array.from(files).map(createItem)
     setVideos(current => [...current, ...incoming])
+    if (options.select) setSelectedId(incoming[0].id)
 
     await Promise.all(
       incoming.map(async item => {

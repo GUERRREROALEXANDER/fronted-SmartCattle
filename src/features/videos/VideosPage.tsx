@@ -1,7 +1,6 @@
 import { AnimatePresence } from 'motion/react'
 import { Clapperboard } from 'lucide-react'
 import { EmptyState, PageHeader } from '../../components/ui'
-import { useMediaQuery } from '../../lib/useMediaQuery'
 import { useResource } from '../../lib/useResource'
 import { listCameras } from '../../services'
 import { AnalysisNotice } from './AnalysisNotice'
@@ -14,7 +13,6 @@ import styles from './VideosPage.module.css'
 export function VideosPage() {
   const { videos, selected, addFiles, remove, assignCamera, select } = useVideoLibraryContext()
   const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 60_000 })
-  const desktop = useMediaQuery('(min-width: 1024px)')
 
   const readyCount = videos.filter(video => video.status === 'ready').length
   const readingCount = videos.filter(video => video.status === 'reading').length
@@ -26,9 +24,11 @@ export function VideosPage() {
     <div className={styles.page}>
       <PageHeader title="Videos" actions={summary && <p className={styles.summary}>{summary}</p>} />
 
-      <div className={styles.notice}>
-        <AnalysisNotice />
-      </div>
+      {selected ? (
+        <VideoPlayer video={selected} onClose={() => select(null)} />
+      ) : (
+        <AnalysisNotice onSampleReady={file => void addFiles([file], { select: true })} />
+      )}
 
       <VideoDropzone onAdd={addFiles} />
 
@@ -36,13 +36,14 @@ export function VideosPage() {
         <EmptyState
           icon={Clapperboard}
           title="No hay videos cargados"
-          description="Arrastra grabaciones de las cámaras o presiona Elegir videos para revisarlas aquí."
+          description="Arrastra grabaciones de las cámaras o presiona Elegir videos. Luego elige un video para analizarlo."
         />
       )}
 
-      <div className={styles.layout}>
-        {videos.length > 0 && (
-          <section className={styles.grid} aria-label="Videos cargados">
+      {videos.length > 0 && (
+        <section className={styles.library} aria-labelledby="videos-library-title">
+          <h2 id="videos-library-title" className={styles.libraryTitle}>Biblioteca</h2>
+          <div className={styles.grid}>
             <AnimatePresence mode="popLayout">
               {videos.map((video, index) => (
                 <VideoCard
@@ -57,16 +58,8 @@ export function VideosPage() {
                 />
               ))}
             </AnimatePresence>
-          </section>
-        )}
-
-        {desktop && selected && (
-          <VideoPlayer video={selected} onClose={() => select(null)} />
-        )}
-      </div>
-
-      {!desktop && selected && (
-        <VideoPlayer video={selected} onClose={() => select(null)} />
+          </div>
+        </section>
       )}
     </div>
   )

@@ -52,6 +52,21 @@ function captureFrame(video: HTMLVideoElement, time: number, preferredWidth = 32
   })
 }
 
+// MediaRecorder WebM files have no duration header; seeking far forward makes the browser compute it.
+function resolveUnknownDuration(video: HTMLVideoElement): Promise<void> {
+  return new Promise(resolve => {
+    const onChange = () => {
+      if (!Number.isFinite(video.duration)) return
+      video.removeEventListener('durationchange', onChange)
+      video.removeEventListener('timeupdate', onChange)
+      resolve()
+    }
+    video.addEventListener('durationchange', onChange)
+    video.addEventListener('timeupdate', onChange)
+    video.currentTime = Number.MAX_SAFE_INTEGER
+  })
+}
+
 async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined
   const timeout = new Promise<never>((_, reject) => {
@@ -97,6 +112,14 @@ export async function readVideoMetadata(url: string, options: ReadOptions = {}):
       options.timeoutMs ?? METADATA_TIMEOUT_MS,
       'El video tardó demasiado en cargar sus metadatos.',
     )
+
+    if (video.duration === Infinity) {
+      try {
+        await withTimeout(resolveUnknownDuration(video), 4000, 'No se pudo calcular la duración.')
+      } catch {
+        // Keep the duration unknown; playback still works.
+      }
+    }
 
     const duration = Number.isFinite(video.duration) && video.duration > 0 ? video.duration : null
     const width = video.videoWidth || null

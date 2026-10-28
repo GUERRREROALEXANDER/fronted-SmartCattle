@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef } from 'react'
 import { X } from 'lucide-react'
-import { useMediaQuery } from '../../lib/useMediaQuery'
+import { VideoAnalyzer } from './analysis/VideoAnalyzer'
 import { formatBytes, formatDuration, videoResolution } from './videosModel'
 import type { VideoItem } from './videosModel'
 import styles from './VideoPlayer.module.css'
@@ -10,24 +10,24 @@ export interface VideoPlayerProps {
   onClose: () => void
 }
 
+/** Selected video with the simulated detection analyzer; shown inline above the library. */
 export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
   const headingId = useId()
-  const inline = useMediaQuery('(min-width: 1024px)')
-
-  useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-    if (!inline && !dialog.open) dialog.showModal()
-    if (inline && dialog.open) dialog.close()
-  }, [inline])
-
+  const sectionRef = useRef<HTMLElement>(null)
   const resolution = videoResolution(video.width, video.height)
 
-  const panel = (
-    <div className={styles.panel}>
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    section.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+  }, [video.id])
+
+  return (
+    <section ref={sectionRef} className={styles.panel} aria-labelledby={headingId}>
       <div className={styles.header}>
         <div className={styles.title}>
+          <p className={styles.eyebrow}>Análisis con IA · simulación</p>
           <h2 id={headingId} className={styles.name}>{video.fileName}</h2>
           <p className={styles.meta}>
             {formatBytes(video.size)}
@@ -37,46 +37,11 @@ export function VideoPlayer({ video, onClose }: VideoPlayerProps) {
             {video.duration != null && video.duration > 0 && formatDuration(video.duration)}
           </p>
         </div>
-        {!inline && (
-          <button
-            type="button"
-            className={styles.close}
-            onClick={onClose}
-            aria-label="Cerrar reproductor"
-          >
-            <X size={22} strokeWidth={1.75} aria-hidden="true" />
-          </button>
-        )}
+        <button type="button" className={styles.close} onClick={onClose} aria-label="Cerrar video">
+          <X size={22} strokeWidth={1.75} aria-hidden="true" />
+        </button>
       </div>
-      <div className={styles.stage}>
-        <video
-          src={video.url}
-          controls
-          autoPlay
-          className={styles.video}
-          aria-labelledby={headingId}
-        />
-      </div>
-    </div>
-  )
-
-  if (inline) {
-    return (
-      <aside className={styles.inline} aria-labelledby={headingId}>
-        {panel}
-      </aside>
-    )
-  }
-
-  return (
-    <dialog
-      ref={dialogRef}
-      className={styles.dialog}
-      aria-labelledby={headingId}
-      onClose={onClose}
-      onClick={event => { if (event.target === dialogRef.current) dialogRef.current?.close() }}
-    >
-      {panel}
-    </dialog>
+      <VideoAnalyzer key={video.id} video={video} labelledBy={headingId} />
+    </section>
   )
 }
