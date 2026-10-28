@@ -10,7 +10,7 @@ This repository contains only the frontend. The REST API lives in the separate `
 
 | Login (desktop) | Login (mobile) |
 |---|---|
-| ![Login screen on desktop](docs/screenshots/login-desktop.jpg) | ![Login screen on mobile](docs/screenshots/login-mobile.jpg) |
+| ![Login with the dusk pasture photo and a glass form card](docs/screenshots/login-desktop.png) | ![Login screen on mobile](docs/screenshots/login-mobile.png) |
 
 | App shell (desktop) | App shell (mobile, "Más" sheet) |
 |---|---|
