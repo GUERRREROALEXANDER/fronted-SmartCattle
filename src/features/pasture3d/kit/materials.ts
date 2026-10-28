@@ -1,114 +1,107 @@
-import { DoubleSide, MeshStandardMaterial } from 'three'
-import type { MeshStandardMaterialParameters } from 'three'
+import {
+  Color,
+  DoubleSide,
+  MeshPhysicalMaterial,
+  MeshStandardMaterial,
+} from 'three'
+import {
+  barkTexture,
+  concreteTexture,
+  corrugatedTexture,
+  leafTexture,
+  plankTexture,
+  roadTexture,
+  turfTexture,
+  woodTexture,
+} from './textures'
 
 export const palette = {
-  ground: '#EDECE6',
-  surface: '#F8F7F3',
-  surfaceRaised: '#FFFFFF',
-  rule: '#D5D3CA',
-  ruleStrong: '#B9B6AA',
-  ink: '#17201A',
-  inkMuted: '#465049',
-  inkSubtle: '#5B645C',
-  brand: '#2F4A36',
-  brandStrong: '#22362A',
-  brandHover: '#3A5A42',
-  onBrand: '#F3F1EA',
-  onBrandMuted: '#B9C8B7',
-  earth: '#8A6A4A',
-  earthSurface: '#EFE6DA',
-  earthInk: '#6B5037',
-  sage: '#7C9A6E',
-  safe: '#2E7D4F',
-  safeInk: '#23623F',
-  safeSurface: '#E2EEE5',
   critical: '#B42318',
-  inactive: '#6F756F',
-  inactiveSurface: '#E4E4DE',
-  stageRaised: '#1C211E',
-  stageInkMuted: '#A9B1A9',
-  overlayCattle: '#F1EBD8',
+  criticalGlow: '#FF2A1A',
+  fog: '#C9D6DC',
 } as const
 
-export type PaletteKey = keyof typeof palette
-export type StandardMaterialOptions = Omit<
-  MeshStandardMaterialParameters,
-  'color' | 'flatShading'
->
+export const ALERT_COLOR = new Color(palette.criticalGlow)
 
-export function createStandardMaterial(
-  color: PaletteKey,
-  options: StandardMaterialOptions = {},
-) {
-  return new MeshStandardMaterial({
-    ...options,
-    color: palette[color],
-    flatShading: true,
-    roughness: options.roughness ?? 0.88,
-    metalness: options.metalness ?? 0,
-  })
+let cached: ReturnType<typeof createMaterials> | null = null
+
+function createMaterials() {
+  const wood = woodTexture()
+  const planks = plankTexture()
+  const zinc = corrugatedTexture()
+  const concrete = concreteTexture()
+  const bark = barkTexture()
+  bark.repeat.set(2, 3)
+
+  return {
+    terrain: {
+      ground: new MeshStandardMaterial({ map: turfTexture(), vertexColors: true, roughness: 0.96, metalness: 0 }),
+      road: new MeshStandardMaterial({
+        map: roadTexture(),
+        transparent: true,
+        depthWrite: false,
+        roughness: 1,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2,
+      }),
+    },
+    fence: {
+      wood: new MeshStandardMaterial({ map: wood, bumpMap: wood, bumpScale: 1.4, roughness: 0.92, metalness: 0 }),
+      wire: new MeshStandardMaterial({ color: '#7a7f84', metalness: 0.85, roughness: 0.42 }),
+    },
+    structure: {
+      planks: new MeshStandardMaterial({ map: planks, bumpMap: planks, bumpScale: 1.2, roughness: 0.85 }),
+      zinc: new MeshStandardMaterial({
+        map: zinc,
+        bumpMap: zinc,
+        bumpScale: 3,
+        metalness: 0.65,
+        roughness: 0.42,
+        side: DoubleSide,
+      }),
+      trim: new MeshStandardMaterial({ color: '#ece6d8', roughness: 0.6 }),
+      concrete: new MeshStandardMaterial({ map: concrete, bumpMap: concrete, bumpScale: 0.6, roughness: 0.95 }),
+      darkWood: new MeshStandardMaterial({ map: wood, color: '#6b5440', roughness: 0.9 }),
+      interior: new MeshStandardMaterial({ color: '#16120e', roughness: 1 }),
+      water: new MeshPhysicalMaterial({
+        color: '#2c4a48',
+        roughness: 0.04,
+        metalness: 0,
+        ior: 1.33,
+        envMapIntensity: 1.5,
+        clearcoat: 1,
+        clearcoatRoughness: 0.02,
+      }),
+      galvanized: new MeshStandardMaterial({ color: '#b8bfc3', metalness: 0.9, roughness: 0.3 }),
+      cameraBody: new MeshPhysicalMaterial({ color: '#f1f2ef', roughness: 0.35, clearcoat: 0.6, clearcoatRoughness: 0.25 }),
+      cameraLens: new MeshPhysicalMaterial({ color: '#0b0d10', roughness: 0.05, metalness: 0.2, clearcoat: 1 }),
+      solar: new MeshPhysicalMaterial({ color: '#1b2a4a', roughness: 0.18, metalness: 0.4, clearcoat: 1, clearcoatRoughness: 0.05 }),
+      cameraView: new MeshStandardMaterial({
+        color: '#7fd1a0',
+        transparent: true,
+        opacity: 0.06,
+        depthWrite: false,
+        side: DoubleSide,
+        roughness: 1,
+      }),
+    },
+    nature: {
+      bark: new MeshStandardMaterial({ map: bark, bumpMap: bark, bumpScale: 2, roughness: 0.95 }),
+      leaves: new MeshStandardMaterial({
+        map: leafTexture(),
+        alphaTest: 0.45,
+        side: DoubleSide,
+        roughness: 0.82,
+        metalness: 0,
+      }),
+      foliageCore: new MeshStandardMaterial({ color: '#2a4522', roughness: 1 }),
+      rock: new MeshStandardMaterial({ vertexColors: true, roughness: 0.88, metalness: 0 }),
+    },
+  }
 }
 
-export const materials = {
-  terrain: {
-    grass: createStandardMaterial('sage', { roughness: 1 }),
-    track: createStandardMaterial('earth', { roughness: 1 }),
-  },
-  fence: {
-    post: createStandardMaterial('earthInk', { roughness: 1 }),
-    wire: createStandardMaterial('inkMuted', { roughness: 0.72, metalness: 0.18 }),
-  },
-  cow: {
-    holstein: createStandardMaterial('overlayCattle'),
-    brown: createStandardMaterial('earth'),
-    black: createStandardMaterial('ink'),
-    cream: createStandardMaterial('earthSurface'),
-    patch: createStandardMaterial('ink'),
-    muzzle: createStandardMaterial('ruleStrong'),
-    hoof: createStandardMaterial('ink'),
-    horn: createStandardMaterial('onBrandMuted'),
-    udder: createStandardMaterial('earthSurface'),
-  },
-  person: {
-    workerShirt: createStandardMaterial('brand'),
-    visitorShirt: createStandardMaterial('inactive'),
-    workerPants: createStandardMaterial('brandStrong'),
-    visitorPants: createStandardMaterial('inkMuted'),
-    skin: createStandardMaterial('earth'),
-    workerHat: createStandardMaterial('earthSurface'),
-    visitorHat: createStandardMaterial('inkSubtle'),
-    boots: createStandardMaterial('ink'),
-  },
-  structure: {
-    barnWall: createStandardMaterial('earth'),
-    barnRoof: createStandardMaterial('brandStrong'),
-    barnDoor: createStandardMaterial('earthInk'),
-    barnTrim: createStandardMaterial('earthSurface'),
-    trough: createStandardMaterial('inactive', { roughness: 0.62, metalness: 0.28 }),
-    water: createStandardMaterial('stageInkMuted', {
-      transparent: true,
-      opacity: 0.68,
-      depthWrite: false,
-      roughness: 0.24,
-      metalness: 0.08,
-    }),
-    cameraPole: createStandardMaterial('inkMuted', { metalness: 0.32 }),
-    cameraBody: createStandardMaterial('stageRaised', { metalness: 0.2 }),
-    cameraLens: createStandardMaterial('ink', { roughness: 0.32 }),
-    cameraView: createStandardMaterial('safe', {
-      transparent: true,
-      opacity: 0.07,
-      depthWrite: false,
-      side: DoubleSide,
-      roughness: 1,
-    }),
-  },
-  nature: {
-    trunk: createStandardMaterial('earthInk', { roughness: 1 }),
-    foliageDark: createStandardMaterial('safeInk', { roughness: 1 }),
-    foliageMid: createStandardMaterial('brandHover', { roughness: 1 }),
-    foliageLight: createStandardMaterial('sage', { roughness: 1 }),
-    rock: createStandardMaterial('inactive', { roughness: 1 }),
-    rockLight: createStandardMaterial('ruleStrong', { roughness: 1 }),
-  },
-} as const
+export function getMaterials() {
+  cached ??= createMaterials()
+  return cached
+}
