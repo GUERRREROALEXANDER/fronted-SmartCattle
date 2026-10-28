@@ -51,10 +51,10 @@ This repository contains only the frontend. The REST API lives in the separate `
 | Language | TypeScript 6 (strict) | Typed API contracts and safer refactors |
 | Build tool | Vite 8 | Fast dev server, CSS Modules out of the box |
 | Routing | React Router 8 | Data router with nested layout routes |
-| Styling | Plain CSS: CSS Modules + custom properties | No framework lock-in, tokens in one file |
+| Styling | Plain CSS: CSS Modules + custom properties | No framework lock-in, tokens in one file, glass recipe built from tokens |
 | Icons | lucide-react | Consistent stroke icons, tree-shaken |
-| 3D | three.js + @react-three/fiber + @react-three/drei | Declarative 3D scene in React, orbit controls, HTML labels |
-| Motion | motion (`motion/react`) | Layout animations, shared-element indicators, reduced-motion hook |
+| 3D | three.js + @react-three/fiber + @react-three/drei | Declarative 3D scene in React, orbit controls, HTML labels, glTF loading |
+| Motion | motion (`motion/react`, the successor of framer-motion) | Page transitions, layout animations, shared-element indicators, springs, reduced-motion hook |
 | Charts | Recharts | Composable SVG charts that read colors from CSS tokens |
 | Font | Archivo Variable (self-hosted via Fontsource) | One family with a width axis for hierarchy |
 | Tests | Vitest | Same config as Vite, fast |
