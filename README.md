@@ -497,7 +497,7 @@ flowchart LR
 
 - A cow or person outside the zone is drawn red, marked on the timeline and raises the global alarm.
 - The zone corners can be dragged with the mouse or moved with the keyboard (Tab to a corner, arrow keys, Shift for long steps).
-- "Terminar y ver resumen" shows totals per class, alerts and a timeline; the summary is saved with `POST /api/videos/analyses` when the backend is reachable.
+- "Terminar y ver resumen" shows totals per class, alerts and a timeline; the summary is saved with `POST /api/videos/analyses`. In `mock` mode, or when the backend cannot be reached, it is kept in the browser so the result is never lost.
 
 ---
 
