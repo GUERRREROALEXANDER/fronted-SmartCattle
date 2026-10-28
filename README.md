@@ -392,9 +392,15 @@ Rules the dashboard follows:
 - **Stale data stays visible.** A failed background refresh keeps the last data and shows the offline notice. Retries are automatic.
 - **Time to scale.** The 24 h band places each event at its real time and shades the restricted hours.
 
-| Server offline (hybrid mode) |
-|---|
-| ![Dashboard with the server offline](docs/screenshots/dashboard-offline-desktop.jpg) |
+### Live herd monitor
+
+"Monitoreo en vivo" animates a seeded demo herd over the farm plan. Each cow is a top-down Holstein marker with its tag number that turns toward where it walks, moves smoothly and lowers its head while grazing. People walk the track as yellow markers.
+
+- When a cow crosses its lot boundary it turns red within 200 ms, gets a pulsing ring and the label "Fuera del perímetro", the lot is hatched red and the global alarm fires. Walking back in clears it.
+- Controls: Pausar/Reanudar, speed ×1/×2 and "Simular salida", which forces one cow out to demo the alert.
+- With `prefers-reduced-motion` markers move in steps and nothing pulses.
+
+![A cow leaves Lote 3: red marker, hatched lot and the alarm banner](docs/screenshots/farm-plan-exit.png)
 
 ---
 
