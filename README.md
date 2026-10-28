@@ -368,11 +368,13 @@ The dashboard answers "is everything OK on the farm right now?" first, then wher
 flowchart TB
     header["Status line<br/>San José · 1 alerta en la última hora<br/>+ server / vision / cameras status"]
     alert["Alert strip<br/>most important recent alert → Verificar cámara"]
-    plan["Farm plan<br/>lots as linderos, cameras as observation points,<br/>alert lot hatched, camera list"]
+    metrics["Real-time metrics<br/>animated counters + deltas vs session start"]
+    plan["Live herd monitor<br/>animated cattle and people over the farm plan"]
+    charts["Last 60 seconds + alerts per zone"]
     herd["Cattle<br/>registered vs detected now"]
     log["Field log<br/>24 h band + last 5 events"]
-    header --> alert --> plan
-    alert --> herd --> log
+    header --> alert --> metrics --> plan --> charts
+    metrics --> herd --> log
 ```
 
 | Block | Source today | Notes |
