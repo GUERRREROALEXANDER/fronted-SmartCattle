@@ -531,13 +531,14 @@ Motion is short, calm and functional. Presets live in `src/motion/presets.ts` (e
 
 | Where | What moves |
 |---|---|
-| Route change | Content fades in with a short rise |
+| Route change | Content fades in with a 12 px rise (0.45 s) |
 | Side rail and mobile tab bar | The active marker slides between items (shared layout animation) |
-| Dashboard | Sections reveal in sequence; herd figures count up on first view |
+| Dashboard | Sections reveal in sequence; metrics count up with delta chips; cattle markers walk, turn and graze; new log entries slide in |
 | Lists (events, field log, cattle, cameras, videos) | Items stagger in on first render, capped at 8 steps |
-| Login and register | The headline rises word by word; fields fade in in order |
+| Login and register | The photo's detection boxes appear one by one, a scan line sweeps the image and the outside-zone box pulses; the form card rises in |
 | Analytics | Range tabs slide their indicator; KPIs count up; charts draw in |
-| Buttons | Press feedback (`scale(0.97)`) |
+| Cards and buttons | Clickable cards lift 2 px on hover; buttons have press feedback and a sheen on the primary gradient |
+| Alarms | Pulsing red ring on the marker and a banner that slides down |
 
 Only `transform` and `opacity` are animated. With `prefers-reduced-motion` every primitive falls back to a short fade or no motion.
 
