@@ -310,8 +310,14 @@ sequenceDiagram
     end
 ```
 
-- **Demo accounts** (password `demo1234`): `dueno@sanjose.demo` (owner) and `trabajador@sanjose.demo` (worker). The login page has buttons that fill them in.
-- Registration always creates an **owner**. Workers will join through an invitation from the owner, which needs backend support.
+- **Demo accounts** (password `demo1234`): `carmen.rojas` / `dueno@sanjose.demo` (owner) and `julian.perez` / `trabajador@sanjose.demo` (worker). Sign in with the username or the email; the "Cuentas de demostración" disclosure fills them in.
+- Registration asks for username, email, password and confirmation, with a live password strength meter and a caps-lock warning. It always creates an **owner**. Workers will join through an invitation from the owner, which needs backend support.
+- After repeated failed attempts the form locks for a short cooldown with a visible countdown.
+- "Recordarme" and "¿Olvidaste tu contraseña?" are visual only for now: the demo always keeps the session, and password recovery needs backend support (the link explains this).
+
+| Sign up |
+|---|
+| ![Registration form with the password strength meter](docs/screenshots/register-desktop.png) |
 - Passwords are stored as SHA-256 hashes, never in plain text. All storage access is wrapped in `try/catch` and falls back to memory.
 - In `api` mode the login shows "Inicio de sesión no disponible" instead of pretending to work.
 - Route guards and permissions (`src/lib/permissions.ts`) only shape the UI. **The backend must enforce access.**
