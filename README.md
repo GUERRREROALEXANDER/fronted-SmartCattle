@@ -383,6 +383,7 @@ flowchart TB
 | Events, alert strip, field log | `GET /api/events` (demo in `mock` mode) | Polled every 15 s |
 | Registered cattle | `GET /api/animals` | Shows "Sin registros" while the backend list is empty |
 | Detected now, cameras, farm plan, restricted hours | demo data | The plan is labeled "Esquema ilustrativo" |
+| Real-time metrics, last 60 seconds chart, alerts per zone | live herd simulation | Cattle inside the perimeter, alerts issued, detections per minute and people detected, each with a ▲/▼ change since the session started |
 
 Rules the dashboard follows:
 
