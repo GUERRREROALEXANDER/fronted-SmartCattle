@@ -678,6 +678,14 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 - Analytics page with percentage charts, KPIs and accessible data tables
 - App-wide motion: route transitions, sliding navigation marker, staggered lists, count-up figures, masked headlines
 
+**Dashboard V15 redesign**
+- Glass tokens and a shared `GlassCard`; floating glass side rail, top bar, tab bar and sheets over a pastel-green backdrop
+- Professional sign-in on the dusk pasture photo with animated detections, feature chips and a glass form card
+- Live herd monitor with animated cattle and people markers, real-time metrics with deltas and 60-second charts
+- Realistic 3D pasture with a glTF cow model; only its page wrapper joined the glass layout
+- Video analyzer with simulated YOLO detection, an editable safe zone and saved summaries
+- Every other page (En vivo, Eventos, Ganado, Cámaras, Ajustes, Perfil, Videos, Análisis) moved to glass panels with motion
+
 ## Roadmap
 
 | Phase | Scope | Status |
@@ -692,6 +700,7 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 | 8 | Security: person detection, possible intrusion, restricted hours | Done |
 | 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Done |
 | — | 3D pasture, videos, analytics, motion | Done |
+| — | Dashboard V15: glass redesign, live herd monitor, video analyzer, realistic 3D pasture | Done |
 | 10 | Quality: accessibility and responsive audit, motion review, `DESIGN.md` | Next |
 
 Pending on the backend side: authentication, cameras, streaming, detections, safe zones, severity and notifications. The frontend is ready to switch each capability from demo data to the API as it lands.
