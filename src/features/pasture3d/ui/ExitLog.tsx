@@ -32,12 +32,12 @@ export function ExitLog({ entries }: ExitLogProps) {
                   key={entry.id}
                   layout={!reduce}
                   className={`${styles.entry} ${entry.type === 'exit' ? styles.exit : styles.return}`}
-                  initial={{ opacity: 0, y: reduce ? 0 : -8 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, x: reduce ? 0 : 16 }}
+                  animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: reduce ? duration.micro : duration.state, ease: ease.out }}
                 >
-                  <Icon className={styles.icon} size={18} strokeWidth={1.75} aria-hidden="true" />
+                  <span className={styles.icon} aria-hidden="true"><Icon size={16} strokeWidth={1.75} /></span>
                   <span className={styles.text}>
                     <span className={styles.kind}>{entry.type === 'exit' ? 'Salida' : 'Regreso'}</span>
                     {eventSentence(entry)}

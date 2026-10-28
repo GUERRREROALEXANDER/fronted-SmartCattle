@@ -9,5 +9,5 @@
 .unsupported {
   place-items: center;
   padding: var(--space-4);
-  background: var(--color-surface);
+  background: var(--glass-fill-subtle);
 }

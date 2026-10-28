@@ -1,14 +1,20 @@
 .page { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); }
 
+.head { margin-bottom: var(--space-6); }
+.head > header { margin-bottom: var(--space-1); }
+
 .demo {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--pill-padding-inline);
-  border: 1px solid var(--color-rule-strong);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-full);
-  background: var(--color-earth-surface);
-  color: var(--color-earth-ink);
+  background: linear-gradient(var(--glass-fill-brand), var(--glass-fill-brand)), var(--glass-fill);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  color: var(--color-brand-strong);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
 }
@@ -17,8 +23,6 @@
 
 .intro {
   max-width: 72ch;
-  margin-top: calc(-1 * var(--space-3));
-  margin-bottom: var(--space-5);
   color: var(--color-ink-muted);
   font-size: var(--text-sm);
 }
@@ -31,18 +35,30 @@
   gap: var(--space-5);
 }
 
-.stage { display: grid; min-width: 0; gap: var(--space-3); }
+.stageSlot { min-width: 0; }
+.stage { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
+
+/* Glass frame around the canvas; the scene inside is untouched. */
+.frame {
+  padding: var(--space-2);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+}
 
 .canvas {
   position: relative;
   height: 420px;
   overflow: hidden;
-  border: 1px solid var(--color-rule);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
   touch-action: none;
 }
 
+/* Alarm stays bright red and slides down over the scene. */
 .banner {
   position: absolute;
   top: var(--space-3);
@@ -54,8 +70,8 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-md);
-  background: var(--color-critical);
-  box-shadow: var(--shadow-overlay);
+  background: var(--color-alarm);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-alarm) 30%, transparent), var(--shadow-overlay);
   color: var(--color-surface-raised);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
@@ -65,18 +81,56 @@
 
 .banner svg { flex-shrink: 0; margin-top: 1px; }
 
-.pausedTag {
+.chips {
   position: absolute;
   right: var(--space-3);
   bottom: var(--space-3);
+  left: var(--space-3);
   z-index: 11;
-  padding: var(--badge-padding-block) var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--glass-dark-border);
   border-radius: var(--radius-full);
-  background: var(--color-stage-tag);
+  background: var(--glass-dark-fill);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   color: var(--color-stage-ink);
   font-size: var(--text-xs);
   font-weight: var(--weight-semibold);
-  pointer-events: none;
+}
+
+.liveDot, .pausedDot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+}
+
+.liveDot { background: var(--color-safe); }
+.liveDot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-safe);
+  animation: live-ping 1.6s var(--ease-out) infinite;
+}
+
+.pausedDot { background: var(--color-warning); }
+
+@keyframes live-ping {
+  from { transform: scale(1); opacity: 0.75; }
+  to { transform: scale(2.8); opacity: 0; }
 }
 
 .hint {
@@ -86,10 +140,19 @@
 
 .side { display: grid; min-width: 0; gap: var(--space-4); }
 
+@media (max-width: 599px) {
+  .frame { padding: var(--space-1); border-radius: var(--radius-lg); }
+  .canvas { border-radius: var(--radius-md); }
+}
+
 @media (min-width: 760px) {
   .canvas { height: max(420px, 60vh); }
 }
 
 @media (min-width: 1180px) {
   .layout { grid-template-columns: minmax(0, 1fr) minmax(18rem, 22rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liveDot::after { animation: none; opacity: 0; }
 }
