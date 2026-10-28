@@ -12,9 +12,9 @@ This repository contains only the frontend. The REST API lives in the separate `
 |---|---|
 | ![Login with the dusk pasture photo and a glass form card](docs/screenshots/login-desktop.png) | ![Login screen on mobile](docs/screenshots/login-mobile.png) |
 
-| App shell (desktop) | App shell (mobile, "Más" sheet) |
+| Home on a phone | Mobile "Más" sheet |
 |---|---|
-| ![App shell with side rail](docs/screenshots/app-shell-desktop.png) | ![Mobile tab bar and sheet](docs/screenshots/app-shell-mobile-more.png) |
+| ![Home dashboard on a phone](docs/screenshots/dashboard-mobile.png) | ![Mobile tab bar and the glass "Más" sheet](docs/screenshots/app-shell-mobile-more.png) |
 
 ---
 
