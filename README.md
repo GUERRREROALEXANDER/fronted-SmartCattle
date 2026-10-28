@@ -661,14 +661,16 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 
 | Security tab with detail | All events |
 |---|---|
-| ![Security tab](docs/screenshots/events-security-desktop.jpg) | ![Events history](docs/screenshots/events-desktop.jpg) |
+| ![Security tab with the restricted-hours notice](docs/screenshots/events-security-desktop.png) | ![Events history grouped by day](docs/screenshots/events-desktop.png) |
 
 **Phase 9: Settings**
 - Account section for every user; farm, users, cameras and safe zones, security hours and alert classification for owners only (permissions from `src/lib/permissions.ts`)
 - Everything is read-only and each section says why: the backend has no endpoints to change settings, invite workers, change passwords or send notifications yet
 - Workers see their account and a note that the owner manages the rest
 
-![Settings page](docs/screenshots/settings-desktop.jpg)
+| Settings | Profile |
+|---|---|
+| ![Settings page with glass sections](docs/screenshots/settings-desktop.png) | ![Profile page with the gradient banner](docs/screenshots/profile-desktop.png) |
 
 **3D pasture, videos, analytics and motion**
 - Interactive 3D pasture with a procedural asset kit, a seeded herd simulation and zones that turn red when a cow leaves them
