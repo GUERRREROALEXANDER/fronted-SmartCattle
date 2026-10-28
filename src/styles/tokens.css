@@ -185,3 +185,33 @@
   --duration-detection-reveal: 320ms;
   --duration-outside-pulse: 1.2s;
 }
+
+:root {
+  /* Glass (Dashboard V15) - page backdrop */
+  --glass-backdrop:
+    radial-gradient(60rem 40rem at 8% -10%, rgb(187 247 208 / 0.75), transparent 60%),
+    radial-gradient(50rem 36rem at 100% 0%, rgb(205 235 255 / 0.7), transparent 60%),
+    radial-gradient(44rem 34rem at 70% 110%, rgb(255 241 184 / 0.55), transparent 60%),
+    linear-gradient(180deg, #F3FBF5 0%, #EEF8F2 100%);
+
+  /* Glass - panels */
+  --glass-fill: rgb(255 255 255 / 0.62);
+  --glass-fill-strong: rgb(255 255 255 / 0.78);
+  --glass-fill-subtle: rgb(255 255 255 / 0.42);
+  --glass-fill-brand: rgb(22 163 74 / 0.10);
+  --glass-border: rgb(255 255 255 / 0.72);
+  --glass-border-subtle: rgb(15 36 24 / 0.08);
+  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.85);
+  --glass-blur: 18px;
+  --glass-saturate: 160%;
+  --glass-shadow: 0 1px 2px rgb(15 36 24 / 0.04), 0 18px 40px -12px rgb(22 101 52 / 0.18);
+  --glass-shadow-hover: 0 2px 4px rgb(15 36 24 / 0.05), 0 26px 56px -14px rgb(22 101 52 / 0.26);
+
+  /* Glass - dark (over photos and the camera stage) */
+  --glass-dark-fill: rgb(14 26 19 / 0.46);
+  --glass-dark-border: rgb(255 255 255 / 0.18);
+
+  /* Glass - accents */
+  --gradient-brand: linear-gradient(135deg, #22C55E 0%, #16A34A 55%, #15803D 100%);
+  --gradient-brand-soft: linear-gradient(135deg, rgb(187 247 208 / 0.9), rgb(205 235 255 / 0.8));
+}
