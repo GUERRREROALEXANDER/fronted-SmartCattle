@@ -1,4 +1,4 @@
-.strip { margin-top: var(--space-6); }
+.strip { border-radius: var(--radius-lg); box-shadow: var(--glass-shadow); }
 
 .verify {
   display: inline-flex;
@@ -7,14 +7,15 @@
   min-height: var(--touch-min);
   padding-inline: var(--space-4);
   border-radius: var(--radius-md);
-  background: var(--color-brand);
+  background: var(--gradient-brand);
   color: var(--color-on-brand);
   font-size: var(--text-sm);
   font-weight: var(--weight-semibold);
   text-decoration: none;
   white-space: nowrap;
-  transition: background var(--duration-fast), transform var(--duration-fast) var(--ease-out);
+  transition: box-shadow var(--duration-fast), transform var(--duration-fast) var(--ease-out);
 }
 
-@media (hover: hover) { .verify:hover { background: var(--color-brand-hover); } }
+@media (hover: hover) { .verify:hover { box-shadow: var(--shadow-glow-brand); } }
+.verify:focus-visible { outline: none; box-shadow: var(--focus-ring), var(--shadow-glow-brand); }
 .verify:active { transform: scale(0.98); }

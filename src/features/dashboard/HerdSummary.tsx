@@ -1,4 +1,5 @@
-import { Skeleton } from '../../components/ui'
+import { Tag } from 'lucide-react'
+import { GlassCard, Skeleton } from '../../components/ui'
 import { formatCount, formatTime } from '../../lib/format'
 import type { ResourceState } from '../../lib/useResource'
 import { CountUp } from '../../motion'
@@ -11,17 +12,27 @@ interface HerdSummaryProps {
   detected: ResourceState<HerdCount | null>
   /** The server is offline: the detected count is the last one received, not a live number. */
   stale?: boolean
+  /** Renders as a glass card with an icon badge (dashboard); plain section otherwise. */
+  card?: boolean
+  className?: string
+  /** Entrance delay of the card, in seconds. */
+  delay?: number
 }
 
 /**
  * The herd line: registered and detected cattle side by side in one sentence, never merged into
  * one number, with where the detected count comes from and when it was taken.
  */
-export function HerdSummary({ title = 'Ganado', registered, detected, stale = false }: HerdSummaryProps) {
+export function HerdSummary({ title = 'Ganado', registered, detected, stale = false, card = false, className, delay }: HerdSummaryProps) {
   const loading = registered.status === 'loading' || detected.status === 'loading'
   const count = detected.data ?? null
-  return <section className={styles.section} aria-labelledby="herd-title">
-    <h2 id="herd-title" className={styles.title}>{title}</h2>
+  const body = <>
+    {card
+      ? <div className={styles.cardHeading}>
+        <span className={styles.badge} aria-hidden="true"><Tag size={18} strokeWidth={2} /></span>
+        <h2 id="herd-title" className={styles.title}>{title}</h2>
+      </div>
+      : <h2 id="herd-title" className={styles.title}>{title}</h2>}
     {loading
       ? <Skeleton width="18ch" height="1.6em" />
       : <p className={styles.line}>
@@ -45,5 +56,13 @@ export function HerdSummary({ title = 'Ganado', registered, detected, stale = fa
       La detección puede variar por oclusión, ángulo de cámara o cambios de luz: una diferencia no indica por sí sola que falte un animal.
       Cada cámara ve solo una parte de la finca, así que este total no es la suma de lo que muestran las imágenes.
     </p>
-  </section>
+  </>
+
+  if (card) {
+    return <GlassCard as="section" padding="none" delay={delay} aria-labelledby="herd-title"
+      className={[styles.card, className].filter(Boolean).join(' ')}>
+      {body}
+    </GlassCard>
+  }
+  return <section className={[styles.section, className].filter(Boolean).join(' ')} aria-labelledby="herd-title">{body}</section>
 }

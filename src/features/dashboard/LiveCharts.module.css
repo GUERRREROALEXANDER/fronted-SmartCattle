@@ -1,30 +1,19 @@
-.section { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
-.card {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--color-rule);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface-raised);
-  box-shadow: var(--shadow-raised);
-}
+section.card { display: flex; min-width: 0; padding: var(--space-5); }
+.figure { display: flex; width: 100%; min-width: 0; flex-direction: column; gap: var(--space-3); }
 .caption { display: grid; gap: var(--space-1); }
-.title { font-size: var(--text-md); font-weight: var(--weight-semibold); }
+.title { font-size: var(--text-md); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); }
 .note { color: var(--color-ink-subtle); font-size: var(--text-xs); }
 .legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); padding: 0; color: var(--color-ink-muted); font-size: var(--text-xs); list-style: none; }
 .legend li { display: inline-flex; align-items: center; gap: var(--space-2); }
-.swatchInside, .swatchDetections { width: 0.875rem; height: 0.5rem; border-radius: var(--radius-sm); }
-.swatchInside { border: 2px solid var(--color-brand); background: var(--color-mint); }
-.swatchDetections { height: 3px; background: var(--color-info); }
+.swatchInside, .swatchDetections { width: 0.875rem; height: 0.5rem; border-radius: var(--radius-full); }
+.swatchInside { background: linear-gradient(90deg, var(--color-brand), var(--color-sage)); }
+.swatchDetections { background: linear-gradient(90deg, var(--color-info), var(--color-sky)); }
 .plot { width: 100%; min-width: 0; height: 15rem; }
 .bars { height: 13rem; }
 
 @media (min-width: 760px) {
-  .section { grid-template-columns: minmax(0, 3fr) minmax(14rem, 2fr); }
   .plot, .bars { height: 16rem; }
 }
-@media (min-width: 1024px) and (max-width: 1279px) {
-  .section { grid-template-columns: minmax(0, 1fr); }
+@media (max-width: 599px) {
+  section.card { padding: var(--space-4); }
 }

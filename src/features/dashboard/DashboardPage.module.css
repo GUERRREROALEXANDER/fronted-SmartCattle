@@ -1,16 +1,56 @@
-.page { display: grid; grid-template-columns: minmax(0, 1fr); }
+.page { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-6); }
 
-.notice { margin-top: var(--space-6); }
+.alerts { display: grid; gap: var(--space-3); }
 
+/* Phones: one column, the live status first. */
 .grid {
   display: grid;
+  min-width: 0;
   grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-8);
-  margin-top: var(--space-8);
+  grid-template-areas:
+    "metrics"
+    "plan"
+    "trend"
+    "zones"
+    "herd"
+    "log";
+  align-items: start;
+  gap: var(--space-4);
 }
 
-.main, .aside { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: var(--space-6); min-width: 0; }
+.metrics { grid-area: metrics; }
+.plan { grid-area: plan; }
+.trend { grid-area: trend; }
+.zones { grid-area: zones; }
+.herd { grid-area: herd; }
+.log { grid-area: log; }
+.metrics, .plan, .trend, .zones, .herd, .log { min-width: 0; }
 
-@media (min-width: 1024px) {
-  .grid { grid-template-columns: minmax(0, 3fr) minmax(20rem, 2fr); gap: var(--space-10); }
+@media (min-width: 760px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "metrics metrics"
+      "plan plan"
+      "trend trend"
+      "zones herd"
+      "log log";
+    align-items: stretch;
+    gap: var(--space-5);
+  }
+  .metrics { align-self: start; }
+}
+
+/* Wide: the live plan leads, the herd and the log run beside it. */
+@media (min-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: auto auto 1fr auto;
+    grid-template-areas:
+      "metrics metrics metrics"
+      "plan plan herd"
+      "plan plan log"
+      "trend trend zones";
+    gap: var(--space-6);
+  }
 }

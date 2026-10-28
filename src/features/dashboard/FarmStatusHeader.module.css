@@ -4,8 +4,16 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--space-4) var(--space-8);
-  padding-bottom: var(--space-6);
-  border-bottom: 1px solid var(--color-rule);
+}
+
+.titleBlock { display: grid; min-width: 0; gap: var(--space-3); }
+
+.eyebrow {
+  color: var(--color-brand-strong);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 }
 
 .headline {
@@ -14,13 +22,14 @@
   font-stretch: var(--stretch-wide);
   font-weight: var(--weight-display);
   letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
 }
 
 .farm { color: var(--color-ink); }
 .separator { color: var(--color-rule-strong); }
-.calm { color: var(--color-safe); }
+.calm { color: var(--color-safe-ink); }
 .warning { color: var(--color-warning-ink); }
-.critical { color: var(--color-critical); }
+.critical { color: var(--color-critical-ink); }
 .unknown { color: var(--color-ink-subtle); }
 .skeleton { display: inline-block; vertical-align: middle; }
 
@@ -28,7 +37,51 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+  padding: 0;
+  list-style: none;
 }
+
+/* Glass status pills */
+.pill {
+  --pill-ink: var(--color-ink-muted);
+  --pill-tint: transparent;
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: linear-gradient(var(--pill-tint), var(--pill-tint)), var(--glass-fill);
+  box-shadow: var(--glass-highlight), 0 4px 12px -6px color-mix(in srgb, var(--color-ink) 18%, transparent);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  color: var(--pill-ink);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+}
+.pill svg { flex-shrink: 0; }
+.pill-safe { --pill-ink: var(--color-safe-ink); --pill-tint: color-mix(in srgb, var(--color-safe-surface) 55%, transparent); }
+.pill-warning { --pill-ink: var(--color-warning-ink); --pill-tint: color-mix(in srgb, var(--color-warning-surface) 70%, transparent); }
+.pill-critical { --pill-ink: var(--color-critical-ink); --pill-tint: color-mix(in srgb, var(--color-critical-surface) 75%, transparent); }
+.pill-inactive { --pill-ink: var(--color-ink-muted); }
+
+.updated {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-fill-subtle);
+  box-shadow: var(--glass-highlight);
+  color: var(--color-ink-subtle);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+.updated time { color: var(--color-ink); font-weight: var(--weight-semibold); }
 
 @media (min-width: 1024px) {
   .headline { font-size: var(--text-2xl); }
