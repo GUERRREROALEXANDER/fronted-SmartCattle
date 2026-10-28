@@ -489,6 +489,16 @@ flowchart LR
 - **Nothing is uploaded.** The backend has no upload endpoint, so videos stay in the browser as object URLs (released when removed) and the page says so.
 - **Sample clip.** Evaluators without footage can generate a sample pasture clip from the notice at the top of the page.
 
+### Video analyzer
+
+"Analizar con IA (simulación YOLO)" opens the analyzer: the video plays with detection boxes for cows and people, a draggable safe-zone polygon and a HUD with model, FPS, inference time, counts and the latest alerts. The detection is a labeled in-browser simulation, not a real model.
+
+![Video analyzer: a cow outside the safe zone triggers the alarm](docs/screenshots/video-analyzer-desktop.png)
+
+- A cow or person outside the zone is drawn red, marked on the timeline and raises the global alarm.
+- The zone corners can be dragged with the mouse or moved with the keyboard (Tab to a corner, arrow keys, Shift for long steps).
+- "Terminar y ver resumen" shows totals per class, alerts and a timeline; the summary is saved with `POST /api/videos/analyses` when the backend is reachable.
+
 ---
 
 ## Analytics
