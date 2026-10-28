@@ -1,65 +1,128 @@
 ﻿.form { display: grid; gap: var(--space-4); }
-.serverRegion:empty { display: none; }
-.animatedField, .registerFields { overflow: hidden; }
+.slot { position: relative; min-width: 0; }
+.serverRegion:empty, .recoveryRegion:empty { display: none; }
+/* The bleed keeps focus rings and input shadows visible while the height animation clips. */
+.animatedField, .registerFields { overflow: hidden; padding: var(--space-1); margin: calc(-1 * var(--space-1)); }
 .registerFields, .passwordBlock { display: grid; gap: var(--space-4); }
 .passwordBlock { gap: var(--space-3); }
-.input {
-  transition: border-color var(--duration-fast) var(--ease-out), box-shadow var(--duration-base) var(--ease-out);
-}
-.input:focus-visible { border-color: var(--color-brand); box-shadow: var(--focus-ring); outline: none; }
-.input[aria-invalid='true'] { border-color: var(--color-critical); }
+/* Fields use the shared TextField glass styles; this hook only remains for overrides. */
+.input { min-width: 0; }
 .cooldown, .capsWarning {
   display: flex; align-items: center; gap: var(--space-2);
   padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
-  background: var(--color-warning-surface); color: var(--color-warning-ink);
+  border: 1px solid color-mix(in srgb, var(--color-warning) 30%, transparent);
+  background: color-mix(in srgb, var(--color-warning-surface) 90%, transparent); color: var(--color-warning-ink);
   font-size: var(--text-sm); font-variant-numeric: tabular-nums;
 }
 .cooldown svg, .capsWarning svg { flex-shrink: 0; }
+
+.extras { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); margin-top: calc(-1 * var(--space-2)); }
+.remember {
+  position: relative; display: inline-flex; align-items: center; gap: var(--space-2);
+  min-height: var(--touch-min); color: var(--color-ink-muted); font-size: var(--text-sm); cursor: pointer; user-select: none;
+}
+.remember input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.checkbox {
+  display: grid; place-items: center; width: 20px; height: 20px; flex-shrink: 0;
+  border: 1.5px solid var(--color-rule-strong); border-radius: 6px;
+  background: var(--glass-fill-strong); color: transparent;
+  transition: background-color var(--duration-fast), border-color var(--duration-fast), color var(--duration-fast), transform var(--duration-fast) var(--ease-out);
+}
+.remember input:checked + .checkbox { background: var(--color-brand-strong); border-color: var(--color-brand-strong); color: var(--color-on-brand); }
+.remember input:focus-visible + .checkbox { box-shadow: var(--focus-ring); }
+.remember input:active + .checkbox { transform: scale(0.9); }
+.remember input:disabled + .checkbox { opacity: 0.55; }
+.linkButton {
+  min-height: var(--touch-min); padding: 0 var(--space-1); border: 0; background: none;
+  color: var(--color-brand-strong); font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer;
+  text-underline-offset: 0.2em;
+}
+.recovery {
+  display: flex; align-items: flex-start; gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--color-info) 28%, var(--glass-border)); border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-info-surface) 90%, transparent), var(--glass-fill-strong));
+  box-shadow: var(--glass-highlight);
+  color: var(--color-ink-muted); font-size: var(--text-sm);
+}
+.recoveryIcon { flex-shrink: 0; margin-top: 2px; color: var(--color-info-ink); }
+.recovery > div { flex: 1; min-width: 0; }
+.recoveryTitle { color: var(--color-info-ink); font-weight: var(--weight-semibold); }
+.recoveryClose {
+  display: grid; place-items: center; flex-shrink: 0; width: 32px; height: 32px; margin: -4px -4px 0 0;
+  border: 0; border-radius: var(--radius-full); background: transparent; color: var(--color-info-ink); cursor: pointer;
+}
+
 .strength { display: grid; gap: var(--space-2); }
 .strengthHeader { display: flex; justify-content: space-between; gap: var(--space-3); color: var(--color-ink-muted); font-size: var(--text-xs); }
 .strengthLabel { color: var(--color-ink); font-weight: var(--weight-semibold); }
-.strengthTrack { height: var(--space-1); overflow: hidden; border-radius: var(--radius-full); background: var(--color-inactive-surface); }
-.strengthFill { width: 100%; height: 100%; transform-origin: left center; border-radius: var(--radius-full); }
-.strengthWeak { background: var(--color-critical); }
-.strengthMedium { background: var(--color-warning); }
-.strengthStrong { background: var(--color-safe); }
+.strengthTrack { position: relative; height: 6px; overflow: hidden; border-radius: var(--radius-full); background: var(--color-inactive-surface); box-shadow: inset 0 1px 2px var(--glass-border-subtle); }
+.strengthFill { position: relative; width: 100%; height: 100%; overflow: hidden; transform-origin: left center; border-radius: var(--radius-full); }
+.strengthFill::after {
+  content: ''; position: absolute; inset: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, var(--color-on-brand-surface), transparent);
+  animation: glass-sheen 2.4s var(--ease-in-out) infinite;
+}
+.strengthWeak { background: linear-gradient(90deg, var(--color-critical-ink), var(--color-critical)); }
+.strengthMedium { background: linear-gradient(90deg, var(--color-warning), var(--color-overlay-person)); }
+.strengthStrong { background: var(--gradient-brand); }
 .strengthHints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1) var(--space-3); list-style: none; }
 .hintPending, .hintMet { display: flex; align-items: center; gap: var(--space-1); min-width: 0; font-size: var(--text-xs); transition: color var(--duration-base); }
 .hintPending { color: var(--color-ink-subtle); }
 .hintMet { color: var(--color-safe-ink); }
 .hintPending svg, .hintMet svg { flex-shrink: 0; }
-.submit {
-  margin-top: var(--space-1);
-  transition: transform var(--duration-fast) var(--ease-out), background var(--duration-fast), box-shadow var(--duration-fast);
-}
+
+.submit { margin-top: var(--space-1); min-height: 48px; font-size: var(--text-base); }
+.submitSuccess:disabled { opacity: 1; cursor: default; }
+.submit[aria-busy='true']:disabled { opacity: 0.9; cursor: wait; }
 .submitContent { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--space-6); }
+.successCheck { flex-shrink: 0; }
+.successCheck path { stroke: var(--color-brand-strong); }
+.successDisc { fill: var(--color-on-brand); }
 .spinner { animation: spin var(--duration-spin) linear infinite; }
-.demo { margin-top: var(--space-6); overflow: hidden; border: 1px solid var(--color-rule); border-radius: var(--radius-md); background: var(--color-safe-surface); }
-.demo summary {
-  display: flex; align-items: center; min-height: var(--touch-min); padding: var(--space-2) var(--space-4);
-  color: var(--color-brand-strong); font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer;
+
+.demo {
+  margin-top: var(--space-5); overflow: hidden;
+  border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--color-mint) 45%, transparent), var(--glass-fill-subtle));
+  box-shadow: var(--glass-highlight);
 }
-.demo summary:focus-visible { outline-offset: calc(-1 * var(--space-1)); }
+.demo summary {
+  display: flex; align-items: center; gap: var(--space-3); min-height: var(--touch-min); padding: var(--space-2) var(--space-3);
+  color: var(--color-mint-ink); font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer; list-style: none;
+}
+.demo summary::-webkit-details-marker { display: none; }
+.demo summary:focus-visible { border-radius: var(--radius-lg); }
+.demoIcon {
+  display: grid; place-items: center; width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: var(--radius-full); background: var(--glass-fill-strong); color: var(--color-brand-strong);
+  box-shadow: var(--glass-highlight);
+}
+.demoSummaryText { flex: 1; }
+.demoChevron { flex-shrink: 0; transition: transform var(--duration-base) var(--ease-out); }
+.demo[open] .demoChevron { transform: rotate(180deg); }
 .demoContent { padding: 0 var(--space-4) var(--space-4); color: var(--color-ink-muted); font-size: var(--text-sm); }
 .demoActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); margin-top: var(--space-3); }
-.demoActions button { flex-direction: column; gap: 0; }
+.demoActions button { min-height: 56px; }
+.demoActions button > span { flex-direction: column; gap: 0; }
 .demoUsername { color: var(--color-ink-muted); font-size: var(--text-xs); font-weight: var(--weight-regular); overflow-wrap: anywhere; }
-.note { margin-top: var(--space-6); color: var(--color-ink-subtle); font-size: var(--text-sm); }
+.note { margin-top: var(--space-5); color: var(--color-ink-subtle); font-size: var(--text-sm); }
 .srOnly {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden;
   clip-path: inset(50%); white-space: nowrap; border: 0;
 }
 @media (hover: hover) {
-  .submit:hover:not(:disabled) { transform: translateY(-1px); box-shadow: var(--shadow-raised); }
-  .demo summary:hover { text-decoration: underline; }
+  .linkButton:hover { text-decoration: underline; }
+  .remember:hover .checkbox { border-color: var(--color-brand-strong); }
+  .recoveryClose:hover { background: var(--color-info-surface); }
+  .demo summary:hover .demoSummaryText { text-decoration: underline; }
 }
-.submit:active:not(:disabled) { transform: scale(0.97); }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 419px) {
   .strengthHints, .demoActions { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .input, .hintPending, .hintMet, .submit { transition: none; }
-  .submit:hover:not(:disabled), .submit:active:not(:disabled) { transform: none; }
+  .hintPending, .hintMet, .checkbox, .demoChevron { transition: none; }
+  .strengthFill::after { display: none; }
   .spinner { animation: none; }
 }

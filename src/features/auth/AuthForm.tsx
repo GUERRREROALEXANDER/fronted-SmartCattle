@@ -1,11 +1,11 @@
-﻿import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
-import { Check, Circle, Clock3, Loader2, TriangleAlert } from 'lucide-react'
+import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
+import { Check, ChevronDown, Circle, Clock3, Info, Loader2, Lock, LockKeyhole, Mail, TriangleAlert, UserRound, UsersRound, X } from 'lucide-react'
 import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from 'motion/react'
 import { useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../app/auth/useAuth'
 import { Button, Notice, TextField } from '../../components/ui'
 import { demoAccounts, demoPassword } from '../../mocks/mockAuth'
-import { duration, ease } from '../../motion'
+import { duration, ease, staggerDelay } from '../../motion'
 import { AuthError } from '../../types/auth'
 import {
   getPasswordStrength, validateEmail, validateIdentifier, validateNewPassword, validatePassword,
@@ -18,6 +18,20 @@ type SubmitStatus = 'idle' | 'pending' | 'success'
 interface FormNotice { tone: 'critical' | 'warning'; title: string; text: string }
 const emptyValues = { identifier: '', username: '', email: '', password: '', confirmPassword: '' }
 const deadlineIn = (ms: number) => Date.now() + ms
+// Fields reveal right after the card springs in.
+const REVEAL_START = 0.28
+
+function SuccessCheck() {
+  const reduce = useReducedMotion()
+  return <motion.svg className={styles.successCheck} viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"
+    initial={reduce ? false : { scale: 0.4, rotate: -45 }} animate={{ scale: 1, rotate: 0 }}
+    transition={{ type: 'spring', stiffness: 420, damping: 18 }}>
+    <circle cx="12" cy="12" r="11" className={styles.successDisc} />
+    <motion.path d="M7 12.5l3.2 3.2L17 9" fill="none" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"
+      initial={reduce ? false : { pathLength: 0 }} animate={{ pathLength: 1 }}
+      transition={{ delay: 0.12, duration: 0.32, ease: ease.out }} />
+  </motion.svg>
+}
 
 function PasswordStrengthMeter({ id, strength }: { id: string; strength: PasswordStrength }) {
   const reduce = useReducedMotion()
@@ -63,8 +77,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const noticeRef = useRef<HTMLDivElement>(null)
   const inFlight = useRef(false)
   const mounted = useRef(true)
+  const [remember, setRemember] = useState(true)
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
   const [shownMode, setShownMode] = useState(mode)
   if (shownMode !== mode) {
+    setRecoveryOpen(false)
     // Switching between login and register keeps the form mounted; start each mode clean.
     setShownMode(mode)
     setValues(emptyValues)
@@ -90,7 +107,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     confirmPassword: serverErrors.confirmPassword ?? validatePasswordConfirmation(values.password, values.confirmPassword),
   }
 
-  useEffect(() => () => { mounted.current = false }, [])
+  // Re-arm on mount: StrictMode runs the cleanup once in development before remounting.
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
   useEffect(() => {
     if (notice || cooldownActive) noticeRef.current?.focus()
   }, [notice, cooldownActive])
@@ -216,6 +237,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     exit: { opacity: 0, height: 0, y: reduce ? 0 : -8 },
     transition: { duration: reduce ? duration.micro : duration.panel, ease: ease.out },
   }
+  const rise = (index: number) => ({
+    initial: reduce ? false : { opacity: 0, y: 12 },
+    animate: { opacity: 1, y: 0 },
+    transition: { delay: REVEAL_START + staggerDelay(index), duration: 0.45, ease: ease.out },
+  })
 
   return <>
     <motion.form ref={formRef} className={styles.form} noValidate onSubmit={handleSubmit}
@@ -230,20 +256,22 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         <Clock3 size={18} aria-hidden="true" />Podrás intentarlo de nuevo en <strong>{cooldownSeconds} s</strong>.
       </p>}
 
-      <AnimatePresence initial={false} mode="popLayout">
-        {isRegistration ? <motion.div key="register-identity" className={styles.registerFields} {...entrance}>
-          <TextField label="Usuario" autoComplete="username" autoCapitalize="none" spellCheck={false}
-            maxLength={20} {...fieldProps('username')} />
-          <TextField label="Correo electrónico" type="email" autoComplete="email" inputMode="email"
-            autoCapitalize="none" spellCheck={false} {...fieldProps('email')} />
-        </motion.div> : <motion.div key="login-identifier" className={styles.animatedField} {...entrance}>
-          <TextField label="Usuario o correo" autoComplete="username" autoCapitalize="none" spellCheck={false}
-            {...fieldProps('identifier')} />
-        </motion.div>}
-      </AnimatePresence>
+      <motion.div className={styles.slot} {...rise(0)}>
+        <AnimatePresence initial={false} mode="popLayout">
+          {isRegistration ? <motion.div key="register-identity" className={styles.registerFields} {...entrance}>
+            <TextField label="Usuario" autoComplete="username" autoCapitalize="none" spellCheck={false}
+              maxLength={20} leadingIcon={UserRound} {...fieldProps('username')} />
+            <TextField label="Correo electrónico" type="email" autoComplete="email" inputMode="email"
+              autoCapitalize="none" spellCheck={false} leadingIcon={Mail} {...fieldProps('email')} />
+          </motion.div> : <motion.div key="login-identifier" className={styles.animatedField} {...entrance}>
+            <TextField label="Usuario o correo" autoComplete="username" autoCapitalize="none" spellCheck={false}
+              leadingIcon={UserRound} {...fieldProps('identifier')} />
+          </motion.div>}
+        </AnimatePresence>
+      </motion.div>
 
-      <motion.div className={styles.passwordBlock} layout={!reduce}>
-        <TextField id={passwordId} label="Contraseña" type="password"
+      <motion.div className={styles.slot} {...rise(1)}><motion.div className={styles.passwordBlock} layout={!reduce}>
+        <TextField id={passwordId} label="Contraseña" type="password" leadingIcon={Lock}
           autoComplete={isRegistration ? 'new-password' : 'current-password'}
           aria-describedby={[isRegistration && strengthId, capsLockField === 'password' && `${passwordId}-caps`].filter(Boolean).join(' ') || undefined}
           onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => checkCapsLock('password', event)}
@@ -253,11 +281,45 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         {capsLockField === 'password' && <p id={`${passwordId}-caps`} className={styles.capsWarning} role="status">
           <TriangleAlert size={17} aria-hidden="true" />Bloq Mayús está activado.
         </p>}
-      </motion.div>
+      </motion.div></motion.div>
+
+      <AnimatePresence initial={false}>
+        {!isRegistration && <motion.div key="login-extras" className={styles.animatedField} {...entrance}>
+          <motion.div className={styles.extras} {...rise(2)}>
+            <label className={styles.remember}>
+              <input type="checkbox" name="remember" checked={remember} disabled={busy}
+                onChange={event => setRemember(event.target.checked)} />
+              <span className={styles.checkbox} aria-hidden="true"><Check size={14} strokeWidth={3} /></span>
+              Recordarme
+            </label>
+            <button type="button" className={styles.linkButton} aria-expanded={recoveryOpen} aria-controls={`${formId}-recovery`}
+              onClick={() => setRecoveryOpen(open => !open)}>
+              ¿Olvidaste tu contraseña?
+            </button>
+          </motion.div>
+        </motion.div>}
+      </AnimatePresence>
+      <div id={`${formId}-recovery`} className={styles.recoveryRegion} aria-live="polite">
+        <AnimatePresence initial={false}>
+          {!isRegistration && recoveryOpen && <motion.div key="recovery" className={styles.animatedField} {...entrance}>
+            <div className={styles.recovery}>
+              <Info className={styles.recoveryIcon} size={18} strokeWidth={2} aria-hidden="true" />
+              <div>
+                <p className={styles.recoveryTitle}>Recuperación no disponible todavía</p>
+                <p>En la demostración aún no se puede restablecer la contraseña. Usa una cuenta de demostración o crea una cuenta nueva.</p>
+              </div>
+              <button type="button" className={styles.recoveryClose} aria-label="Cerrar aviso" onClick={() => setRecoveryOpen(false)}>
+                <X size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+            </div>
+          </motion.div>}
+        </AnimatePresence>
+      </div>
 
       <AnimatePresence initial={false}>
         {isRegistration && <motion.div key="confirm-password" className={styles.animatedField} {...entrance}>
           <TextField id={confirmPasswordId} label="Confirmar contraseña" type="password" autoComplete="new-password"
+            leadingIcon={LockKeyhole}
             aria-describedby={capsLockField === 'confirmPassword' ? `${confirmPasswordId}-caps` : undefined}
             onKeyDown={(event: KeyboardEvent<HTMLInputElement>) => checkCapsLock('confirmPassword', event)}
             onKeyUp={(event: KeyboardEvent<HTMLInputElement>) => checkCapsLock('confirmPassword', event)}
@@ -268,25 +330,29 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         </motion.div>}
       </AnimatePresence>
 
-      <motion.div layout={!reduce}>
+      <motion.div className={styles.slot} {...rise(3)}><motion.div layout={!reduce}>
         <Button type="submit" variant="primary" fullWidth disabled={busy || cooldownActive}
-          aria-busy={pending} className={styles.submit}>
+          aria-busy={pending} className={[styles.submit, success && styles.submitSuccess].filter(Boolean).join(' ')}>
           <AnimatePresence mode="wait" initial={false}>
             <motion.span key={contentState} className={styles.submitContent}
               initial={{ opacity: 0, scale: reduce ? 1 : 0.88 }} animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: reduce ? 1 : 0.88 }} transition={{ duration: duration.micro, ease: ease.out }}>
               {pending && <Loader2 className={styles.spinner} size={19} strokeWidth={2} aria-hidden="true" />}
-              {success && <Check size={20} strokeWidth={2.5} aria-hidden="true" />}
+              {success && <SuccessCheck />}
               {cooldownActive && !busy && <Clock3 size={18} aria-hidden="true" />}
               <span>{buttonLabel}</span>
             </motion.span>
           </AnimatePresence>
         </Button>
-      </motion.div>
+      </motion.div></motion.div>
     </motion.form>
 
-    {!isRegistration && isDemo && <details className={styles.demo}>
-      <summary>Cuentas de demostración</summary>
+    {!isRegistration && isDemo && <motion.details className={styles.demo} {...rise(4)}>
+      <summary>
+        <span className={styles.demoIcon} aria-hidden="true"><UsersRound size={16} strokeWidth={2} /></span>
+        <span className={styles.demoSummaryText}>Cuentas de demostración</span>
+        <ChevronDown className={styles.demoChevron} size={18} strokeWidth={2} aria-hidden="true" />
+      </summary>
       <div className={styles.demoContent}>
         <p>Elige un perfil para completar el formulario. Contraseña para ambos: <strong>{demoPassword}</strong>.</p>
         <div className={styles.demoActions}>
@@ -297,7 +363,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
           </Button>)}
         </div>
       </div>
-    </details>}
+    </motion.details>}
     {isRegistration && <p className={styles.note}>Las cuentas de trabajador se crean por invitación del dueño de la finca. Esa función llegará cuando el backend la ofrezca.</p>}
   </>
 }
