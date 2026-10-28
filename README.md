@@ -292,7 +292,7 @@ sequenceDiagram
     participant S as AuthService (mock)
     participant L as localStorage (guarded)
 
-    U->>P: email + password
+    U->>P: username or email + password
     P->>P: validate fields
     P->>C: login(input)
     C->>S: login(input)
@@ -306,7 +306,7 @@ sequenceDiagram
     else wrong credentials
         S-->>C: AuthError("invalid_credentials")
         C-->>P: error
-        P->>U: "Correo o contraseña incorrectos"
+        P->>U: inline error in an aria-live region
     end
 ```
 
