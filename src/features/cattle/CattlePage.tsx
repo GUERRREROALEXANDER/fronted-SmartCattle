@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
-import { motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { EventRow } from '../../components/events/EventRow'
 import { describeApiError } from '../../api/errors'
 import { EmptyState, ErrorState, PageHeader, SkeletonText } from '../../components/ui'
 import { formatCount, formatTime } from '../../lib/format'
 import { useResource } from '../../lib/useResource'
-import { duration, ease, staggerDelay } from '../../motion'
+import { duration, ease, FadeUp, staggerDelay } from '../../motion'
 import { getDetectedCattleCount, getRegisteredCattleCount, hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
 import { cameraName } from '../dashboard/dashboardModel'
 import { HerdSummary } from '../dashboard/HerdSummary'
@@ -35,12 +35,18 @@ export function CattlePage() {
   const recent = cattleEvents(events.data ?? []).slice(0, 8)
 
   return <div className={styles.page}>
-    <PageHeader title="Ganado" />
+    <FadeUp className={styles.head}>
+      <PageHeader title="Ganado" />
+      <p className={styles.lead}>Cuántos animales tiene el hato, cuántos ven las cámaras ahora y sus últimos movimientos.</p>
+    </FadeUp>
 
     <div className={styles.layout}>
       <div className={styles.main}>
-        <HerdSummary title="Hato" registered={registered} detected={detected} />
+        <FadeUp delay={staggerDelay(1)}>
+          <HerdSummary title="Hato" registered={registered} detected={detected} />
+        </FadeUp>
 
+        <FadeUp delay={staggerDelay(2)} className={styles.card}>
         <section aria-labelledby="by-camera-title">
           <h2 id="by-camera-title" className={styles.sectionTitle}>Visibles por cámara</h2>
           <p className={styles.lead}>
@@ -62,17 +68,21 @@ export function CattlePage() {
                     </tr>
                   </thead>
                   <tbody>
+                    <AnimatePresence initial={false}>
                     {rows.map((row, index) => <motion.tr key={row.camera.id}
+                      layout={reduce ? false : 'position'}
                       initial={{ opacity: 0, y: reduce ? 0 : 8 }}
                       animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
                       transition={{ duration: reduce ? duration.micro : duration.state, ease: ease.out, delay: reduce ? 0 : staggerDelay(index) }}>
                       <th scope="row"><Link to={`/live?camera=${encodeURIComponent(row.camera.id)}`}>{row.camera.name}</Link></th>
-                      <td className={styles.wide}>{row.camera.location}</td>
+                      <td className={styles.wide}><span className={styles.tag}>{row.camera.location}</span></td>
                       <td className={styles.num}>{row.visible === null ? <span className={styles.muted}>Sin imagen</span> : formatCount(row.visible)}</td>
                       <td className={styles.num}>{row.outside === null ? <span className={styles.muted}>—</span>
                         : row.outside > 0 ? <strong className={styles.outside}>{formatCount(row.outside)}</strong> : '0'}</td>
                       <td className={`${styles.num} ${styles.wide}`}>{row.capturedAt ? formatTime(row.capturedAt) : <span className={styles.muted}>—</span>}</td>
                     </motion.tr>)}
+                    </AnimatePresence>
                   </tbody>
                   <tfoot>
                     <tr>
@@ -86,9 +96,11 @@ export function CattlePage() {
                 </table>
               </div>}
         </section>
+        </FadeUp>
       </div>
 
       <aside className={styles.aside}>
+        <FadeUp delay={staggerDelay(3)} className={styles.card}>
         <section aria-labelledby="cattle-events-title">
           <div className={styles.heading}>
             <h2 id="cattle-events-title" className={styles.sectionTitle}>Movimientos recientes</h2>
@@ -102,6 +114,7 @@ export function CattlePage() {
                     event={event} cameraLabel={cameraName(cameras.data ?? null, event.cameraId)} now={now} />)}
                 </ol>}
         </section>
+        </FadeUp>
       </aside>
     </div>
   </div>

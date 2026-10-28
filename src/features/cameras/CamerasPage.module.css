@@ -1,11 +1,36 @@
-.summary { color: var(--color-ink-muted); font-size: var(--text-sm); font-weight: var(--weight-medium); }
+.page { display: grid; grid-template-columns: minmax(0, 1fr); }
+
+.head { margin-bottom: var(--space-6); }
+.head > header { margin-bottom: var(--space-1); }
+.lead { max-width: 64ch; color: var(--color-ink-muted); font-size: var(--text-sm); }
+
+.summary {
+  padding: var(--space-1) var(--pill-padding-inline);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-highlight);
+  color: var(--color-ink-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-semibold);
+}
 
 /* Whole cards reflow; a card is never cut between rows. */
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
-  align-items: start;
-  gap: var(--space-4);
+  align-items: stretch;
+  gap: var(--space-5);
+}
+.item { display: grid; min-width: 0; }
+
+.stateCard {
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 
-.note { margin-top: var(--space-6); color: var(--color-ink-subtle); font-size: var(--text-sm); }
+.note { margin-top: var(--space-6); color: var(--color-ink-muted); font-size: var(--text-sm); }

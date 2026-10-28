@@ -4,7 +4,7 @@ import { useAuth } from '../../app/auth/useAuth'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui'
 import { can } from '../../lib/permissions'
 import { useResource } from '../../lib/useResource'
-import { StaggerItem } from '../../motion'
+import { FadeUp, StaggerItem, staggerDelay } from '../../motion'
 import { hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
 import type { Severity } from '../../types/domain'
 import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
@@ -39,23 +39,32 @@ export function CamerasPage() {
     ? `${online} de ${list.length} conectadas · ${videoCount ?? '…'} con video${list.length - online > 0 ? ` · ${list.length - online} sin conexión` : ''}`
     : null
 
-  return <>
-    <PageHeader title="Cámaras" actions={summary && <p className={styles.summary}>{summary}</p>} />
+  return <div className={styles.page}>
+    <FadeUp className={styles.head}>
+      <PageHeader title="Cámaras" actions={summary && <p className={styles.summary}>{summary}</p>} />
+      <p className={styles.lead}>Estado, imagen y detecciones de cada cámara de la finca. Las que tienen alertas aparecen primero.</p>
+    </FadeUp>
 
     {cameras.status === 'loading' && <div className={styles.grid}>
       {[0, 1, 2, 3].map(index => <Skeleton key={index} height="20rem" radius="var(--radius-lg)" />)}
     </div>}
 
-    {cameras.status === 'error' && !cameras.data && <ErrorState description="No se pudo cargar la lista de cámaras." onRetry={cameras.reload} />}
+    {cameras.status === 'error' && !cameras.data && <FadeUp delay={staggerDelay(1)} className={styles.stateCard}>
+      <ErrorState description="No se pudo cargar la lista de cámaras." onRetry={cameras.reload} />
+    </FadeUp>}
 
-    {cameras.status === 'success' && !cameras.data && <ErrorState title="Cámaras no disponibles"
-      description="El servidor todavía no ofrece la lista de cámaras ni su estado." />}
+    {cameras.status === 'success' && !cameras.data && <FadeUp delay={staggerDelay(1)} className={styles.stateCard}>
+      <ErrorState title="Cámaras no disponibles"
+        description="El servidor todavía no ofrece la lista de cámaras ni su estado." />
+    </FadeUp>}
 
-    {cameras.data && list.length === 0 && <EmptyState icon={Cctv} title="No hay cámaras conectadas"
-      description="Enciende la cámara y el servicio de visión en la PC de la finca. Aparecerá aquí sola, con su video." />}
+    {cameras.data && list.length === 0 && <FadeUp delay={staggerDelay(1)} className={styles.stateCard}>
+      <EmptyState icon={Cctv} title="No hay cámaras conectadas"
+        description="Enciende la cámara y el servicio de visión en la PC de la finca. Aparecerá aquí sola, con su video." />
+    </FadeUp>}
 
     {list.length > 0 && <div className={styles.grid}>
-      {list.map((camera, index) => <StaggerItem key={camera.id} index={index}>
+      {list.map((camera, index) => <StaggerItem key={camera.id} index={index + 1} className={styles.item}>
         <CameraCard camera={camera}
           stream={snapshots.data?.[camera.id]?.stream ?? null}
           frame={snapshots.data?.[camera.id]?.frame ?? null}
@@ -66,5 +75,5 @@ export function CamerasPage() {
     {session && can(session.user.role, 'cameras:configure') && list.length > 0 && <p className={styles.note}>
       Agregar cámaras o cambiar su zona estará disponible cuando el servidor lo permita.
     </p>}
-  </>
+  </div>
 }
