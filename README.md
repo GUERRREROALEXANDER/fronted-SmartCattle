@@ -353,8 +353,9 @@ flowchart TB
 
 - Anonymous visitors to a private route are redirected to `/login` and come back to the requested page after signing in.
 - The navigation is defined once in `src/app/navigation.ts`.
-- **Desktop (≥ 1024 px):** fixed farm-green side rail with the six sections, the demo badge and the signed-in user.
-- **Mobile:** top bar, a five-cell bottom tab bar (Inicio, En vivo, Eventos, Ganado, Más) and a native `<dialog>` sheet for Potrero 3D, Videos, Análisis, Cámaras, Ajustes and Perfil.
+- **Desktop (≥ 1024 px):** floating glass side rail with the nine sections, a green indicator that slides to the active page, the demo badge and the signed-in user.
+- **Mobile:** glass top bar, a floating five-cell tab bar (Inicio, En vivo, Eventos, Ganado, Más) and a native `<dialog>` glass sheet for Potrero 3D, Videos, Análisis, Cámaras, Ajustes and Perfil.
+- **Alarm banner:** when any part of the app raises a zone alarm (live map, 3D pasture, video analyzer), a red banner slides down with a "Silenciar" action.
 - "Security" is a tab inside Events rather than a separate page: security alerts are events, and a separate page would duplicate the list and filters.
 
 ---
