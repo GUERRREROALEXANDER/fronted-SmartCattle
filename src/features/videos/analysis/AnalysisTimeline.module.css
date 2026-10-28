@@ -1,0 +1,143 @@
+.timeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.track {
+  position: relative;
+  height: var(--touch-min);
+}
+
+.rail {
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: var(--radius-full);
+  background: var(--color-stage-raised);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  background: var(--color-sage);
+}
+
+.range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.range:disabled {
+  cursor: not-allowed;
+}
+
+.range::-webkit-slider-runnable-track {
+  height: 100%;
+  background: transparent;
+}
+
+.range::-moz-range-track {
+  background: transparent;
+}
+
+.range::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  margin-top: calc((var(--touch-min) - 18px) / 2);
+  border: 3px solid var(--color-stage);
+  border-radius: var(--radius-full);
+  background: var(--color-stage-ink);
+}
+
+.range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 3px solid var(--color-stage);
+  border-radius: var(--radius-full);
+  background: var(--color-stage-ink);
+}
+
+.range:focus-visible {
+  outline: none;
+}
+
+.range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--color-brand-hover);
+}
+
+.range:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--color-brand-hover);
+}
+
+.markers {
+  position: relative;
+  height: 28px;
+}
+
+/* 44px-wide hit area; the visible pin is a thin flag. */
+.marker {
+  position: absolute;
+  top: 0;
+  width: var(--touch-min);
+  height: 28px;
+  margin-left: calc(var(--touch-min) / -2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pin {
+  display: block;
+  width: 12px;
+  height: 20px;
+  margin: 4px auto 0;
+  border-radius: var(--radius-sm) var(--radius-sm) var(--radius-sm) 0;
+  border: 2px solid var(--color-stage);
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.cattle .pin {
+  background: var(--color-overlay-outside);
+}
+
+.person .pin {
+  background: var(--color-overlay-person);
+}
+
+@media (hover: hover) {
+  .marker:hover .pin {
+    transform: translateY(-2px) scale(1.15);
+  }
+}
+
+.marker:focus-visible {
+  outline: none;
+}
+
+.marker:focus-visible .pin {
+  box-shadow: 0 0 0 2px var(--color-stage-ink);
+}
+
+.hint {
+  display: block;
+  font-size: var(--text-xs);
+  line-height: 28px;
+  color: var(--color-stage-ink-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin { transition: none; }
+  .marker:hover .pin { transform: none; }
+}

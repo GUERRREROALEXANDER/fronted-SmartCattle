@@ -1,0 +1,70 @@
+.overlay {
+  position: absolute;
+  inset: 0;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.handles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* 44px hit area around a small visible knob. */
+.handle {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: var(--touch-min);
+  height: var(--touch-min);
+  margin: calc(var(--touch-min) / -2) 0 0 calc(var(--touch-min) / -2);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+  pointer-events: auto;
+}
+
+.handle:active {
+  cursor: grabbing;
+}
+
+.dot {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--color-stage);
+  border-radius: var(--radius-full);
+  background: var(--color-overlay-lindero);
+  box-shadow: 0 0 0 3px var(--color-stage-scrim);
+  transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast);
+}
+
+@media (hover: hover) {
+  .handle:hover .dot {
+    transform: scale(1.2);
+    background: var(--color-sage);
+  }
+}
+
+.handle:focus-visible {
+  outline: none;
+}
+
+.handle:focus-visible .dot {
+  background: var(--color-sage);
+  box-shadow: 0 0 0 3px var(--color-stage), 0 0 0 6px var(--color-overlay-lindero);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot { transition: none; }
+  .handle:hover .dot { transform: none; }
+}
