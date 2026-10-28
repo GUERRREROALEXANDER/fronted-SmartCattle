@@ -15,7 +15,7 @@ const Z_INDEX_RANGE = [10, 0]
 export function CowLabel({ cowName, lotName, variant }: CowLabelProps) {
   return (
     <Html
-      position={[0, variant === 'alert' ? 3 : 2.6, 0]}
+      position={[0, variant === 'alert' ? 2.35 : 2.05, 0]}
       center
       zIndexRange={Z_INDEX_RANGE}
       pointerEvents="none"
