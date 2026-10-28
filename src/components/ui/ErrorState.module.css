@@ -1,3 +1,4 @@
 .error { min-width: 0; }
+.error > div { border-color: color-mix(in srgb, var(--color-alarm) 30%, var(--glass-border)); }
 .error > div > svg { background: var(--color-alarm-surface); color: var(--color-alarm-ink); }
 .error button { margin: var(--space-1); }

@@ -1,12 +1,17 @@
 .state {
   display: flex; flex-direction: column; align-items: center; gap: var(--space-3);
   text-align: center; padding: var(--space-10) var(--space-4);
-  border: 1px dashed var(--color-rule-strong); border-radius: var(--radius-xl);
-  background: var(--color-surface-raised); overflow-wrap: anywhere;
+  border: 1px dashed color-mix(in srgb, var(--color-rule-strong) 45%, var(--glass-border)); border-radius: var(--radius-xl);
+  background: var(--glass-fill);
+  box-shadow: var(--glass-highlight);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  overflow-wrap: anywhere;
 }
 .icon {
-  box-sizing: content-box; padding: var(--space-3); border-radius: var(--radius-full);
-  background: var(--color-mint); color: var(--color-mint-ink);
+  box-sizing: content-box; padding: var(--space-4); border-radius: var(--radius-lg);
+  background: var(--gradient-brand-soft); color: var(--color-mint-ink);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
 }
 .title { font-size: var(--text-md); font-weight: var(--weight-semibold); color: var(--color-ink); }
 .description { font-size: var(--text-sm); color: var(--color-ink-muted); max-width: var(--state-description-max); }

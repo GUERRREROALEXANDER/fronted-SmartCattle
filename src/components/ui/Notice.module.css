@@ -1,10 +1,16 @@
 .notice {
+  position: relative;
   display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3);
   padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg);
-  border: 1px solid color-mix(in srgb, var(--notice-tone) 28%, transparent);
-  background: var(--notice-surface); color: var(--notice-tone);
+  border: 1px solid color-mix(in srgb, var(--notice-tone) 26%, var(--glass-border));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--notice-surface) 88%, transparent), var(--glass-fill-strong));
+  box-shadow: var(--glass-highlight), 0 10px 24px -16px var(--notice-tone);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  color: var(--notice-tone);
   animation: enter var(--duration-base) var(--ease-out);
 }
+.notice:focus-visible { border-radius: var(--radius-lg); }
 .safe { --notice-tone: var(--color-safe-ink); --notice-surface: var(--color-safe-surface); }
 .warning { --notice-tone: var(--color-warning-ink); --notice-surface: var(--color-warning-surface); }
 .critical { --notice-tone: var(--color-critical-ink); --notice-surface: var(--color-critical-surface); }

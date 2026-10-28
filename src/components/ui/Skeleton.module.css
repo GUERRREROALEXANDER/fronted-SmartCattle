@@ -1,10 +1,11 @@
 .skeleton {
   display: block; position: relative; overflow: hidden; width: 100%; height: var(--space-4);
-  border-radius: var(--radius-sm); background: var(--color-well);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-mint) 45%, var(--glass-fill-subtle));
 }
 .skeleton::after {
   content: ''; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, var(--color-surface-raised), transparent);
+  background: linear-gradient(90deg, transparent, var(--glass-fill-strong), transparent);
   transform: translateX(-100%); animation: soft-shimmer var(--duration-shimmer) ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) { .skeleton::after { animation: none; display: none; } }

@@ -1,0 +1,35 @@
+.card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-fill);
+  color: var(--color-ink);
+  box-shadow: var(--glass-highlight), var(--glass-shadow);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  transition: box-shadow var(--duration-base) var(--ease-out), border-color var(--duration-base);
+}
+
+.default { background: var(--glass-fill); }
+.strong { background: var(--glass-fill-strong); }
+.subtle { background: var(--glass-fill-subtle); box-shadow: var(--glass-highlight); }
+.brand {
+  background: linear-gradient(var(--glass-fill-brand), var(--glass-fill-brand)), var(--glass-fill);
+  border-color: color-mix(in srgb, var(--color-brand) 22%, var(--glass-border));
+}
+
+.pad-none { padding: 0; }
+.pad-sm { padding: var(--space-3); }
+.pad-md { padding: var(--space-5); }
+.pad-lg { padding: var(--space-6); }
+
+.interactive { cursor: pointer; }
+@media (hover: hover) {
+  .interactive:hover { box-shadow: var(--glass-highlight), var(--glass-shadow-hover); }
+}
+.interactive:focus-visible { box-shadow: var(--focus-ring), var(--glass-shadow-hover); border-radius: var(--radius-lg); }
+
+@media (min-width: 1024px) {
+  .pad-lg { padding: var(--space-8); }
+}

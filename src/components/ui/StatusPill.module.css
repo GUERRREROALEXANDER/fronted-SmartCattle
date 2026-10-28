@@ -1,13 +1,15 @@
 .pill {
   display: inline-flex; align-items: center; gap: var(--space-1);
-  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
   border-radius: var(--radius-full); font-weight: var(--weight-semibold);
+  box-shadow: var(--glass-highlight);
+  white-space: nowrap;
 }
 .pill svg { flex-shrink: 0; }
 .sm { font-size: var(--text-xs); padding: var(--badge-padding-block) var(--space-2); }
 .md { font-size: var(--text-sm); padding: var(--space-1) var(--pill-padding-inline); }
-.safe { color: var(--color-safe-ink); background: var(--color-safe-surface); }
-.warning { color: var(--color-warning-ink); background: var(--color-warning-surface); }
-.critical { color: var(--color-critical-ink); background: var(--color-critical-surface); }
-.inactive { color: var(--color-inactive-ink); background: var(--color-inactive-surface); }
-.info { color: var(--color-info-ink); background: var(--color-info-surface); }
+.safe { color: var(--color-safe-ink); background: color-mix(in srgb, var(--color-safe-surface) 88%, transparent); }
+.warning { color: var(--color-warning-ink); background: color-mix(in srgb, var(--color-warning-surface) 88%, transparent); }
+.critical { color: var(--color-critical-ink); background: color-mix(in srgb, var(--color-critical-surface) 92%, transparent); }
+.inactive { color: var(--color-inactive-ink); background: color-mix(in srgb, var(--color-inactive-surface) 88%, transparent); }
+.info { color: var(--color-info-ink); background: color-mix(in srgb, var(--color-info-surface) 88%, transparent); }
