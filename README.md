@@ -174,6 +174,8 @@ src/
   services/     Data access per capability, mappers, source resolution
   styles/       Design tokens, base styles, reduced-motion rules
   types/        API contract mirror, domain view models, auth types
+public/
+  models/       glTF models for the 3D pasture (cow.glb) and their credits
 docs/
   screenshots/  Images used in this README
 ```
