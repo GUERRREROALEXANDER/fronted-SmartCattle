@@ -640,7 +640,7 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 - Cameras with recent alerts first, then cameras with connection problems
 - Owners see a note that adding or rezoning cameras needs backend support; no fake configuration controls
 
-![Cameras page](docs/screenshots/cameras-desktop.jpg)
+![Cameras page with glass camera cards](docs/screenshots/cameras-desktop.png)
 
 **Phase 6: Cattle**
 - Herd figures: registered vs. detected now, with the occlusion note
@@ -648,7 +648,7 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 - Recent cattle movements (outside-zone exits, external animals)
 - No veterinary data: no vaccines, treatments, weights or collars
 
-![Cattle page](docs/screenshots/cattle-desktop.jpg)
+![Cattle page with the herd table on a glass panel](docs/screenshots/cattle-desktop.png)
 
 **Phases 7 and 8: Events, alerts and security**
 - Category tabs with counts: Todos, Seguridad, Ganado, Sistema (security is a tab, not a separate page, because security alerts are events)
