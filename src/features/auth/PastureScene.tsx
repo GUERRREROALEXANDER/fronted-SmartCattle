@@ -1,105 +1,129 @@
-﻿import { useId, type CSSProperties } from 'react'
+import { useEffect, type CSSProperties } from 'react'
+import { BellRing, ChartNoAxesColumnIncreasing, ScanEye } from 'lucide-react'
+import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react'
+import pastureSmall from '../../assets/login/pasture-dusk-1200.jpg'
+import pastureLarge from '../../assets/login/pasture-dusk-2400.jpg'
+import { BrandMark } from '../../components/ui/BrandMark'
+import { ease, staggerDelay } from '../../motion'
 import styles from './PastureScene.module.css'
 
-const sceneWidth = 2400
-const sceneHeight = 1595
-// The herd sits in the right half so the desktop crop (focus-x 0.85) never cuts a box or its label.
-const zoneVertices = [[860, 830], [1700, 640], [1860, 1080], [840, 1180]] as const
+// Coordinates are in the photo's own 2400x1595 pixel space.
+const photoWidth = 2400
+const photoHeight = 1595
+const zoneVertices = [[60, 800], [1560, 600], [1760, 1010], [40, 1120]] as const
 const detections = [
-  { x: 900, y: 870, width: 220, height: 130, confidence: 0.88 },
-  { x: 1170, y: 800, width: 150, height: 160, confidence: 0.91 },
-  { x: 1360, y: 760, width: 240, height: 165, confidence: 0.94 },
-  { x: 1240, y: 990, width: 200, height: 150, confidence: 0.83, labelBelow: true },
-  { x: 2000, y: 560, width: 160, height: 182, confidence: 0.92, outside: true },
+  { x: 160, y: 850, width: 250, height: 140, confidence: 0.88 },
+  { x: 690, y: 765, width: 150, height: 165, confidence: 0.91 },
+  { x: 845, y: 725, width: 265, height: 170, confidence: 0.94 },
+  { x: 1095, y: 672, width: 200, height: 182, confidence: 0.89 },
+  // Labelled below its box so it does not collide with the neighbouring label.
+  { x: 1232, y: 672, width: 160, height: 172, confidence: 0.83, labelBelow: true },
+  { x: 2085, y: 518, width: 160, height: 182, confidence: 0.92, outside: true },
 ]
+const features = [
+  { icon: ScanEye, label: 'Detección con visión artificial' },
+  { icon: BellRing, label: 'Zonas seguras y alertas al instante' },
+  { icon: ChartNoAxesColumnIncreasing, label: 'Métricas en tiempo real' },
+]
+
+const ZONE_DRAW = { delay: 0.3, duration: 1.2 }
+const DETECTION_START = 1.1
+const DETECTION_STEP = 0.22
 const confidenceFormat = new Intl.NumberFormat('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const toPercent = (value: number, total: number) => `${(value / total) * 100}%`
-const revealDelay = (index: number, outside?: boolean) => `${outside ? 1200 : 700 + index * 70}ms`
+const detectionDelay = (index: number) => DETECTION_START + index * DETECTION_STEP
 
-function Cow({ box }: { box: (typeof detections)[number] }) {
-  const { x, y, width, height } = box
-  return <g className={styles.cow} transform={`translate(${x} ${y})`}>
-    <path className={styles.cowLegs} vectorEffect="non-scaling-stroke"
-      d={`M ${width * 0.28} ${height * 0.62} L ${width * 0.25} ${height * 0.94} M ${width * 0.61} ${height * 0.62} L ${width * 0.65} ${height * 0.94}`} />
-    <ellipse className={styles.cowBody} cx={width * 0.46} cy={height * 0.48} rx={width * 0.34} ry={height * 0.26} />
-    <ellipse className={styles.cowSpot} cx={width * 0.38} cy={height * 0.43} rx={width * 0.12} ry={height * 0.13} />
-    <path className={styles.cowEar} d={`M ${width * 0.73} ${height * 0.32} L ${width * 0.63} ${height * 0.21} L ${width * 0.78} ${height * 0.25} Z`} />
-    <ellipse className={styles.cowHead} cx={width * 0.79} cy={height * 0.43} rx={width * 0.15} ry={height * 0.2} />
-    <ellipse className={styles.cowMuzzle} cx={width * 0.84} cy={height * 0.52} rx={width * 0.12} ry={height * 0.1} />
-    <circle className={styles.cowEye} cx={width * 0.84} cy={height * 0.36} r={Math.max(2, width * 0.018)} />
-  </g>
+function Confidence({ value, delay }: { value: number; delay: number }) {
+  const reduce = useReducedMotion()
+  const current = useMotionValue(reduce ? value : 0)
+  const text = useTransform(current, latest => confidenceFormat.format(latest))
+
+  useEffect(() => {
+    if (reduce) {
+      current.set(value)
+      return
+    }
+    const controls = animate(current, value, { delay, duration: 0.9, ease: ease.out })
+    return () => controls.stop()
+  }, [current, delay, reduce, value])
+
+  return <motion.span className={styles.confidence}>{text}</motion.span>
 }
 
 export function PastureScene({ focusX }: { focusX?: number }) {
-  const id = useId()
-  const skyId = `sky-${id}`
-  const pastureId = `pasture-${id}`
-  const hatchId = `hatch-outside-${id}`
+  const reduce = useReducedMotion()
+  const points = zoneVertices.map(point => point.join(',')).join(' ')
+  // Labels position themselves with a CSS transform, so only SVG shapes get the scale pop.
+  const appear = (delay: number, pop = false) => ({
+    initial: reduce ? false : pop ? { opacity: 0, scale: 0.9 } : { opacity: 0 },
+    animate: pop ? { opacity: 1, scale: 1 } : { opacity: 1 },
+    transition: { delay, duration: 0.35, ease: ease.out },
+  })
+
   return <figure className={styles.scene} style={{ '--focus-x': focusX } as CSSProperties}>
     <div className={styles.frame} aria-hidden="true">
-      <svg className={styles.illustration} viewBox={`0 0 ${sceneWidth} ${sceneHeight}`} preserveAspectRatio="none" focusable="false">
-        <defs>
-          <linearGradient id={skyId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" className={styles.skyTop} />
-            <stop offset="100%" className={styles.skyBottom} />
-          </linearGradient>
-          <linearGradient id={pastureId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" className={styles.pastureTop} />
-            <stop offset="100%" className={styles.pastureBottom} />
-          </linearGradient>
-          <pattern id={hatchId} width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <path d="M 0 0 V 10" className={styles.hatch} vectorEffect="non-scaling-stroke" />
-          </pattern>
-        </defs>
-        <rect width={sceneWidth} height={sceneHeight} fill={`url(#${skyId})`} />
-        <circle className={styles.sun} cx="1980" cy="220" r="120" />
-        <g className={styles.clouds}>
-          <path d="M180 280 C210 190 350 180 390 260 C470 200 590 250 580 330 H180 C130 330 130 280 180 280 Z" />
-          <path d="M1260 190 C1300 110 1420 120 1450 190 C1530 140 1630 200 1610 270 H1250 C1200 250 1210 200 1260 190 Z" />
-        </g>
-        <path className={styles.hillBack} d="M0 650 C360 400 690 490 980 650 C1330 370 1780 430 2400 700 V1595 H0 Z" />
-        <path className={styles.hillFront} d="M0 790 C420 610 810 690 1190 790 C1650 570 2050 650 2400 800 V1595 H0 Z" />
-        <rect className={styles.pasture} x="0" y="790" width={sceneWidth} height="805" fill={`url(#${pastureId})`} />
-        <g className={styles.fence}>
-          <path d="M0 1240 C620 1150 1460 1210 2400 1060 M0 1320 C650 1230 1500 1290 2400 1140" />
-          <path d="M180 1160 V1390 M760 1130 V1360 M1420 1110 V1340 M2140 1010 V1250" />
-        </g>
-        <g className={styles.boundary}>
-          <polygon points={zoneVertices.map(point => point.join(',')).join(' ')} vectorEffect="non-scaling-stroke" />
-          {zoneVertices.map(([x, y]) => <rect key={x} x={x - 5} y={y - 5} width="10" height="10" />)}
-        </g>
-        {detections.map(box => <Cow key={`cow-${box.x}`} box={box} />)}
-        {detections.map((box, index) => <g key={box.x}
-          className={`${styles.detection} ${box.outside ? styles.outside : ''}`}
-          style={{ '--reveal-delay': revealDelay(index, box.outside) } as CSSProperties}>
-          <rect className={styles.box} x={box.x} y={box.y} width={box.width} height={box.height}
-            fill={box.outside ? `url(#${hatchId})` : 'none'} vectorEffect="non-scaling-stroke" />
-        </g>)}
+      <img src={pastureLarge} srcSet={`${pastureSmall} 1200w, ${pastureLarge} 2400w`}
+        sizes="(min-width: 1024px) 60vw, 100vw" alt="" decoding="async" fetchPriority="high" />
+      <svg viewBox={`0 0 ${photoWidth} ${photoHeight}`} preserveAspectRatio="none" focusable="false">
+        <motion.polygon className={styles.zoneFill} points={points}
+          initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }}
+          transition={{ delay: ZONE_DRAW.delay + ZONE_DRAW.duration * 0.6, duration: 0.6 }} />
+        <motion.polygon className={styles.zoneLine} points={points} vectorEffect="non-scaling-stroke"
+          initial={reduce ? false : { pathLength: 0, opacity: 0 }} animate={{ pathLength: 1, opacity: 1 }}
+          transition={{ pathLength: { ...ZONE_DRAW, ease: ease.fluid }, opacity: { delay: ZONE_DRAW.delay, duration: 0.2 } }} />
+        {zoneVertices.map(([x, y], index) => <motion.circle key={x} className={styles.vertex} cx={x} cy={y} r="9"
+          {...appear(ZONE_DRAW.delay + (ZONE_DRAW.duration / zoneVertices.length) * index, true)} />)}
+        {detections.map((box, index) => <motion.rect key={box.x}
+          className={box.outside ? `${styles.box} ${styles.outside}` : styles.box}
+          x={box.x} y={box.y} width={box.width} height={box.height} rx="6" vectorEffect="non-scaling-stroke"
+          style={{ transformBox: 'fill-box', transformOrigin: 'center' }}
+          {...appear(detectionDelay(index), true)} />)}
       </svg>
-      <div className={styles.skyOverlay} />
+      <span className={styles.scan} />
+      {/* Labels are HTML so they keep a legible size at any scale. */}
       <div className={styles.labels}>
-        <span className={styles.zoneLabel}
-          style={{ left: toPercent(zoneVertices[1][0], sceneWidth), top: toPercent(zoneVertices[1][1], sceneHeight) }}>
+        <motion.span className={styles.zoneLabel}
+          style={{ left: toPercent(zoneVertices[1][0], photoWidth), top: toPercent(zoneVertices[1][1], photoHeight) }}
+          {...appear(ZONE_DRAW.delay + ZONE_DRAW.duration)}>
           Zona segura · Lote 3
-        </span>
-        {detections.map((box, index) => <span key={box.x}
+        </motion.span>
+        {detections.map((box, index) => <motion.span key={box.x}
           className={[styles.label, box.outside && styles.outsideLabel, box.labelBelow && styles.below].filter(Boolean).join(' ')}
           style={{
-            left: toPercent(box.outside ? box.x + box.width : box.x, sceneWidth),
-            top: toPercent(box.labelBelow ? box.y + box.height : box.y, sceneHeight),
-            '--reveal-delay': revealDelay(index, box.outside),
-          } as CSSProperties}>
-          {box.outside ? 'fuera' : 'bovino'} · {confidenceFormat.format(box.confidence)}
-        </span>)}
+            // The outside box sits near the photo edge, so its label is right-aligned to the box.
+            left: toPercent(box.outside ? box.x + box.width : box.x, photoWidth),
+            top: toPercent(box.labelBelow ? box.y + box.height : box.y, photoHeight),
+          }}
+          {...appear(detectionDelay(index) + 0.1)}>
+          {box.outside ? 'fuera de zona' : 'bovino'} · <Confidence value={box.confidence} delay={detectionDelay(index) + 0.1} />
+        </motion.span>)}
       </div>
     </div>
-    <div className={styles.chrome}>
-      <p className={styles.wordmark}>SmartCattle</p>
-      <p className={styles.pill}><span aria-hidden="true" />Potrero Norte · Demostración</p>
+    <div className={styles.scrim} aria-hidden="true" />
+
+    <div className={styles.overlay}>
+      <div className={styles.topRow}>
+        <p className={styles.chip}><span className={styles.hudDot} aria-hidden="true" />Potrero Norte · Demostración</p>
+        <p className={`${styles.chip} ${styles.status}`}><span className={styles.liveDot} aria-hidden="true" />Sistema operativo</p>
+      </div>
+      <motion.div className={styles.story}
+        initial={reduce ? false : { opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.6, ease: ease.out }}>
+        <BrandMark tone="on-dark" size="lg" className={styles.brand} />
+        <p className={styles.tagline}>Vigilancia inteligente del ganado</p>
+        <ul className={styles.features}>
+          {features.map(({ icon: Icon, label }, index) => <motion.li key={label} className={styles.feature}
+            initial={reduce ? false : { opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 + staggerDelay(index) * 2, duration: 0.45, ease: ease.out }}>
+            <span className={styles.featureIcon}><Icon size={18} strokeWidth={2} aria-hidden="true" /></span>
+            {label}
+          </motion.li>)}
+        </ul>
+      </motion.div>
     </div>
-    <figcaption className={styles.caption}>
-      <strong>Tu finca, de un vistazo.</strong>
-      <span>Detecciones simuladas sobre una pradera segura.</span>
+
+    <figcaption className={styles.caption}>Imagen ilustrativa con detecciones simuladas. Foto:{' '}
+      <a href="https://unsplash.com/photos/cows-grazing-in-a-field-at-sunset-HaSohIaDVdI" target="_blank" rel="noopener noreferrer">Uran Wang / Unsplash</a>
     </figcaption>
   </figure>
 }
