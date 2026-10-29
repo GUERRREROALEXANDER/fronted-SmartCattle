@@ -51,7 +51,8 @@ describe('login', () => {
   it('omits expiresAt when the backend sends no lifetime', async () => {
     // Rather than inventing one. An absent expiry means "ask the backend",
     // which is correct; a guessed one would sign the user out early.
-    const { expires_in: _unused, ...withoutLifetime } = tokenResponse
+    const withoutLifetime: Record<string, unknown> = { ...tokenResponse }
+    delete withoutLifetime.expires_in
     const { service: auth } = service(scriptedFetch(Response.json(withoutLifetime)))
     expect((await auth.login(credentials)).expiresAt).toBeUndefined()
   })
