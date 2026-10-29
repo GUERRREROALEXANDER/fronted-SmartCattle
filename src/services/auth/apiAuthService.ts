@@ -120,12 +120,24 @@ export interface ApiAuthOptions {
   storage?: SafeStorage
   now?: () => Date
   fetchImpl?: typeof fetch
+  /**
+   * Which backend to talk to. Defaults to the configured one.
+   *
+   * Every other service accepts this, and leaving it out here meant the auth
+   * service could only ever reach VITE_API_BASE_URL -- so an integration run
+   * pointed at a second backend signed in against the first without saying
+   * so, which is a confusing way to fail.
+   */
+  baseUrl?: string
 }
 
 export function createApiAuthService({
-  storage = safeStorage, now = () => new Date(), fetchImpl,
+  storage = safeStorage, now = () => new Date(), fetchImpl, baseUrl,
 }: ApiAuthOptions = {}): AuthService {
-  const options = fetchImpl ? { fetchImpl } : {}
+  const options = {
+    ...(fetchImpl ? { fetchImpl } : {}),
+    ...(baseUrl ? { baseUrl } : {}),
+  }
 
   const persist = (session: Session): Session => {
     storage.setJson(sessionKey, session)
