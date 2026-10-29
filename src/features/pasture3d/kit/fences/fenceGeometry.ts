@@ -72,9 +72,19 @@ export function cleanBoundary(points: readonly WorldPoint[]) {
 }
 
 /** Posts, rail spans and a gate on the edge that faces the farm track. */
-export function layoutFence(boundary: readonly WorldPoint[], track: readonly WorldPoint[]): FenceLayout {
+export function layoutFence(input: readonly WorldPoint[], track: readonly WorldPoint[]): FenceLayout {
   const posts: PostSpec[] = []
   const spans: SpanSpec[] = []
+  // Cleaned here rather than trusted from the caller. Two identical
+  // consecutive points give a zero-length edge, and every value derived from
+  // it is a division by that length: the outward normal, the post positions
+  // and the span heights all become NaN. Three.js does not report a NaN in a
+  // buffer geometry -- the fence simply stops being drawn -- so the failure is
+  // silent and looks like a rendering problem rather than bad input.
+  //
+  // cleanBoundary is idempotent, so the caller that already calls it is
+  // unaffected.
+  const boundary = cleanBoundary(input)
   if (boundary.length < 3) return { posts, spans, gate: null }
 
   // Gate: the edge point closest to the track, kept clear of the corners.
