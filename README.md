@@ -282,50 +282,118 @@ Severity from the catalog is a presentation default (`severitySource: 'catalog'`
 
 ## Authentication
 
-The backend has no authentication yet, so login and registration run against a **demo service** behind the `AuthService` interface. Replacing it with a real implementation does not touch the screens.
+Sign-in goes to the backend. The demo service is still there, behind the same
+`AuthService` interface, and it is used **only** when `VITE_DATA_SOURCE=mock`.
+
+That distinction matters: `hybrid` used to fall back to the demo service, so
+the deployed app -- which runs in hybrid -- authenticated against unsalted
+SHA-256 hashes in `localStorage`. Authentication is the one capability where
+falling back to a demo is worse than failing, because a session that is not
+real cannot protect anything and looks exactly like one that is.
 
 ```mermaid
 sequenceDiagram
     actor U as User
     participant P as LoginPage
     participant C as AuthProvider
-    participant S as AuthService (mock)
+    participant S as apiAuthService
+    participant B as Backend
     participant L as localStorage (guarded)
 
-    U->>P: username or email + password
+    U->>P: email + password
     P->>P: validate fields
     P->>C: login(input)
     C->>S: login(input)
-    S->>S: SHA-256 hash of password
-    S->>L: read demo users
-    alt credentials match
-        S->>L: save session
-        S-->>C: Session
+    S->>B: POST /api/auth/login
+    alt credentials accepted
+        B-->>S: access token + user
+        S->>L: save session with the token
+        S-->>C: Session (source: 'api')
         C-->>P: authenticated
         P->>U: redirect to requested page
-    else wrong credentials
+    else rejected
+        B-->>S: 401
         S-->>C: AuthError("invalid_credentials")
         C-->>P: error
         P->>U: inline error in an aria-live region
     end
 ```
 
-- **Demo accounts** (password `demo1234`): `carmen.rojas` / `dueno@sanjose.demo` (owner) and `julian.perez` / `trabajador@sanjose.demo` (worker). Sign in with the username or the email; the "Cuentas de demostración" disclosure fills them in.
-- Registration asks for username, email, password and confirmation, with a live password strength meter and a caps-lock warning. It always creates an **owner**. Workers will join through an invitation from the owner, which needs backend support.
-- After repeated failed attempts the form locks for a short cooldown with a visible countdown.
-- "Recordarme" and "¿Olvidaste tu contraseña?" are visual only for now: the demo always keeps the session, and password recovery needs backend support (the link explains this).
+### What the backend decides
+
+- **One message for every failure.** A wrong password, an unknown address and
+  a deactivated account all return the same 401. Distinguishing them would
+  turn the form into a way to find out which addresses have accounts, so the
+  interface shows one message because there is no detail to show.
+- **The first account registered is the owner**, and every later one is a
+  worker. The client cannot ask for a role; it reads the one that comes back.
+- **Passwords are limited to 72 bytes**, which is bcrypt's limit. Accented
+  letters are two bytes in UTF-8, so the message says bytes rather than
+  letters -- a password well under 72 characters can still exceed it.
+- **A session lasts an hour** (`ACCESS_TOKEN_MINUTES` on the backend). There
+  is no refresh token, so expiry ends the session and `AuthProvider` signs the
+  user out on a timer rather than letting every request start failing with a
+  401.
+
+### Restoring a session
+
+`getSession()` confirms the stored token against `GET /api/auth/me` instead of
+trusting it. A well-formed token stops working when the account is deactivated
+or the deployment's signing secret is replaced, and both leave something that
+looks perfectly valid in storage.
+
+Only a 401 clears the session. A network failure or a server error keeps it,
+because a dropped connection is not a signed-out user -- and on a rural link
+that is the normal case rather than the exceptional one.
+
+### Demo accounts
+
+Only in `mock` mode. Password `demo1234`: `carmen.rojas` /
+`dueno@sanjose.demo` (owner) and `julian.perez` / `trabajador@sanjose.demo`
+(worker). Sign in with the username or the email; the "Cuentas de
+demostración" disclosure fills them in.
+
+A demo session carries **no token**, which is what makes it unusable against
+the backend rather than quietly half-working. The profile page labels it, so a
+write that cannot reach a server is not a mystery.
 
 | Sign up |
 |---|
 | ![Registration form with the password strength meter](docs/screenshots/register-desktop.png) |
-- Passwords are stored as SHA-256 hashes, never in plain text. All storage access is wrapped in `try/catch` and falls back to memory.
-- In `api` mode the login shows "Inicio de sesión no disponible" instead of pretending to work.
-- Route guards and permissions (`src/lib/permissions.ts`) only shape the UI. **The backend must enforce access.**
+
+- Registration asks for email, password and confirmation, with a live password
+  strength meter and a caps-lock warning.
+- After repeated failed attempts the backend refuses the address for a while
+  and the form shows the countdown. The lockout is keyed on the address rather
+  than the connection, because the farm staff share one.
+- "Recordarme" and "¿Olvidaste tu contraseña?" are still visual only: the
+  session already persists, and password recovery needs an email sender the
+  backend does not have.
+
+### Roles
+
+`users.role` is `owner` or `worker`. The backend enforces it on every write;
+`src/lib/permissions.ts` shapes the interface so a worker is not offered a
+control whose every use returns 403. **The guard in the browser is a courtesy,
+not a control.**
 
 | Permission | Owner | Worker |
 |---|---|---|
 | `monitoring:view`, `events:view`, `events:review` | yes | yes |
+| `herd:edit`, `zones:edit` | yes | no |
 | `farm:edit`, `workers:manage`, `cameras:configure`, `alerts:configure`, `security-hours:configure` | yes | no |
+
+`RequireAuth` accepts an optional `role`, and a worker reaching an owner route
+is redirected to the dashboard rather than shown an error: they are signed in
+and simply cannot be there.
+
+### What is still missing
+
+- No password recovery, and no email sender to build it on.
+- No invitation flow, so a worker account is created by registering and then
+  changing `users.role` in the database.
+- No way to sign out other devices. The backend has no revocation list, so a
+  token works until it expires; replacing `JWT_SECRET` signs everyone out.
 
 ---
 
