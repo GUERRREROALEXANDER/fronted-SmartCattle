@@ -1,13 +1,12 @@
 import { dataMode } from '../api/config'
 import { getJson, patchJson, postJson } from '../api/httpClient'
 import { parseAnimal, parseAnimalsResponse } from '../api/validate'
-import { authHeaders } from '../api/session'
 import { mockDetectedCattle, mockRegisteredCattle } from '../mocks/mockData'
 import { buildMockHerd } from '../mocks/mockHerd'
 import type { Animal, AnimalStatus, Sourced } from '../types/domain'
 import type { ApiAnimal } from '../types/api'
 import { resolveSource } from './dataSource'
-import { resolveMockOnly, waitForMock, type ServiceOptions } from './options'
+import { requestHeaders, resolveMockOnly, waitForMock, type ServiceOptions } from './options'
 
 /** The backend speaks snake_case and ISO strings; the interface wants Dates. */
 export function toAnimal(animal: ApiAnimal): Animal {
@@ -69,7 +68,7 @@ export async function registerAnimal(draft: AnimalDraft, options: ServiceOptions
     name: draft.name?.trim() || null,
     camera_id: draft.cameraId || null,
     ...(draft.status ? { status: draft.status } : {}),
-  }, { ...options, headers: authHeaders() })
+  }, { ...options, headers: requestHeaders(options) })
   return toAnimal(parseAnimal(body))
 }
 
@@ -87,7 +86,7 @@ export async function updateAnimal(
   if ('status' in changes && changes.status) body.status = changes.status
 
   const response = await patchJson<unknown>(`/api/animals/${encodeURIComponent(tag)}`, body, {
-    ...options, headers: authHeaders(),
+    ...options, headers: requestHeaders(options),
   })
   return toAnimal(parseAnimal(response))
 }
@@ -101,7 +100,7 @@ export async function updateAnimal(
 export async function deactivateAnimal(tag: string, options: ServiceOptions = {}): Promise<Animal> {
   const body = await postJson<unknown>(
     `/api/animals/${encodeURIComponent(tag)}/deactivate`, undefined,
-    { ...options, headers: authHeaders() },
+    { ...options, headers: requestHeaders(options) },
   )
   return toAnimal(parseAnimal(body))
 }
@@ -110,7 +109,7 @@ export async function deactivateAnimal(tag: string, options: ServiceOptions = {}
 export async function tagExists(tag: string, options: ServiceOptions = {}): Promise<boolean> {
   const body = await getJson<{ exists?: unknown }>(
     `/api/animals/${encodeURIComponent(tag)}/exists`,
-    { ...options, headers: authHeaders() },
+    { ...options, headers: requestHeaders(options) },
   )
   return body.exists === true
 }

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import { SESSION_STORAGE_KEY } from '../api/session'
 import {
   deactivateAnimal,
   getRegisteredCattleCount,
@@ -98,17 +97,14 @@ describe('getRegisteredCattleCount', () => {
 })
 
 describe('writing', () => {
-  const withSession = () => {
-    globalThis.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify({
-      user: { id: '1', name: 'Ana', email: 'ana@finca.example', role: 'owner' },
-      issuedAt: '2026-10-29T12:00:00Z', source: 'api', accessToken: 'a-token',
-    }))
-  }
+  // Injected rather than written into a browser storage the node test
+  // environment does not have -- and it keeps each test's authorisation
+  // visible at the call site.
+  const signedIn = { headers: { Authorization: 'Bearer a-token' } }
 
   it('registers an animal and sends the token', async () => {
-    withSession()
     const fetchImpl = replying(apiAnimal)
-    await registerAnimal({ tag: ' A-441 ', name: ' Lucera ', cameraId: 'camera-01' }, { fetchImpl })
+    await registerAnimal({ tag: ' A-441 ', name: ' Lucera ', cameraId: 'camera-01' }, { fetchImpl, ...signedIn })
 
     const init = fetchImpl.mock.calls[0][1] as RequestInit
     expect(init.method).toBe('POST')
@@ -119,18 +115,16 @@ describe('writing', () => {
   })
 
   it('sends null rather than an empty name', async () => {
-    withSession()
     const fetchImpl = replying(apiAnimal)
-    await registerAnimal({ tag: 'A-441', name: '   ' }, { fetchImpl })
+    await registerAnimal({ tag: 'A-441', name: '   ' }, { fetchImpl, ...signedIn })
     // An empty string is how a form says "not set"; storing it would leave two
     // ways to express the same absence.
     expect(sentBody(fetchImpl)).toMatchObject({ name: null, camera_id: null })
   })
 
   it('sends only the fields an update mentions', async () => {
-    withSession()
     const fetchImpl = replying(apiAnimal)
-    await updateAnimal('A-441', { status: 'lost' }, { fetchImpl })
+    await updateAnimal('A-441', { status: 'lost' }, { fetchImpl, ...signedIn })
 
     // The classic partial-update bug: including the untouched keys as
     // undefined would blank the animal's name and camera.
@@ -139,26 +133,23 @@ describe('writing', () => {
   })
 
   it('can clear a name explicitly', async () => {
-    withSession()
     const fetchImpl = replying(apiAnimal)
-    await updateAnimal('A-441', { name: null }, { fetchImpl })
+    await updateAnimal('A-441', { name: null }, { fetchImpl, ...signedIn })
     // Sending null and omitting the key have to mean different things.
     expect(sentBody(fetchImpl)).toEqual({ name: null })
   })
 
   it('escapes a tag in the path', async () => {
-    withSession()
     const fetchImpl = replying(apiAnimal)
-    await updateAnimal('A 441', { status: 'lost' }, { fetchImpl })
+    await updateAnimal('A 441', { status: 'lost' }, { fetchImpl, ...signedIn })
     // A raw space would produce an invalid URL; the backend rejects the tag
     // anyway, but the request has to be well formed to get that answer.
     expect(sentUrl(fetchImpl)).toContain('A%20441')
   })
 
   it('deactivates rather than deleting', async () => {
-    withSession()
     const fetchImpl = replying({ ...apiAnimal, status: 'inactive' })
-    const animal = await deactivateAnimal('A-441', { fetchImpl })
+    const animal = await deactivateAnimal('A-441', { fetchImpl, ...signedIn })
 
     expect((fetchImpl.mock.calls[0][1] as RequestInit).method).toBe('POST')
     expect(sentUrl(fetchImpl)).toContain('/deactivate')
@@ -166,15 +157,13 @@ describe('writing', () => {
   })
 
   it('checks whether a tag is taken', async () => {
-    withSession()
-    await expect(tagExists('A-441', { fetchImpl: replying({ exists: true }) })).resolves.toBe(true)
-    await expect(tagExists('A-999', { fetchImpl: replying({ exists: false }) })).resolves.toBe(false)
+    await expect(tagExists('A-441', { fetchImpl: replying({ exists: true }), ...signedIn })).resolves.toBe(true)
+    await expect(tagExists('A-999', { fetchImpl: replying({ exists: false }), ...signedIn })).resolves.toBe(false)
   })
 
   it('treats a malformed exists answer as not taken', async () => {
-    withSession()
     // A truthy non-boolean must not read as taken: the form would refuse a tag
     // that is free, and the user has no way to tell why.
-    await expect(tagExists('A-441', { fetchImpl: replying({ exists: 'yes' }) })).resolves.toBe(false)
+    await expect(tagExists('A-441', { fetchImpl: replying({ exists: 'yes' }), ...signedIn })).resolves.toBe(false)
   })
 })

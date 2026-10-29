@@ -1,12 +1,11 @@
 import { dataMode } from '../api/config'
-import { authHeaders } from '../api/session'
 import { deleteJson, getJson, patchJson, postJson } from '../api/httpClient'
 import { parseZone, parseZonesResponse } from '../api/validate'
 import { mockSafeZones } from '../mocks/mockData'
 import type { ApiZone } from '../types/api'
 import type { NormalizedBounds, NormalizedPoint, SafeZone, Sourced } from '../types/domain'
 import { resolveSource } from './dataSource'
-import { waitForMock, type ServiceOptions } from './options'
+import { requestHeaders, waitForMock, type ServiceOptions } from './options'
 
 /**
  * A zone as the interface uses it.
@@ -57,7 +56,7 @@ export async function listSafeZones(
   }
   const query = cameraId ? `?camera_id=${encodeURIComponent(cameraId)}` : ''
   const response = parseZonesResponse(await getJson<unknown>(`/api/zones${query}`, {
-    ...options, headers: authHeaders(),
+    ...options, headers: requestHeaders(options),
   }))
   return { data: response.items.map(toSafeZone), source }
 }
@@ -76,7 +75,7 @@ export async function createSafeZone(
 ): Promise<SafeZone> {
   const body = await postJson<unknown>(
     `/api/zones/camera/${encodeURIComponent(cameraId)}`, toApiBody(draft),
-    { ...options, headers: authHeaders() },
+    { ...options, headers: requestHeaders(options) },
   )
   return toSafeZone(parseZone(body))
 }
@@ -99,7 +98,7 @@ export async function updateSafeZone(
   if (changes.geometry) body.geometry = toApiBody(changes.geometry)
 
   const response = await patchJson<unknown>(`/api/zones/${encodeURIComponent(zoneId)}`, body, {
-    ...options, headers: authHeaders(),
+    ...options, headers: requestHeaders(options),
   })
   return toSafeZone(parseZone(response))
 }
@@ -113,6 +112,6 @@ export async function updateSafeZone(
  */
 export async function deleteSafeZone(zoneId: string, options: ServiceOptions = {}): Promise<void> {
   await deleteJson<void>(`/api/zones/${encodeURIComponent(zoneId)}`, {
-    ...options, headers: authHeaders(),
+    ...options, headers: requestHeaders(options),
   })
 }

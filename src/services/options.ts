@@ -1,4 +1,5 @@
 import { dataMode, type DataMode } from '../api/config'
+import { authHeaders } from '../api/session'
 import type { Sourced } from '../types/domain'
 import { mockDelay, resolveSource } from './dataSource'
 
@@ -9,6 +10,18 @@ export interface ServiceOptions {
   now?: Date
   /** Overrides VITE_AI_SERVICE_URL; an empty string disables live video. */
   aiServiceUrl?: string
+  /**
+   * Overrides the Authorization header the service would read from the stored
+   * session. Injected rather than reached for, so a service can be tested
+   * without a browser storage and so a caller holding a token directly -- a
+   * sign-up flow that has one before it is persisted -- can use it.
+   */
+  headers?: Record<string, string>
+}
+
+/** The caller's headers if given, otherwise the current session's. */
+export function requestHeaders(options: ServiceOptions): Record<string, string> {
+  return options.headers ?? authHeaders()
 }
 
 export async function waitForMock(options: ServiceOptions): Promise<void> {

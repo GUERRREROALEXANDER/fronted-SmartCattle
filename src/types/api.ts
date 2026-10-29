@@ -57,3 +57,26 @@ export interface ApiLiveStatus {
   captured_at: string | null
   detections: ApiLiveDetection[]
 }
+
+/** A polygon vertex. Normalised from 0 to 1, not pixels. */
+export interface ApiZonePoint { x: number; y: number }
+
+/**
+ * GET /api/zones. Coordinates are normalised from 0 to 1 rather than stored
+ * in pixels: a zone in pixels is tied to the resolution it was drawn at, so
+ * swapping the camera moves the zone without anyone touching it.
+ */
+export interface ApiZone {
+  id: number
+  camera_id: string
+  name: string
+  x_min: number
+  y_min: number
+  x_max: number
+  y_max: number
+  /** Optional polygon. When present it defines the zone; the rectangle is its bounding box. */
+  outline: ApiZonePoint[] | null
+  active: boolean
+  created_at: string
+}
+export interface ApiZonesResponse { items: ApiZone[]; total: number }
