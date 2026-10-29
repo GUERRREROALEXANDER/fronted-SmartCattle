@@ -7,10 +7,11 @@ import { EmptyState, ErrorState, PageHeader, SkeletonText } from '../../componen
 import { formatCount, formatTime } from '../../lib/format'
 import { useResource } from '../../lib/useResource'
 import { duration, ease, FadeUp, staggerDelay } from '../../motion'
-import { getDetectedCattleCount, getRegisteredCattleCount, hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
+import { getDetectedCattleCount, getRegisteredCattleCount, hasPicture, listAnimals, listCameras, listEvents, loadCameraSnapshots } from '../../services'
 import { cameraName } from '../dashboard/dashboardModel'
 import { HerdSummary } from '../dashboard/HerdSummary'
 import { cattleEvents, herdByCamera, visibleTotals } from './cattleModel'
+import { HerdPanel } from './HerdPanel'
 import styles from './CattlePage.module.css'
 
 export function CattlePage() {
@@ -22,6 +23,9 @@ export function CattlePage() {
   }, [])
 
   const registered = useResource(signal => getRegisteredCattleCount({ signal }))
+  // The registry, not what the cameras see. Refreshed slowly: the herd
+  // changes when somebody registers an animal, not every few seconds.
+  const herd = useResource(signal => listAnimals({ signal }), { refreshMs: 120_000 })
   const detected = useResource(signal => getDetectedCattleCount({ signal }), { refreshMs: 15_000 })
   const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 15_000 })
   const events = useResource(signal => listEvents({ signal }), { refreshMs: 15_000 })
@@ -44,6 +48,19 @@ export function CattlePage() {
       <div className={styles.main}>
         <FadeUp delay={staggerDelay(1)}>
           <HerdSummary title="Hato" registered={registered} detected={detected} />
+        </FadeUp>
+
+        <FadeUp delay={staggerDelay(2)} className={styles.card}>
+          <section aria-labelledby="herd-registry-title">
+            <h2 id="herd-registry-title" className={styles.sectionTitle}>Hato registrado</h2>
+            <p className={styles.lead}>
+              Qué animales existen y cuáles no se han podido ubicar. Contar lo que ve una cámara
+              no dice qué animal falta.
+            </p>
+            {herd.status === 'loading' && <SkeletonText lines={4} />}
+            {herd.status === 'error' && <ErrorState {...describeApiError(herd.error)} onRetry={herd.reload} />}
+            {herd.data && <HerdPanel animals={herd.data} now={now} />}
+          </section>
         </FadeUp>
 
         <FadeUp delay={staggerDelay(2)} className={styles.card}>
