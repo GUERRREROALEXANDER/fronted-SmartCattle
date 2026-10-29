@@ -256,9 +256,16 @@ flowchart TD
 
 | Capability | `mock` | `hybrid` | `api` |
 |---|---|---|---|
-| System status, events, registered cattle | demo | **API** | **API** |
-| Cameras, detections, safe zones, detected count, farm | demo | demo | unavailable |
-| Authentication | demo | demo | unavailable |
+| System status, events, registered herd, safe zones | demo | **API** | **API** |
+| **Authentication** | demo | **API** | **API** |
+| Cameras, detections, detected count, farm | demo | demo | unavailable |
+
+Authentication is the row that does not follow the pattern, and deliberately
+so. Every other capability falls back to demo data in `hybrid`; sign-in does
+not, because a session that is not real cannot protect anything and is
+indistinguishable from one that is. It used to fall back, which meant the
+deployed app -- running in `hybrid` -- authenticated against unsalted SHA-256
+hashes in `localStorage`.
 
 Rules:
 
