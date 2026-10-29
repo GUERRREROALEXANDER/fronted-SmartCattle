@@ -191,14 +191,25 @@ The backend (`SmartCattle-Backend`) is a FastAPI service backed by PostgreSQL (S
 | Method | Path | Response | Used for |
 |---|---|---|---|
 | GET | `/health` | `{ "status": "ok" }` | Backend online/offline indicator |
-| GET | `/api/status` | `version`, `ai_service.configured`, `storage` | System status. `configured` means an AI URL is set, **not** that the AI is online. |
-| GET | `/api/animals` | `{ items, total }` | Registered cattle count |
-| GET | `/api/events` | Latest 1000 events, newest first | Alerts and history |
-| GET | `/api/cameras` | `{ items, total }` | Camera list and status |
-| POST | `/api/videos/analyses` | Saved analysis | Stores the summary of a finished video analysis |
+| GET | `/api/status` | `version`, `ai_service.configured`, `storage`, `auth_enabled` | System status. `configured` means an AI URL is set, **not** that the AI is online. `auth_enabled` false means sign-in is switched off on that deployment. |
+| POST | `/api/auth/register`, `/api/auth/login` | token + user | Sign-up and sign-in |
+| GET | `/api/auth/me` | The signed-in user | Confirming a stored token |
+| GET | `/api/animals` | `{ items, total }` | The registered herd, and its count |
+| POST, PATCH | `/api/animals`, `/api/animals/{tag}` | One animal | Registering and editing (**owner**) |
+| POST | `/api/animals/{tag}/deactivate` | One animal | Withdrawing an animal (**owner**). There is no DELETE. |
+| GET | `/api/events` | Newest first; filters `camera_id`, `level`, `event_type`, and `limit`/`offset` | Alerts and history |
+| GET | `/api/cameras`, `/api/cameras/{id}` | `{ items, total }` / one camera | Camera list and status |
+| GET | `/api/zones` | `{ items, total }` | Safe zones (**signed in**) |
+| POST, PATCH, DELETE | `/api/zones/...` | One zone | Editing a safe zone (**owner**) |
+| POST | `/api/videos/analyses` | Saved analysis | Stores a finished analysis (**signed in**) |
 | GET | `/api/videos/analyses`, `/api/videos/analyses/{id}` | Analyses list / one analysis | Analysis history |
 | GET | `/api/metrics/summary` | Aggregated counts | Metrics summary |
-| POST | `/api/ai/events`, PUT `/api/ai/cameras/{id}/status` | — | AI service only (API key). **The frontend never calls them.** |
+| POST | `/api/ai/events`, PUT `/api/ai/cameras/{id}/status`, PUT `/api/animals/{tag}/detection` | — | AI service only (API key). **The frontend never calls them.** |
+
+`POST /api/videos/analyses` needs a signed-in user rather than the AI key,
+because it is called by the browser and `AI_API_KEY` cannot live in a `VITE_`
+variable -- those are public in the bundle. That is also why it was the one
+unauthenticated path into the shared events table until users existed.
 
 Event shape (mirrored in `src/types/api.ts`):
 
