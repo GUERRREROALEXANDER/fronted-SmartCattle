@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          # Matches engines.node in package.json and NODE_VERSION in render.yaml.
+          node-version: '22.22.0'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check and build
+        # 'npm run build' is tsc -b followed by vite build, so this covers both
+        # the types and the bundle Render has to produce.
+        run: npm run build
+
+      - name: Test
+        run: npm test
+
+      - name: Audit production dependencies
+        # Dev-only advisories do not block a deploy; anything shipped to the
+        # browser does.
+        run: npm audit --omit=dev --audit-level=high
