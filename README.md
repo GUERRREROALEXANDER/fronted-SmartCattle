@@ -220,12 +220,21 @@ The backend's CORS policy allows `GET` and `POST`, the headers `Content-Type` an
 
 The frontend never invents endpoints. Until these capabilities exist, the UI uses labeled demo data or shows that the capability is unavailable:
 
-- Authentication, sessions, users, roles, farms and worker invitations
-- Video streaming, per-frame detections and video uploads (analyses store only their summary)
-- Safe-zone geometry
+- Farms and worker invitations. Authentication, sessions, users and roles now
+  exist; a worker account is created by registering and then changing
+  `users.role` in the database, and there is no farm entity -- one deployment
+  is one farm, which is why the profile shows no farm identifier.
+- Video streaming, per-frame detections and video uploads (analyses store only
+  their summary)
 - Person or vehicle detection, day/night security rules
-- Event severity, zone, evidence and review state
+- Event zone, evidence and review state. Event **severity** now comes from the
+  backend, derived from the detection confidence.
+- Password recovery, which needs an email sender
 - Real-time push (WebSocket/SSE) and notifications
+
+Safe-zone geometry is no longer on this list: zones are stored, so a zone
+drawn in the browser survives a reload and reaches the service that compares
+detections against it.
 
 ---
 
