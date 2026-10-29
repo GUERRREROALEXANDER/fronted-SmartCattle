@@ -169,6 +169,8 @@ src/
     ui/         Reusable UI primitives (GlassCard, BrandMark, Button, TextField, StatusPill, ...)
   features/     One folder per section (auth, dashboard, monitoring, events, videos, pasture3d, ...)
   lib/          Pure helpers: event catalog, permissions, safe storage, zone alarm
+                (`permissions.ts` mirrors the roles the backend enforces; it
+                shapes the interface and protects nothing)
   motion/       Motion presets and primitives: FadeUp, Reveal, StaggerItem, CountUp,
                 AnimatedNumber, DeltaChip, PulseRing, MaskedText
   mocks/        The only place with fictional data (clearly labeled)
