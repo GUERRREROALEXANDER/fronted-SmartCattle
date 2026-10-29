@@ -14,7 +14,7 @@ export interface RequestOptions {
   headers?: Record<string, string>
 }
 
-export interface GetJsonOptions extends Omit<RequestOptions, 'body'> {}
+export type GetJsonOptions = Omit<RequestOptions, 'body'>
 
 /** Reads `detail` out of a FastAPI error body, whatever shape it came in. */
 function errorDetail(body: unknown): string | undefined {
@@ -65,6 +65,14 @@ export async function request<T>(
   const timer = setTimeout(() => abort(new ApiError('timeout', 'Request timed out')), timeoutMs)
 
   const hasBody = body !== undefined && method !== 'GET' && method !== 'DELETE'
+  // Built once, and omitted entirely when empty: an empty headers object is
+  // not the same request as no headers at all for some proxies, and it makes
+  // the init object harder to assert on.
+  const requestHeaders: Record<string, string> = {
+    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+    ...headers,
+  }
+  const hasHeaders = Object.keys(requestHeaders).length > 0
 
   const send = async (): Promise<T> => {
     let response: Response
@@ -73,10 +81,7 @@ export async function request<T>(
         method,
         signal: controller.signal,
         ...(hasBody ? { body: JSON.stringify(body) } : {}),
-        headers: {
-          ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
-          ...headers,
-        },
+        ...(hasHeaders ? { headers: requestHeaders } : {}),
       })
     } catch {
       if (aborted) throw abortReason
