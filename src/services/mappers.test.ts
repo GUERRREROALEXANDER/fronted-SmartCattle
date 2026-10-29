@@ -10,7 +10,8 @@ describe('toFarmEvent', () => {
       id: event.id, event_type: 'cattle_out_of_zone', camera_id: event.cameraId,
       detected_object: event.detectedObject, confidence: event.confidence,
       timestamp: event.occurredAt.toISOString(), received_at: event.receivedAt.toISOString(),
-    })).toEqual({ ...event, severity: 'warning', severitySource: 'catalog' })
+      level: 'medium',
+    })).toEqual({ ...event, severity: 'warning', severitySource: 'backend' })
   })
 })
 

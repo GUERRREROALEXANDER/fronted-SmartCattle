@@ -44,3 +44,26 @@ export interface SystemStatus {
 }
 export interface Farm { id: string; name: string }
 export type UserRole = 'owner' | 'worker'
+
+export type AnimalStatus = 'active' | 'inactive' | 'lost'
+
+/**
+ * A registered animal. `tag` is the ear tag and the identity: there is no
+ * separate numeric id, because the tag is physically on the animal and is what
+ * the staff use.
+ *
+ * `lost` is not `inactive`. One is an administrative decision; the other is an
+ * animal that should be here and is not, which is what the system exists to
+ * detect.
+ */
+export interface Animal {
+  tag: string
+  name: string | null
+  status: AnimalStatus
+  /** Camera it was last seen by, or null when nobody has located it. */
+  cameraId: string | null
+  /** Null when never detected, which is not the same as detected long ago. */
+  lastDetection: Date | null
+  createdAt: Date
+  updatedAt: Date
+}

@@ -5,7 +5,19 @@ export interface ApiStatus {
   ai_service: { configured: boolean }
   storage: string
 }
-export interface ApiAnimal { id: string; tag: string }
+/**
+ * GET /api/animals. The ear tag is the identity; there is no numeric id,
+ * because the tag is what is physically on the animal and what the staff use.
+ */
+export interface ApiAnimal {
+  tag: string
+  name: string | null
+  status: 'active' | 'inactive' | 'lost'
+  camera_id: string | null
+  last_detection: string | null // ISO timestamp in UTC.
+  created_at: string
+  updated_at: string
+}
 export interface ApiAnimalsResponse { items: ApiAnimal[]; total: number }
 export interface ApiEvent {
   id: string
@@ -15,6 +27,8 @@ export interface ApiEvent {
   confidence: number // 0..1
   timestamp: string // ISO timestamp with timezone.
   received_at: string // ISO timestamp in UTC.
+  /** Severity, derived by the backend from the confidence. */
+  level: 'low' | 'medium' | 'high'
 }
 // Items are ordered newest first.
 export interface ApiEventsResponse { items: ApiEvent[]; total: number }

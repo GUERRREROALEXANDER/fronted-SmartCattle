@@ -1,5 +1,5 @@
 import { eventCatalog } from '../lib/eventCatalog'
-import type { ApiAnimalsResponse, ApiCamera, ApiCamerasResponse, ApiEvent, ApiEventsResponse, ApiLiveDetection, ApiLiveStatus, ApiStatus } from '../types/api'
+import type { ApiAnimal, ApiAnimalsResponse, ApiCamera, ApiCamerasResponse, ApiEvent, ApiEventsResponse, ApiLiveDetection, ApiLiveStatus, ApiStatus } from '../types/api'
 import { ApiError } from './errors'
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -20,13 +20,34 @@ export function parseStatusResponse(body: unknown): ApiStatus {
   return { status: body.status, version: body.version, ai_service: { configured: body.ai_service.configured }, storage: body.storage }
 }
 
+const animalStatuses = new Set(['active', 'inactive', 'lost'])
+
 export function parseAnimalsResponse(body: unknown): ApiAnimalsResponse {
   if (!isObject(body) || !Array.isArray(body.items) || typeof body.total !== 'number' || !Number.isFinite(body.total)) return invalid('Invalid animals response')
-  const items = body.items.map((item: unknown) => {
-    if (!isObject(item) || typeof item.id !== 'string' || typeof item.tag !== 'string') return invalid('Invalid animal item')
-    return { id: item.id, tag: item.tag }
-  })
-  return { items, total: body.total }
+  return { items: body.items.map(parseAnimal), total: body.total }
+}
+
+export function parseAnimal(body: unknown): ApiAnimal {
+  if (!isObject(body) || typeof body.tag !== 'string' || !body.tag
+    || typeof body.status !== 'string' || !animalStatuses.has(body.status)
+    || !isTimestamp(body.created_at) || !isTimestamp(body.updated_at)
+    // Nullable, and null is meaningful: an animal nobody has located, and one
+    // never detected. Accepting undefined too, because an older backend
+    // omitted these fields rather than sending null.
+    || (body.name != null && typeof body.name !== 'string')
+    || (body.camera_id != null && typeof body.camera_id !== 'string')
+    || (body.last_detection != null && !isTimestamp(body.last_detection))) {
+    return invalid('Invalid animal item')
+  }
+  return {
+    tag: body.tag,
+    name: (body.name as string | null | undefined) ?? null,
+    status: body.status as ApiAnimal['status'],
+    camera_id: (body.camera_id as string | null | undefined) ?? null,
+    last_detection: (body.last_detection as string | null | undefined) ?? null,
+    created_at: body.created_at as string,
+    updated_at: body.updated_at as string,
+  }
 }
 
 export function parseEventsResponse(body: unknown): ApiEventsResponse {
@@ -43,14 +64,23 @@ export function parseEventsResponse(body: unknown): ApiEventsResponse {
       unknownTypes.add(item.event_type)
       continue
     }
-    items.push({ id: item.id, event_type: item.event_type as ApiEvent['event_type'], camera_id: item.camera_id,
-      detected_object: item.detected_object, confidence: item.confidence, timestamp: item.timestamp, received_at: item.received_at })
+    items.push({
+      id: item.id, event_type: item.event_type as ApiEvent['event_type'], camera_id: item.camera_id,
+      detected_object: item.detected_object, confidence: item.confidence,
+      timestamp: item.timestamp, received_at: item.received_at,
+      // A backend that predates the severity column sends no level. Treated as
+      // medium, which is the default that column has always carried, rather
+      // than failing the whole response over a field this app can live
+      // without.
+      level: eventLevels.has(item.level as string) ? item.level as ApiEvent['level'] : 'medium',
+    })
   }
   if (unknownTypes.size) console.warn(`Unknown event types: ${[...unknownTypes].join(', ')}`)
   return { items, total: body.total }
 }
 
 const cameraStatuses = new Set(['online', 'offline', 'error'])
+const eventLevels = new Set(['low', 'medium', 'high'])
 const isTimestamp = (value: unknown) => typeof value === 'string' && !Number.isNaN(Date.parse(value))
 const isSize = (value: unknown) => value === null || (typeof value === 'number' && Number.isInteger(value) && value > 0)
 

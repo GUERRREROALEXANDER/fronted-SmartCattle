@@ -13,6 +13,7 @@ const backendEvents: ApiEvent[] = events.filter(event => event.kind === 'cattle_
   return {
   id: event.id, event_type: 'cattle_out_of_zone', camera_id: event.cameraId, detected_object: event.detectedObject,
   confidence: event.confidence, timestamp: event.occurredAt.toISOString(), received_at: event.receivedAt.toISOString(),
+  level: 'medium' as const,
   }
 })
 
@@ -22,7 +23,14 @@ describe('backend services', () => {
   it.each(['api', 'hybrid'] as const)('loads backend events in %s mode', async mode => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: backendEvents, total: backendEvents.length }))
     const result = await listEvents({ mode, fetchImpl, now })
-    expect(result).toEqual({ data: events.filter(event => event.kind === 'cattle_out_of_zone'), source: 'api' })
+    // severitySource is 'backend' now: the ranking came from the server's
+    // level rather than from the catalog's per-type default.
+    expect(result).toEqual({
+      data: events
+        .filter(event => event.kind === 'cattle_out_of_zone')
+        .map(event => ({ ...event, severitySource: 'backend' })),
+      source: 'api',
+    })
     expect(fetchImpl).toHaveBeenCalledWith(expect.stringMatching(/\/api\/events$/), expect.objectContaining({ method: 'GET' }))
   })
   it('orders backend events by detection time, not arrival time', async () => {

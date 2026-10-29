@@ -1,5 +1,5 @@
 import type { ApiCamera, ApiEvent, ApiLiveStatus } from '../types/api'
-import type { Camera, FarmEvent, FrameDetections, NormalizedBounds, NormalizedBox, NormalizedPoint, SafeZone } from '../types/domain'
+import type { Camera, FarmEvent, FrameDetections, NormalizedBounds, NormalizedBox, NormalizedPoint, SafeZone, Severity } from '../types/domain'
 import { eventCatalog } from '../lib/eventCatalog'
 
 /** The backend only knows camera ids; "camera-01" reads as "Cámara 01". */
@@ -27,12 +27,32 @@ export function toFrameDetections(live: ApiLiveStatus): FrameDetections | null {
   }
 }
 
+/**
+ * The backend's severity, in the vocabulary the interface uses.
+ *
+ * The backend derives low/medium/high from the detection confidence, which is
+ * information the catalog cannot have: the catalog knows only the event type,
+ * and with one type every alert looked equally urgent whether the detector was
+ * 51 % or 99 % sure.
+ */
+const severityByLevel: Record<ApiEvent['level'], Severity> = {
+  low: 'info',
+  medium: 'warning',
+  high: 'critical',
+}
+
 export function toFarmEvent(event: ApiEvent): FarmEvent {
+  // severitySource records where the ranking came from, so the interface can
+  // say whether it is showing a judgement from the server or a default from
+  // the catalog. It has had a 'backend' option since before anything could
+  // produce one.
+  const fromBackend = severityByLevel[event.level] as Severity | undefined
   return {
     id: event.id, kind: event.event_type, cameraId: event.camera_id,
     detectedObject: event.detected_object, confidence: event.confidence,
     occurredAt: new Date(event.timestamp), receivedAt: new Date(event.received_at),
-    severity: eventCatalog[event.event_type].defaultSeverity, severitySource: 'catalog',
+    severity: fromBackend ?? eventCatalog[event.event_type].defaultSeverity,
+    severitySource: fromBackend ? 'backend' : 'catalog',
   }
 }
 
