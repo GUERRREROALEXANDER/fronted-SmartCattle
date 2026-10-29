@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react'
-import type { LoginInput, RegisterInput, Session, UserRole } from '../../types/auth'
+import type { LoginInput, RegisterInput, Session } from '../../types/auth'
+import type { UserRole } from '../../types/domain'
 import type { Permission } from '../../lib/permissions'
 
 export interface AuthContextValue {

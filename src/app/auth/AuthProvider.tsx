@@ -22,30 +22,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   /**
-   * Signs the user out when the access token lapses.
+   * Ends the session the moment its token does.
    *
-   * Without this the session stays on screen after its token expires and
-   * every request starts failing with a 401, which reads as the server
-   * breaking rather than as a session that ended. There is no refresh token,
-   * so expiry is the end of the session.
+   * Without this the session stays on screen after the token lapses and every
+   * request starts failing with a 401, which reads as the server breaking
+   * rather than as a session that ended. There is no refresh token, so expiry
+   * is the end of the session.
+   *
+   * This only has to cover a session that expires while the tab is open: one
+   * that was already expired never reaches state, because the auth service
+   * refuses to restore it and clears it from storage instead.
    */
+  const expiresAt = session?.expiresAt
   useEffect(() => {
-    if (!session?.expiresAt) return
-    const remaining = Date.parse(session.expiresAt) - Date.now()
-    if (remaining <= 0) {
+    if (expiresAt === undefined) return
+    const remaining = Date.parse(expiresAt) - Date.now()
+    const endSession = () => {
       setSession(null)
       setStatus('anonymous')
-      return
     }
-    // setTimeout saturates above ~24.8 days, firing immediately instead of
-    // never. Tokens last an hour, but clamping costs nothing and a clamped
+    // Clamped to the 32-bit maximum: setTimeout saturates above ~24.8 days and
+    // fires immediately instead of never, which would sign the user out on
+    // sight. Tokens last an hour so it cannot happen today, and a clamped
     // timer is a late sign-out rather than an instant one.
-    const timer = setTimeout(() => {
-      setSession(null)
-      setStatus('anonymous')
-    }, Math.min(remaining, 2_147_483_647))
+    const timer = setTimeout(endSession, Math.max(0, Math.min(remaining, 2_147_483_647)))
     return () => clearTimeout(timer)
-  }, [session?.expiresAt])
+  }, [expiresAt])
 
   async function authenticate(operation: () => Promise<Session>) {
     const current = ++revision.current
