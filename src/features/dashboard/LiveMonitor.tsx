@@ -1,10 +1,17 @@
+import { Suspense, lazy } from 'react'
 import type { FarmPlan as FarmPlanData } from '../../services'
 import type { Camera, FarmEvent } from '../../types/domain'
+import { GlassCard, SkeletonText } from '../../components/ui'
 import { staggerDelay } from '../../motion'
 import { FarmPlan } from './FarmPlan'
-import { LiveCharts } from './LiveCharts'
 import { LiveMetrics } from './LiveMetrics'
 import { useLiveHerd } from './useLiveHerd'
+
+// recharts is the single heaviest dependency in the dashboard, and the
+// dashboard is imported eagerly by the router, which put the whole charting
+// library in the bundle the login screen downloads. Deferring it here keeps
+// the page shell, the metric tiles and the farm plan in the first paint.
+const LiveCharts = lazy(async () => ({ default: (await import('./LiveCharts')).LiveCharts }))
 
 export interface LiveMonitorAreas {
   metrics?: string
@@ -28,7 +35,20 @@ export function LiveMonitor({ plan, cameras, alerts, stale, withVideo, areas = {
     <LiveMetrics className={areas.metrics} snapshot={live.snapshot} baseline={live.baseline} staggerFrom={1} />
     <FarmPlan className={areas.plan} delay={staggerDelay(5)} plan={plan} live={live} cameras={cameras} alerts={alerts}
       stale={stale} withVideo={withVideo} />
-    <LiveCharts trendClassName={areas.trend} zonesClassName={areas.zones} staggerFrom={7}
-      snapshot={live.snapshot} points={live.points} />
+    <Suspense fallback={<LiveChartsPlaceholder trendClassName={areas.trend} zonesClassName={areas.zones} />}>
+      <LiveCharts trendClassName={areas.trend} zonesClassName={areas.zones} staggerFrom={7}
+        snapshot={live.snapshot} points={live.points} />
+    </Suspense>
+  </>
+}
+
+/** Holds the two chart slots in the grid while recharts loads, so nothing shifts. */
+function LiveChartsPlaceholder({ trendClassName, zonesClassName }: {
+  trendClassName?: string
+  zonesClassName?: string
+}) {
+  return <>
+    <GlassCard className={trendClassName} aria-busy="true"><SkeletonText lines={5} /></GlassCard>
+    <GlassCard className={zonesClassName} aria-busy="true"><SkeletonText lines={5} /></GlassCard>
   </>
 }
