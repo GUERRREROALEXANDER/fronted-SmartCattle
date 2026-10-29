@@ -221,11 +221,28 @@ Event shape (mirrored in `src/types/api.ts`):
   "detected_object": "cow",
   "confidence": 0.95,
   "timestamp": "2026-10-03T15:30:00Z",
-  "received_at": "2026-10-03T15:30:01Z"
+  "received_at": "2026-10-03T15:30:01Z",
+  "level": "high"
 }
 ```
 
-The backend's CORS policy allows `GET` and `POST`, the headers `Content-Type` and `X-API-Key`, and no credentials. Real authentication will need a CORS change on the backend (an `Authorization` header or credentials).
+`level` is the backend's severity, derived from the confidence (0.9 and above
+is `high`, below 0.6 is `low`). The frontend maps it to its own vocabulary and
+records `severitySource: 'backend'`; the per-type default in `eventCatalog`
+remains the fallback for a backend that predates the field.
+
+`timestamp` is the AI service's clock and `received_at` is the backend's. The
+events list is sorted by `timestamp`, because that is when the thing happened,
+while the backend returns them ordered by `received_at` -- the only clock it
+controls.
+
+The backend's CORS policy allows `GET`, `POST` and `PUT`, the headers
+`Content-Type`, `X-API-Key`, `Authorization` and `X-Request-ID`, and no
+credentials. `Authorization` has to be on that list or the browser's preflight
+succeeds and the real request arrives with the header stripped, so every
+authenticated call fails as unauthenticated with nothing in the logs to
+explain it. `X-Request-ID` is also exposed, so the app can read the id back
+off a response and quote it in an error report.
 
 ### What the backend does not provide yet
 
