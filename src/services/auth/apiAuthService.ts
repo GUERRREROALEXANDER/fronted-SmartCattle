@@ -2,12 +2,16 @@
 // for VITE_DATA_SOURCE=mock, so the app still demonstrates without a server.
 import { ApiError } from '../../api/errors'
 import { getJson, postJson } from '../../api/httpClient'
+import { SESSION_STORAGE_KEY } from '../../api/session'
 import { safeStorage, type SafeStorage } from '../../lib/safeStorage'
 import { AuthError, type AuthErrorCode, type Session } from '../../types/auth'
 import type { UserRole } from '../../types/domain'
 import type { AuthService } from './authService'
 
-const sessionKey = 'smartcattle.session'
+// The same key api/session.ts reads. Two literals would let the writer and
+// the readers drift apart, and the symptom would be an app that signs in and
+// then sends every request anonymously.
+const sessionKey = SESSION_STORAGE_KEY
 
 /** What POST /api/auth/login and /register return. */
 interface ApiTokenResponse {
