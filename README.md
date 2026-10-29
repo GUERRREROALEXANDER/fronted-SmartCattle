@@ -160,7 +160,8 @@ flowchart TB
 
 ```text
 src/
-  api/          HTTP client, configuration, typed errors
+  api/          HTTP client (every method), configuration, typed errors,
+                response validation, and the stored session's access token
   app/          App root, router, navigation config, auth context and guards
   assets/       Images (login photo, with embedded provenance)
   components/
