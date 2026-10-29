@@ -1,7 +1,7 @@
 // DEVELOPMENT MOCK AUTH. Not secure, not backend data. Replace when the backend provides authentication.
 import { safeStorage, type SafeStorage } from '../../lib/safeStorage'
-import { demoAccounts, demoPassword } from '../../mocks/mockAuth'
-import { AuthError, type AuthUser, type Session } from '../../types/auth'
+import { demoAccounts, demoPassword, type DemoAccount } from '../../mocks/mockAuth'
+import { AuthError, type Session } from '../../types/auth'
 import { mockDelay } from '../dataSource'
 import type { AuthService } from './authService'
 
@@ -9,7 +9,7 @@ const usersKey = 'smartcattle.demo.users'
 const sessionKey = 'smartcattle.demo.session'
 export const MAX_LOGIN_ATTEMPTS = 5
 export const LOGIN_COOLDOWN_MS = 30_000
-interface StoredUser extends AuthUser { passwordHash: string }
+interface StoredUser extends DemoAccount { passwordHash: string }
 interface LoginAttempts { failures: number; lockedUntil: number }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -53,7 +53,7 @@ export function createMockAuthService({ delayMs = 400, storage = safeStorage, no
     return users
   }
 
-  function saveSession(user: AuthUser): Session {
+  function saveSession(user: DemoAccount): Session {
     const session: Session = {
       user: { id: user.id, username: user.username, name: user.name, email: user.email, role: user.role, farmId: user.farmId },
       issuedAt: new Date().toISOString(), source: 'mock',
@@ -105,7 +105,11 @@ export function createMockAuthService({ delayMs = 400, storage = safeStorage, no
       const passwordHash = await hashPassword(input.password)
       const users = await readUsers()
       const email = normalizeIdentifier(input.email)
-      const username = normalizeIdentifier(input.username)
+      // RegisterInput.username is optional, because the backend signs in by
+      // email and has no username at all. The demo accounts do, so one is
+      // derived from the address -- the same fallback readUsers() applies to a
+      // stored user from before usernames existed.
+      const username = normalizeIdentifier(input.username || email.split('@')[0])
       if (users.some(user => normalizeIdentifier(user.email) === email)) throw new AuthError('email_taken')
       if (users.some(user => normalizeIdentifier(user.username) === username)) throw new AuthError('username_taken')
       const user: StoredUser = {
