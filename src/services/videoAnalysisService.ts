@@ -1,5 +1,6 @@
-import { apiBaseUrl, dataMode, normalizeBaseUrl, type DataMode } from '../api/config'
-import { ApiError } from '../api/errors'
+import { dataMode, type DataMode } from '../api/config'
+import { postJson } from '../api/httpClient'
+import { authHeaders } from '../api/session'
 import { safeStorage } from '../lib/safeStorage'
 import { resolveSource } from './dataSource'
 
@@ -35,6 +36,8 @@ export interface SaveAnalysisOptions {
   baseUrl?: string
   timeoutMs?: number
   now?: Date
+  /** Overrides the Authorization header read from the stored session. */
+  headers?: Record<string, string>
 }
 
 const LOCAL_KEY = 'smartcattle.videos.analyses'
@@ -56,36 +59,24 @@ function keepLocally(payload: VideoAnalysisPayload, now: Date): StoredVideoAnaly
   return analysis
 }
 
-async function postAnalysis(payload: VideoAnalysisPayload, options: SaveAnalysisOptions): Promise<StoredVideoAnalysis> {
-  const { signal, fetchImpl = fetch, baseUrl = apiBaseUrl, timeoutMs = 8000 } = options
-  const controller = new AbortController()
-  const onAbort = () => controller.abort(signal?.reason)
-  signal?.addEventListener('abort', onAbort, { once: true })
-  const timer = setTimeout(() => controller.abort(new ApiError('timeout', 'Request timed out')), timeoutMs)
-  try {
-    let response: Response
-    try {
-      response = await fetchImpl(`${normalizeBaseUrl(baseUrl)}/api/videos/analyses`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      })
-    } catch {
-      if (signal?.aborted) throw signal.reason
-      if (controller.signal.aborted) throw new ApiError('timeout', 'Request timed out')
-      throw new ApiError('network', 'Network request failed')
-    }
-    if (!response.ok) throw new ApiError('http', `HTTP request failed with status ${response.status}`, { status: response.status })
-    try {
-      return await response.json() as StoredVideoAnalysis
-    } catch {
-      throw new ApiError('parse', 'Response contains invalid JSON')
-    }
-  } finally {
-    clearTimeout(timer)
-    signal?.removeEventListener('abort', onAbort)
-  }
+async function postAnalysis(
+  payload: VideoAnalysisPayload,
+  options: SaveAnalysisOptions,
+): Promise<StoredVideoAnalysis> {
+  // Through the shared client rather than its own fetch. This function used to
+  // reimplement the abort wiring, the timeout and the error mapping, which
+  // meant two copies of cancellation logic and only one of them had the
+  // careful Promise.race handling.
+  return postJson<StoredVideoAnalysis>('/api/videos/analyses', payload, {
+    signal: options.signal,
+    timeoutMs: options.timeoutMs,
+    baseUrl: options.baseUrl,
+    fetchImpl: options.fetchImpl,
+    // The backend requires a signed-in user for this endpoint: it writes into
+    // the shared events feed, and leaving it open made it the one path into
+    // that table that asked for nothing.
+    headers: options.headers ?? authHeaders(),
+  })
 }
 
 /**
