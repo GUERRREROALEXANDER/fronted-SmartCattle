@@ -167,7 +167,7 @@ describe('camera services', () => {
 describe('mock-only services', () => {
   const cameraId = mockCameras[0].id
   const services = [getDetectedCattleCount, getCurrentFarm,
-    (options: Parameters<typeof listSafeZones>[1]) => listSafeZones(cameraId, options)]
+]
   it.each(services)('returns unavailable in api mode without fetching', async service => {
     const fetchImpl = vi.fn<typeof fetch>()
     await expect(service({ mode: 'api', now, fetchImpl })).resolves.toEqual({ data: null, source: 'unavailable' })
@@ -178,7 +178,10 @@ describe('mock-only services', () => {
     const options = { mode, now, fetchImpl }
     expect((await getDetectedCattleCount(options)).data?.count).toBe(mockDetectedCattle)
     expect((await getCurrentFarm(options)).data).toEqual(mockFarm)
-    expect((await listSafeZones(cameraId, options)).data).toEqual(mockSafeZones.filter(zone => zone.cameraId === cameraId))
+    // listSafeZones is no longer mock-only: it reads the backend in api mode.
+    // Its own tests live in zoneService.test.ts.
+    expect((await listSafeZones(cameraId, { ...options, mode: 'mock' })).data)
+      .toEqual(mockSafeZones.filter(zone => zone.cameraId === cameraId))
     expect(fetchImpl).not.toHaveBeenCalled()
   })
   it('delays unavailable results when no clock is supplied', async () => {

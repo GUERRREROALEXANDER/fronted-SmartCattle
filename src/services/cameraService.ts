@@ -1,9 +1,9 @@
 import { dataMode } from '../api/config'
 import { getJson } from '../api/httpClient'
 import { parseCamerasResponse } from '../api/validate'
-import { mockCameras, mockSafeZones } from '../mocks/mockData'
+import { mockCameras } from '../mocks/mockData'
 import { demoFeedCameraId, demoFeedSource } from '../mocks/mockCameraFeed'
-import type { Camera, SafeZone, Sourced, StreamSource } from '../types/domain'
+import type { Camera, Sourced, StreamSource } from '../types/domain'
 import { resolveSource } from './dataSource'
 import { getLiveSource } from './liveService'
 import { toCamera } from './mappers'
@@ -23,10 +23,6 @@ export async function listCameras(options: ServiceOptions = {}): Promise<Sourced
   }
   const response = parseCamerasResponse(await getJson<unknown>('/api/cameras', options))
   return { data: response.items.filter(camera => camera.status === 'online').map(toCamera), source }
-}
-
-export function listSafeZones(cameraId: string, options: ServiceOptions = {}): Promise<Sourced<SafeZone[] | null>> {
-  return resolveMockOnly(options, () => mockSafeZones.filter(zone => zone.cameraId === cameraId).map(zone => ({ ...zone, bounds: [...zone.bounds] })))
 }
 
 /**

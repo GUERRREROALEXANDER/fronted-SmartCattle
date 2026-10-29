@@ -1,6 +1,7 @@
 export * from './statusService'
 export * from './eventService'
 export * from './animalService'
+export * from './zoneService'
 export * from './cameraService'
 export * from './detectionService'
 export * from './farmService'
