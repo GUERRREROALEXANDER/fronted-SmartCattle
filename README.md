@@ -183,7 +183,11 @@ docs/
   screenshots/  Images used in this README
 ```
 
-Tests live next to the code they cover (`*.test.ts`).
+Tests live next to the code they cover (`*.test.ts`). They run in Node and
+render components with `renderToStaticMarkup`, so they cover what a component
+produces rather than how it behaves under interaction -- which is why the
+assertions are about the text and structure a user would be given, not about
+clicks.
 
 ---
 
