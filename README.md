@@ -274,7 +274,10 @@ Rules:
 - In `mock` mode the backend is never contacted, so the server pill reads **"Servidor: modo demostración"**, never "en línea". Only a real `/health` reply with `status: "ok"` shows the server online.
 - A failed backend call is never replaced with demo data. Screens show the cause (no connection, timeout, HTTP 401/404/422/5xx or an unexpected response). If a background refresh fails, the last data stays on screen with a warning.
 - Backend responses are validated in `src/api/validate.ts`. Events with an `event_type` the frontend does not know are skipped with a console warning, so one new type does not hide the rest.
-- An empty `/api/animals` list is a normal state ("No hay animales registrados"), not an error.
+- An empty `/api/animals` list is a normal state ("No hay animales registrados"), not an error. The empty state says what registering the herd buys, because counting what a camera sees cannot tell you which animal is missing.
+- A write that needs the owner role is not offered to a worker. The backend
+  answers 403 either way; hiding the control prevents a mistake rather than an
+  attacker.
 - Demo detections are deterministic (seeded per camera) so screenshots and tests are stable.
 - Event kinds that the backend does not emit yet (`person_detected`, `possible_intrusion`, ...) exist only in demo data.
 
