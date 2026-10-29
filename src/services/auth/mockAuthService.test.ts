@@ -122,11 +122,13 @@ describe('demo authentication', () => {
     }
   })
 
-  it('preserves unavailable authentication in API mode', async () => {
-    const service = createAuthService('api')
-    expect(await service.getSession()).toBeNull()
-    await expect(service.login({ identifier: '', password: '' })).rejects.toMatchObject({ code: 'unavailable' })
-    await expect(service.register({ username: '', email: '', password: '' })).rejects.toMatchObject({ code: 'unavailable' })
-    await expect(service.logout()).resolves.toBeUndefined()
+  it('uses the demo accounts in mock mode', async () => {
+    const service = createAuthService('mock')
+    const session = await service.login({ identifier: demoAccounts[0].username, password: demoPassword })
+    expect(session.source).toBe('mock')
+    // A demo session has no token, which is what makes it unusable against
+    // the backend rather than quietly half-working.
+    expect(session.accessToken).toBeUndefined()
   })
+
 })
