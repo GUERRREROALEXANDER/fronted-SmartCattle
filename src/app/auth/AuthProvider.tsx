@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { dataMode } from '../../api/config'
 import { can as roleCan } from '../../lib/permissions'
 import { authService } from '../../services/auth/authService'
 import { AuthError, type Session } from '../../types/auth'
@@ -70,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // From the session, not the data mode: hybrid authenticates against the
     // backend now, so the mode no longer answers "is this session real".
     isDemo: session !== null && session.source !== 'api',
+    // From the mode, because the sign-in form asks this before there is a
+    // session to ask about.
+    isDemoMode: dataMode === 'mock',
     role,
     can: permission => role !== null && roleCan(role, permission),
     login: input => authenticate(() => authService.login(input)),

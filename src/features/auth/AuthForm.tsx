@@ -57,7 +57,7 @@ function PasswordStrengthMeter({ id, strength }: { id: string; strength: Passwor
 }
 
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
-  const { login, register, isDemo } = useAuth()
+  const { login, register, isDemoMode } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const reduce = useReducedMotion()
@@ -347,7 +347,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       </motion.div></motion.div>
     </motion.form>
 
-    {!isRegistration && isDemo && <motion.details className={styles.demo} {...rise(4)}>
+    {!isRegistration && isDemoMode && <motion.details className={styles.demo} {...rise(4)}>
       <summary>
         <span className={styles.demoIcon} aria-hidden="true"><UsersRound size={16} strokeWidth={2} /></span>
         <span className={styles.demoSummaryText}>Cuentas de demostración</span>

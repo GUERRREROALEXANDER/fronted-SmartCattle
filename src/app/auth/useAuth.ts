@@ -10,14 +10,24 @@ export interface AuthContextValue {
   register(input: RegisterInput): Promise<void>
   logout(): Promise<void>
   /**
-   * True while the session is a local demo one.
+   * True while the signed-in session is a local demo one.
    *
-   * Read from the session rather than from the configured data mode. The two
-   * used to be the same thing; now hybrid authenticates against the backend,
-   * so the mode no longer says whether the signed-in session is real -- and
-   * what the interface needs to know is whether a write will reach a server.
+   * Read from the session, not the configured mode. What the interface needs
+   * here is whether a write will reach a server, and since hybrid now
+   * authenticates against the backend the mode no longer answers that.
+   *
+   * False when nobody is signed in, which is why the sign-in form uses
+   * `isDemoMode` instead: before signing in there is no session to describe.
    */
   isDemo: boolean
+  /**
+   * True when the app is configured to use demo accounts at all.
+   *
+   * A different question from `isDemo`, and the sign-in form needs this one:
+   * whether to offer the demo accounts, which has to be answerable before
+   * anybody has signed in.
+   */
+  isDemoMode: boolean
   /** The signed-in user's role, or null when nobody is signed in. */
   role: UserRole | null
   /**
