@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createApiAuthService } from './apiAuthService'
 import { NOW, apiUser, memoryStorage, scriptedFetch, tokenResponse } from './testDoubles'
 
@@ -105,6 +105,93 @@ describe('logout', () => {
 
     await auth.logout()
     expect(storage.entries.has('smartcattle.session')).toBe(false)
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+})
+
+describe('restoring a session', () => {
+  const stored = {
+    user: { id: '7', name: 'Ana Restrepo', email: 'ana@finca.example', role: 'owner' },
+    issuedAt: '2026-10-29T11:00:00Z',
+    source: 'api',
+    accessToken: 'a-signed-token',
+    expiresAt: '2026-10-29T13:00:00Z',
+  }
+
+  function restoring(fetchImpl: ReturnType<typeof scriptedFetch>, session: unknown = stored) {
+    const storage = memoryStorage({ 'smartcattle.session': session })
+    return { auth: createApiAuthService({ fetchImpl, storage, now: () => NOW }), storage }
+  }
+
+  it('confirms a stored token against the backend', async () => {
+    const fetchImpl = scriptedFetch(Response.json(apiUser))
+    const { auth } = restoring(fetchImpl)
+
+    expect(await auth.getSession()).toEqual(stored)
+    const [url, init] = fetchImpl.mock.calls[0] as [string, RequestInit]
+    expect(url).toContain('/api/auth/me')
+    expect(new Headers(init.headers).get('authorization')).toBe('Bearer a-signed-token')
+  })
+
+  it('clears a session the backend rejects', async () => {
+    // A well-formed token stops working when the account is deactivated or
+    // the deployment's signing secret is replaced, and both leave something
+    // that looks perfectly valid in localStorage.
+    const { auth, storage } = restoring(scriptedFetch(Response.json({ detail: 'nope' }, { status: 401 })))
+
+    expect(await auth.getSession()).toBeNull()
+    expect(storage.entries.has('smartcattle.session')).toBe(false)
+  })
+
+  it('keeps the session when the network fails', async () => {
+    // A dropped connection is not a signed-out user. Clearing it here would
+    // log somebody out of a dashboard they were watching because the farm's
+    // link flickered.
+    const fetchImpl = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
+    const { auth, storage } = restoring(fetchImpl)
+
+    expect(await auth.getSession()).toEqual(stored)
+    expect(storage.entries.has('smartcattle.session')).toBe(true)
+  })
+
+  it('keeps the session when the backend is briefly broken', async () => {
+    const { auth } = restoring(scriptedFetch(Response.json({ detail: 'oops' }, { status: 500 })))
+    expect(await auth.getSession()).toEqual(stored)
+  })
+
+  it('drops an expired token without asking', async () => {
+    // It is certainly rejected, and asking anyway makes every page load after
+    // a lapsed session start with a failed request.
+    const fetchImpl = scriptedFetch()
+    const { auth, storage } = restoring(fetchImpl, { ...stored, expiresAt: '2026-10-29T11:59:00Z' })
+
+    expect(await auth.getSession()).toBeNull()
+    expect(fetchImpl).not.toHaveBeenCalled()
+    expect(storage.entries.has('smartcattle.session')).toBe(false)
+  })
+
+  it('has no session when nothing is stored', async () => {
+    const fetchImpl = scriptedFetch()
+    const auth = createApiAuthService({ fetchImpl, storage: memoryStorage(), now: () => NOW })
+    expect(await auth.getSession()).toBeNull()
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['a demo session', { ...stored, source: 'mock' }],
+    ['no token', { ...stored, accessToken: undefined }],
+    ['an empty token', { ...stored, accessToken: '' }],
+    ['an unknown role', { ...stored, user: { ...stored.user, role: 'admin' } }],
+    ['a missing user', { ...stored, user: undefined }],
+    ['an unparseable issue time', { ...stored, issuedAt: 'not-a-date' }],
+    ['junk', 'not an object'],
+  ])('ignores %s in storage', async (_label, session) => {
+    // Anything that is not a usable api session is treated as no session.
+    // localStorage is editable by hand and survives a deploy, so a stale or
+    // tampered shape must not be loaded.
+    const fetchImpl = scriptedFetch()
+    const { auth } = restoring(fetchImpl, session)
+    expect(await auth.getSession()).toBeNull()
     expect(fetchImpl).not.toHaveBeenCalled()
   })
 })
