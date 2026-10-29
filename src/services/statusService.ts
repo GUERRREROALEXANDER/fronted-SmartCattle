@@ -15,17 +15,24 @@ export async function getSystemStatus(options: ServiceOptions = {}): Promise<Sou
   }
   const checkedAt = new Date(options.now ?? new Date())
   try {
-    if (!isHealthy(await getJson<unknown>('/health', options))) return { data: { backend: 'offline', aiConfigured: null, version: null, storage: null, checkedAt }, source }
+    if (!isHealthy(await getJson<unknown>('/health', options))) return { data: { backend: 'offline', aiConfigured: null, authEnabled: null, version: null, storage: null, checkedAt }, source }
   } catch (error) {
     if (options.signal?.aborted) throw error
     if (!(error instanceof ApiError)) throw error
-    return { data: { backend: 'offline', aiConfigured: null, version: null, storage: null, checkedAt }, source }
+    return { data: { backend: 'offline', aiConfigured: null, authEnabled: null, version: null, storage: null, checkedAt }, source }
   }
   try {
     const status = parseStatusResponse(await getJson<unknown>('/api/status', options))
-    return { data: { backend: 'online', aiConfigured: status.ai_service.configured, version: status.version, storage: status.storage, checkedAt }, source }
+    return {
+      data: {
+        backend: 'online', aiConfigured: status.ai_service.configured,
+        authEnabled: status.auth_enabled ?? null,
+        version: status.version, storage: status.storage, checkedAt,
+      },
+      source,
+    }
   } catch (error) {
     if (options.signal?.aborted || !(error instanceof ApiError)) throw error
-    return { data: { backend: 'online', aiConfigured: null, version: null, storage: null, checkedAt }, source }
+    return { data: { backend: 'online', aiConfigured: null, authEnabled: null, version: null, storage: null, checkedAt }, source }
   }
 }

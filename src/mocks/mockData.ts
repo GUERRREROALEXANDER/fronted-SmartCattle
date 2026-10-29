@@ -38,7 +38,13 @@ function seededRandom(cameraId: string) {
 }
 
 export function buildMockSystemStatus(now = new Date()): SystemStatus {
-  return { backend: 'not-checked', aiConfigured: null, version: null, storage: null, checkedAt: new Date(now) }
+  return {
+    backend: 'not-checked', aiConfigured: null,
+    // Unknown rather than false: mock mode never asked a backend, and false
+    // would claim sign-in is unavailable when nothing checked.
+    authEnabled: null,
+    version: null, storage: null, checkedAt: new Date(now),
+  }
 }
 
 export function buildMockFrameDetections(cameraId: string, now = new Date()): FrameDetections {

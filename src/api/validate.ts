@@ -17,7 +17,15 @@ export function parseStatusResponse(body: unknown): ApiStatus {
     !isObject(body.ai_service) || typeof body.ai_service.configured !== 'boolean' || typeof body.storage !== 'string') {
     return invalid('Invalid status response')
   }
-  return { status: body.status, version: body.version, ai_service: { configured: body.ai_service.configured }, storage: body.storage }
+  return {
+    status: body.status, version: body.version,
+    ai_service: { configured: body.ai_service.configured },
+    storage: body.storage,
+    // Optional rather than required: a backend that predates the field is
+    // still a working backend, and failing the whole status call over a hint
+    // would blank the dashboard header.
+    ...(typeof body.auth_enabled === 'boolean' ? { auth_enabled: body.auth_enabled } : {}),
+  }
 }
 
 const animalStatuses = new Set(['active', 'inactive', 'lost'])

@@ -38,6 +38,15 @@ export interface SystemStatus {
   // 'not-checked' means mock mode; the backend was never contacted.
   backend: 'online' | 'offline' | 'not-checked'
   aiConfigured: boolean | null
+  /**
+   * Whether the backend can authenticate anyone at all.
+   *
+   * Null when unknown -- mock mode, or a backend that predates the field.
+   * False means JWT_SECRET is unset there, so /api/auth/* answers 503 and a
+   * sign-in attempt fails in a way that reads as a server fault rather than
+   * as a deployment nobody has configured.
+   */
+  authEnabled: boolean | null
   version: string | null
   storage: string | null
   checkedAt: Date

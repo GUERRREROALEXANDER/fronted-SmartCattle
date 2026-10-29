@@ -45,7 +45,8 @@ describe('backend services', () => {
   it('returns offline status on health network failure', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
     await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({
-      source: 'api', data: { backend: 'offline', aiConfigured: null, version: null, storage: null, checkedAt: now },
+      source: 'api',
+      data: { backend: 'offline', aiConfigured: null, authEnabled: null, version: null, storage: null, checkedAt: now },
     })
     expect(fetchImpl).toHaveBeenCalledOnce()
   })
@@ -79,14 +80,18 @@ describe('backend services', () => {
       .mockResolvedValueOnce(Response.json({ status: 'ok', version: '', ai_service: { configured: false }, storage: '' }))
       .mockResolvedValueOnce(Response.json({ items: [], total: 0 }))
     await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({
-      source: 'api', data: { backend: 'online', aiConfigured: false, version: '', storage: '', checkedAt: now },
+      source: 'api',
+      data: { backend: 'online', aiConfigured: false, authEnabled: null, version: '', storage: '', checkedAt: now },
     })
     await expect(getRegisteredCattleCount({ mode: 'api', fetchImpl, now })).resolves.toEqual({ data: 0, source: 'api' })
     expect(fetchImpl.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual(['/health', '/api/status', '/api/animals'])
   })
   it('keeps backend online with unknown details after status failure', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json({ status: 'ok' })).mockRejectedValueOnce(new TypeError('Failed to fetch'))
-    await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({ source: 'api', data: { backend: 'online', aiConfigured: null, version: null, storage: null, checkedAt: now } })
+    await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({
+      source: 'api',
+      data: { backend: 'online', aiConfigured: null, authEnabled: null, version: null, storage: null, checkedAt: now },
+    })
   })
 })
 

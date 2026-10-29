@@ -4,6 +4,8 @@ export interface ApiStatus {
   version: string
   ai_service: { configured: boolean }
   storage: string
+  /** Absent on a backend that predates the field, which reads as unknown. */
+  auth_enabled?: boolean
 }
 /**
  * GET /api/animals. The ear tag is the identity; there is no numeric id,
