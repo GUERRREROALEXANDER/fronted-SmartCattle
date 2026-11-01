@@ -5,6 +5,7 @@ import { useDocumentTitle } from '../../app/useDocumentTitle'
 import { useAuth } from '../../app/auth/useAuth'
 import { duration, ease } from '../../motion'
 import { VideoLibraryProvider } from '../../features/videos/VideoLibraryProvider'
+import { LiveProvider } from '../../live/LiveProvider'
 import { SideRail } from './SideRail'
 import { TopBar } from './TopBar'
 import { AlarmBanner } from './AlarmBanner'
@@ -34,7 +35,7 @@ export function AppShell() {
   const { session } = useAuth()
   useDocumentTitle()
   // The video library lives here so loaded videos survive navigation while signed in.
-  return <VideoLibraryProvider><div className={styles.shell}>
+  return <LiveProvider><VideoLibraryProvider><div className={styles.shell}>
     <a className={styles.skipLink} href="#main-content">Saltar al contenido</a>
     <SideRail />
     <TopBar title={title} user={session?.user} />
@@ -50,5 +51,5 @@ export function AppShell() {
       </AnimatePresence>
     </main>
     <MobileTabBar />
-  </div></VideoLibraryProvider>
+  </div></VideoLibraryProvider></LiveProvider>
 }
