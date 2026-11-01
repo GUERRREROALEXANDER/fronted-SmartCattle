@@ -1,10 +1,7 @@
 import { eventCatalog } from '../lib/eventCatalog'
-import type { ApiAnimalsResponse, ApiCamera, ApiCamerasResponse, ApiEvent, ApiEventsResponse, ApiLiveDetection, ApiLiveStatus, ApiStatus } from '../types/api'
+import type { ApiAnimal, ApiAnimalsResponse, ApiCamera, ApiCamerasResponse, ApiEvent, ApiEventsResponse, ApiLiveDetection, ApiLiveStatus, ApiStatus } from '../types/api'
 import { ApiError } from './errors'
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
+import { isLevel, isObject } from './parsers'
 
 function invalid(message: string): never { throw new ApiError('parse', message) }
 
@@ -17,14 +14,22 @@ export function parseStatusResponse(body: unknown): ApiStatus {
     !isObject(body.ai_service) || typeof body.ai_service.configured !== 'boolean' || typeof body.storage !== 'string') {
     return invalid('Invalid status response')
   }
-  return { status: body.status, version: body.version, ai_service: { configured: body.ai_service.configured }, storage: body.storage }
+  return { status: body.status, version: body.version, ai_service: { configured: body.ai_service.configured }, storage: body.storage,
+    auth_enabled: typeof body.auth_enabled === 'boolean' ? body.auth_enabled : null }
 }
 
 export function parseAnimalsResponse(body: unknown): ApiAnimalsResponse {
   if (!isObject(body) || !Array.isArray(body.items) || typeof body.total !== 'number' || !Number.isFinite(body.total)) return invalid('Invalid animals response')
-  const items = body.items.map((item: unknown) => {
-    if (!isObject(item) || typeof item.id !== 'string' || typeof item.tag !== 'string') return invalid('Invalid animal item')
-    return { id: item.id, tag: item.tag }
+  const statuses = new Set(['active', 'inactive', 'lost'])
+  const items = body.items.map((item: unknown): ApiAnimal => {
+    // The backend identifies an animal by its ear tag; it has no separate id.
+    if (!isObject(item) || typeof item.tag !== 'string' || typeof item.status !== 'string' || !statuses.has(item.status) ||
+      (item.last_detection != null && !isTimestamp(item.last_detection))) return invalid('Invalid animal item')
+    return {
+      tag: item.tag, name: typeof item.name === 'string' ? item.name : null, status: item.status as ApiAnimal['status'],
+      camera_id: typeof item.camera_id === 'string' ? item.camera_id : null,
+      last_detection: (item.last_detection as string | null | undefined) ?? null,
+    }
   })
   return { items, total: body.total }
 }
@@ -44,7 +49,8 @@ export function parseEventsResponse(body: unknown): ApiEventsResponse {
       continue
     }
     items.push({ id: item.id, event_type: item.event_type as ApiEvent['event_type'], camera_id: item.camera_id,
-      detected_object: item.detected_object, confidence: item.confidence, timestamp: item.timestamp, received_at: item.received_at })
+      detected_object: item.detected_object, confidence: item.confidence, timestamp: item.timestamp, received_at: item.received_at,
+      level: isLevel(item.level) ? item.level : null })
   }
   if (unknownTypes.size) console.warn(`Unknown event types: ${[...unknownTypes].join(', ')}`)
   return { items, total: body.total }
@@ -63,7 +69,9 @@ export function parseCamerasResponse(body: unknown): ApiCamerasResponse {
       (item.stream_url != null && (typeof item.stream_url !== 'string' || !/^https?:\/\//.test(item.stream_url)))) return invalid('Invalid camera item')
     return { id: item.id, status: item.status as ApiCamera['status'], last_online_at: (item.last_online_at as string | null | undefined) ?? null,
       frame_width: (item.frame_width as number | null | undefined) ?? null, frame_height: (item.frame_height as number | null | undefined) ?? null,
-      stream_url: (item.stream_url as string | null | undefined) ?? null }
+      stream_url: (item.stream_url as string | null | undefined) ?? null,
+      last_error: typeof item.last_error === 'string' ? item.last_error : null,
+      fps: typeof item.fps === 'number' && Number.isFinite(item.fps) ? item.fps : null }
   })
   return { items, total: body.total }
 }

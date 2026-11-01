@@ -2,7 +2,18 @@ import { expect, it, vi } from 'vitest'
 import { parseAnimalsResponse, parseEventsResponse, parseStatusResponse, isHealthy } from './validate'
 
 const event = { id: 'e1', event_type: 'cattle_out_of_zone', camera_id: 'c1', detected_object: 'cow', confidence: 0.9,
-  timestamp: '2026-10-05T10:00:00Z', received_at: '2026-10-05T10:00:01Z' }
+  timestamp: '2026-10-05T10:00:00Z', received_at: '2026-10-05T10:00:01Z', level: 'high' }
+
+it('parses animals by ear tag, as the backend identifies them', () => {
+  const animal = { tag: 'A-441', name: 'Lucera', status: 'active', camera_id: 'camera-01', last_detection: null,
+    created_at: '2026-10-05T10:00:00Z', updated_at: '2026-10-05T10:00:00Z' }
+  expect(parseAnimalsResponse({ items: [animal], total: 1 }).items).toEqual([
+    { tag: 'A-441', name: 'Lucera', status: 'active', camera_id: 'camera-01', last_detection: null },
+  ])
+})
+it('reads a missing event level as null', () => {
+  expect(parseEventsResponse({ items: [{ ...event, level: undefined }], total: 1 }).items[0].level).toBeNull()
+})
 
 it('parses valid events', () => {
   expect(parseEventsResponse({ items: [event], total: 1 })).toEqual({ items: [event], total: 1 })
