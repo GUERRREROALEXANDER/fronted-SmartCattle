@@ -2,8 +2,9 @@ import { aiServiceUrl } from '../api/config'
 import { getJson, requestJson } from '../api/httpClient'
 import type { ServiceOptions } from './options'
 
-// Talks to the AI service (live.py) on the farm PC, not to the backend: it is the program that opens the
-// camera and runs YOLO. Requests carry no session token; that service has no accounts.
+// Talks to the AI service (live.py), not to the backend: it is the program that opens the camera and runs YOLO.
+// Requests that change cameras or scan the network carry the session token: a service reachable from the internet
+// checks it against the backend, since it has no accounts of its own. Reading its status needs none.
 
 export type FoundCameraKind = 'rtsp' | 'ip-webcam' | 'droidcam'
 export interface FoundCamera { host: string; ports: number[]; kinds: FoundCameraKind[] }
@@ -11,7 +12,7 @@ export interface CameraScan { network: string | null; cameras: FoundCamera[] }
 
 /** An IP camera by address and credentials, or anything else by URL / phone-app address / webcam index. */
 export type CameraSource =
-  | { kind: 'ip'; host: string; username: string; password: string; port?: number }
+  | { kind: 'ip'; host: string; username: string; password: string; port?: number; path?: string }
   | { kind: 'url'; url: string }
 
 const isKind = (value: unknown): value is FoundCameraKind => value === 'rtsp' || value === 'ip-webcam' || value === 'droidcam'
@@ -33,21 +34,39 @@ export function parseCameraScan(body: unknown): CameraScan {
 
 /** Looks for cameras on the PC's local network (GET /cameras/scan). Takes a few seconds. */
 export async function scanCameras(baseUrl = aiServiceUrl, options: ServiceOptions = {}): Promise<CameraScan> {
-  return parseCameraScan(await getJson<unknown>('/cameras/scan', { ...options, baseUrl, token: null, timeoutMs: 60_000 }))
+  return parseCameraScan(await getJson<unknown>('/cameras/scan', { ...options, baseUrl, timeoutMs: 60_000 }))
 }
 
-/** Points the AI service at a camera (POST /camera). It answers at once and reconnects in the background. */
-export async function connectCamera(baseUrl: string, source: CameraSource, options: ServiceOptions = {}): Promise<void> {
+/** The AI service behind a camera's stream URL: added cameras are served under <service>/cameras/<id>. */
+export function serviceRoot(streamUrl: string): string {
+  return streamUrl.replace(/\/cameras\/[^/]+\/?$/, '')
+}
+
+/** True for a camera added from the dashboard, the only kind that can be removed from it. */
+export const isAddedCamera = (streamUrl: string | null | undefined) => Boolean(streamUrl && serviceRoot(streamUrl) !== streamUrl)
+
+export interface AddedCamera { cameraId: string; streamUrl: string }
+
+/** Adds a camera next to the ones already running (POST /cameras). It answers at once and connects in the background. */
+export async function addCamera(baseUrl: string, source: CameraSource, options: ServiceOptions = {}): Promise<AddedCamera> {
   const body = source.kind === 'url'
     ? { url: source.url.trim() }
-    // Only what the person typed: with just the IP, the AI service uses the credentials saved on its PC.
+    // Only what the person typed: for a camera set up on that PC, the AI service uses the credentials saved there.
     : {
       host: source.host.trim(),
       ...(source.username.trim() ? { username: source.username.trim() } : {}),
       ...(source.password ? { password: source.password } : {}),
       ...(source.port ? { port: source.port } : {}),
+      ...(source.path?.trim() ? { path: source.path.trim() } : {}),
     }
-  await requestJson<unknown>('/camera', { ...options, baseUrl, method: 'POST', body, token: null, timeoutMs: 10_000 })
+  const added = await requestJson<{ camera_id?: unknown; stream_url?: unknown }>('/cameras', { ...options, baseUrl, method: 'POST', body, timeoutMs: 10_000 })
+  if (typeof added.camera_id !== 'string' || typeof added.stream_url !== 'string') throw new Error('Respuesta del servicio de IA no válida')
+  return { cameraId: added.camera_id, streamUrl: added.stream_url }
+}
+
+/** Stops a camera added from the dashboard (DELETE /cameras/<id>). */
+export async function removeCamera(baseUrl: string, cameraId: string, options: ServiceOptions = {}): Promise<void> {
+  await requestJson<unknown>(`/cameras/${encodeURIComponent(cameraId)}`, { ...options, baseUrl, method: 'DELETE', timeoutMs: 10_000 })
 }
 
 export interface CameraServiceState { cameraId: string; status: string; error: string | null }

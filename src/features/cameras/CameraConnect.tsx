@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Cctv, Plug, Radar, Smartphone, Wifi } from 'lucide-react'
+import { Cctv, Plug, Radar, Smartphone, Trash2, Wifi } from 'lucide-react'
 import { aiServiceUrl } from '../../api/config'
 import { describeApiError } from '../../api/errors'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import {
-  connectCamera, scanCameras, waitForCamera, type CameraScan, type CameraSource, type FoundCamera,
+  addCamera, isAddedCamera, removeCamera, scanCameras, serviceRoot, waitForCamera, type CameraScan, type CameraSource, type FoundCamera,
 } from '../../services'
 import type { Camera, CameraStatus } from '../../types/domain'
 import styles from './CameraConnect.module.css'
@@ -43,8 +43,8 @@ type Mode = 'ip' | 'url'
  */
 export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera[]; onChanged?: () => void }) {
   const reduce = useReducedMotion()
-  const services = cameras.filter(camera => camera.streamUrl)
-  const scanBase = services[0]?.streamUrl ?? aiServiceUrl
+  const reported = cameras.find(camera => camera.streamUrl)?.streamUrl
+  const serviceBase = reported ? serviceRoot(reported) : aiServiceUrl
   const [scan, setScan] = useState<CameraScan | null>(null)
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState('')
@@ -52,17 +52,17 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
   const [host, setHost] = useState('')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [path, setPath] = useState('')
   const [url, setUrl] = useState('')
-  const [target, setTarget] = useState('')
   const [connecting, setConnecting] = useState(false)
+  const [removing, setRemoving] = useState('')
   const [result, setResult] = useState<{ tone: 'safe' | 'critical'; text: string } | null>(null)
-  const targetCamera = services.find(camera => camera.id === target) ?? services[0]
 
   const runScan = async () => {
     setScanning(true)
     setScanError('')
     try {
-      setScan(await scanCameras(scanBase ?? ''))
+      setScan(await scanCameras(serviceBase))
     } catch (error) {
       setScanError(describeApiError(error).description)
     } finally {
@@ -83,26 +83,47 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!targetCamera?.streamUrl) return
-    const source: CameraSource = mode === 'ip' ? { kind: 'ip', host, username, password } : { kind: 'url', url }
+    if (!serviceBase) return
+    const source: CameraSource = mode === 'ip' ? { kind: 'ip', host, username, password, path } : { kind: 'url', url }
     setConnecting(true)
     setResult(null)
     try {
-      await connectCamera(targetCamera.streamUrl, source)
+      const added = await addCamera(serviceBase, source)
       // The service answers at once and opens the camera in the background: wait until it says how it went.
-      const state = await waitForCamera(targetCamera.streamUrl)
-      setResult(state.status === 'online'
-        ? { tone: 'safe', text: `${targetCamera.name} ya transmite y la IA está analizando la imagen.` }
-        : { tone: 'critical', text: state.error
-          ? `No se pudo abrir la cámara: revisa la IP. Si la cámara es nueva en este PC, abre «usuario y contraseña» y escribe la suya. (${state.error})`
-          : 'La cámara no respondió a tiempo. Comprueba que esté encendida y en la misma red.' })
+      const state = await waitForCamera(added.streamUrl)
       setPassword('')
-      onChanged?.()
+      if (state.status === 'online') {
+        setResult({ tone: 'safe', text: 'La cámara ya transmite y la IA está analizando la imagen.' })
+        onChanged?.()
+        // The service tells the backend within a second, so the list may need one more look to show it.
+        setTimeout(() => onChanged?.(), 2500)
+        return
+      }
+      // A camera that never opened must not stay retrying in the background; connecting again starts it over.
+      await removeCamera(serviceBase, added.cameraId).catch(() => {})
+      setResult({ tone: 'critical', text: state.error
+        ? `No se pudo abrir la cámara: revisa la IP, el usuario y la contraseña. (${state.error})`
+        : 'La cámara no respondió a tiempo. Comprueba que esté encendida y en la misma red que este PC.' })
     } catch (error) {
       const { title, description } = describeApiError(error)
       setResult({ tone: 'critical', text: `${title}. ${description}` })
     } finally {
       setConnecting(false)
+    }
+  }
+
+  const remove = async (camera: Camera) => {
+    if (!camera.streamUrl) return
+    setRemoving(camera.id)
+    setResult(null)
+    try {
+      await removeCamera(serviceRoot(camera.streamUrl), camera.id)
+      onChanged?.()
+    } catch (error) {
+      const { title, description } = describeApiError(error)
+      setResult({ tone: 'critical', text: `${title}. ${description}` })
+    } finally {
+      setRemoving('')
     }
   }
 
@@ -123,6 +144,10 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
               <StatusPill {...statusPill[camera.status]} />
             </div>
             {camera.lastError && camera.status !== 'online' && <p className={styles.error}>{camera.lastError}</p>}
+            {isAddedCamera(camera.streamUrl) && <div className={styles.cardBody}>
+              <Button variant="ghost" size="sm" icon={Trash2} loading={removing === camera.id} onClick={() => remove(camera)}
+                aria-label={`Quitar ${camera.name}`}>Quitar</Button>
+            </div>}
           </GlassCard>)}
         </ul>}
     </section>
@@ -131,14 +156,14 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
       <div className={styles.connectHead}>
         <div>
           <h2 id="camera-connect-title" className={styles.title}>Conectar una cámara</h2>
-          <p className={styles.note}>Escribe solo la IP de la cámara, o búscala en tu red. La IA empieza a analizarla en cuanto abre la imagen.</p>
+          <p className={styles.note}>Escribe la IP y la contraseña de la cámara, o búscala en tu red. Se agrega junto a las que ya tienes y la IA empieza a analizarla en cuanto abre la imagen.</p>
         </div>
-        <Button variant="secondary" icon={Radar} loading={scanning} onClick={runScan} disabled={!scanBase}>
+        <Button variant="secondary" icon={Radar} loading={scanning} onClick={runScan} disabled={!serviceBase}>
           Buscar cámaras en la red
         </Button>
       </div>
 
-      {!scanBase && <p className={styles.error}>
+      {!serviceBase && <p className={styles.error}>
         El servicio de IA no está corriendo en este PC, así que no se puede buscar ni conectar cámaras.
       </p>}
       {scanError && <p className={styles.error} role="alert">{scanError}</p>}
@@ -178,12 +203,16 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
           <TextField label="Dirección IP" value={host} onChange={event => setHost(event.target.value)} required
             placeholder="192.168.100.30" inputMode="decimal" autoComplete="off" />
           <details className={styles.advanced}>
-            <summary>¿La cámara es nueva en este PC? Escribe su usuario y contraseña</summary>
+            <summary>Usuario, contraseña y ruta de la cámara</summary>
             <div className={styles.fields}>
-              <TextField label="Usuario" value={username} onChange={event => setUsername(event.target.value)} autoComplete="off" />
+              <TextField label="Usuario" value={username} onChange={event => setUsername(event.target.value)} autoComplete="off"
+                hint="Vacío: admin." />
               <TextField label="Contraseña de la cámara" type="password" value={password}
                 onChange={event => setPassword(event.target.value)} autoComplete="new-password"
-                hint="En Imou es el código de seguridad de la etiqueta. Vacía: usa la que ya está guardada en el PC." />
+                hint="En Imou es el código de seguridad de la etiqueta. Solo puede quedar vacía si es la cámara ya configurada en este PC." />
+              <TextField label="Ruta RTSP" value={path} onChange={event => setPath(event.target.value)} autoComplete="off"
+                placeholder="/cam/realmonitor?channel=1&subtype=1"
+                hint="Vacía: la de Imou y Dahua. Hikvision: /Streaming/Channels/102. Otra marca: revisa su manual." />
             </div>
           </details>
         </div> : <div className={styles.fields}>
@@ -191,13 +220,7 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
             placeholder="192.168.1.20:8080  ·  rtsp://…  ·  1" autoComplete="off"
             hint="iVCam en el PC aparece como webcam: escribe su número (0 o 1). IP Webcam: la dirección que muestra la app." />
         </div>}
-        {services.length > 1 && <label className={styles.target}>
-          <span>Usar el servicio de</span>
-          <select value={targetCamera?.id ?? ''} onChange={event => setTarget(event.target.value)}>
-            {services.map(camera => <option key={camera.id} value={camera.id}>{camera.name}</option>)}
-          </select>
-        </label>}
-        <Button type="submit" icon={Plug} loading={connecting} disabled={!targetCamera}>Conectar y analizar</Button>
+        <Button type="submit" icon={Plug} loading={connecting} disabled={!serviceBase}>Conectar y analizar</Button>
         {result && <p className={result.tone === 'safe' ? styles.ok : styles.error} role="status">{result.text}</p>}
       </form>
     </GlassCard>
