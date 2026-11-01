@@ -70,3 +70,7 @@ li.card .error { padding: 0 var(--space-4) var(--space-3); font-size: var(--text
 @media (prefers-reduced-motion: reduce) {
   .foundItem:active { transform: none; }
 }
+.advanced { grid-column: 1 / -1; }
+.advanced summary { color: var(--color-brand-strong); font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer; border-radius: var(--radius-sm); }
+.advanced summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.advanced[open] > .fields { margin-top: var(--space-3); }

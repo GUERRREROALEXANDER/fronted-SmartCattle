@@ -50,7 +50,7 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
   const [scanError, setScanError] = useState('')
   const [mode, setMode] = useState<Mode>('ip')
   const [host, setHost] = useState('')
-  const [username, setUsername] = useState('admin')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [url, setUrl] = useState('')
   const [target, setTarget] = useState('')
@@ -94,7 +94,7 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
       setResult(state.status === 'online'
         ? { tone: 'safe', text: `${targetCamera.name} ya transmite y la IA está analizando la imagen.` }
         : { tone: 'critical', text: state.error
-          ? `No se pudo abrir la cámara: revisa la IP, el usuario y la contraseña. (${state.error})`
+          ? `No se pudo abrir la cámara: revisa la IP. Si la cámara es nueva en este PC, abre «usuario y contraseña» y escribe la suya. (${state.error})`
           : 'La cámara no respondió a tiempo. Comprueba que esté encendida y en la misma red.' })
       setPassword('')
       onChanged?.()
@@ -131,7 +131,7 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
       <div className={styles.connectHead}>
         <div>
           <h2 id="camera-connect-title" className={styles.title}>Conectar una cámara</h2>
-          <p className={styles.note}>Busca en tu red o escribe la IP de la cámara. La IA empieza a analizarla en cuanto abre la imagen.</p>
+          <p className={styles.note}>Escribe solo la IP de la cámara, o búscala en tu red. La IA empieza a analizarla en cuanto abre la imagen.</p>
         </div>
         <Button variant="secondary" icon={Radar} loading={scanning} onClick={runScan} disabled={!scanBase}>
           Buscar cámaras en la red
@@ -177,10 +177,15 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
         {mode === 'ip' ? <div className={styles.fields}>
           <TextField label="Dirección IP" value={host} onChange={event => setHost(event.target.value)} required
             placeholder="192.168.100.30" inputMode="decimal" autoComplete="off" />
-          <TextField label="Usuario" value={username} onChange={event => setUsername(event.target.value)} autoComplete="off" />
-          <TextField label="Contraseña de la cámara" type="password" value={password} required
-            onChange={event => setPassword(event.target.value)} autoComplete="new-password"
-            hint="En Imou es el código de seguridad de la etiqueta de la cámara." />
+          <details className={styles.advanced}>
+            <summary>¿La cámara es nueva en este PC? Escribe su usuario y contraseña</summary>
+            <div className={styles.fields}>
+              <TextField label="Usuario" value={username} onChange={event => setUsername(event.target.value)} autoComplete="off" />
+              <TextField label="Contraseña de la cámara" type="password" value={password}
+                onChange={event => setPassword(event.target.value)} autoComplete="new-password"
+                hint="En Imou es el código de seguridad de la etiqueta. Vacía: usa la que ya está guardada en el PC." />
+            </div>
+          </details>
         </div> : <div className={styles.fields}>
           <TextField label="Dirección o número de webcam" value={url} onChange={event => setUrl(event.target.value)} required
             placeholder="192.168.1.20:8080  ·  rtsp://…  ·  1" autoComplete="off"

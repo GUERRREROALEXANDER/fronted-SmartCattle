@@ -40,7 +40,13 @@ export async function scanCameras(baseUrl = aiServiceUrl, options: ServiceOption
 export async function connectCamera(baseUrl: string, source: CameraSource, options: ServiceOptions = {}): Promise<void> {
   const body = source.kind === 'url'
     ? { url: source.url.trim() }
-    : { host: source.host.trim(), username: source.username.trim() || 'admin', password: source.password, ...(source.port ? { port: source.port } : {}) }
+    // Only what the person typed: with just the IP, the AI service uses the credentials saved on its PC.
+    : {
+      host: source.host.trim(),
+      ...(source.username.trim() ? { username: source.username.trim() } : {}),
+      ...(source.password ? { password: source.password } : {}),
+      ...(source.port ? { port: source.port } : {}),
+    }
   await requestJson<unknown>('/camera', { ...options, baseUrl, method: 'POST', body, token: null, timeoutMs: 10_000 })
 }
 
