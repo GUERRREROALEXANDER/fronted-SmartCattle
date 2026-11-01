@@ -1,4 +1,5 @@
 import { useId, useState } from 'react'
+import { Pause, Play } from 'lucide-react'
 import {
   Area, Bar, BarChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
@@ -47,6 +48,8 @@ export function LiveCharts({ history, reduceMotion, trendClassName, alertsClassN
   staggerFrom?: number
 }) {
   const [range, setRange] = useState<Range>('session')
+  // Pausing keeps the session line still so a value can be read; the live state keeps updating underneath.
+  const [frozen, setFrozen] = useState<readonly HerdPoint[] | null>(null)
   const gradientId = `trend-${useId().replace(/:/g, '')}`
   const occupancy = useResource(signal => {
     const end = new Date()
@@ -60,7 +63,7 @@ export function LiveCharts({ history, reduceMotion, trendClassName, alertsClassN
     return getAlertReport({ start, end }, { signal })
   }, { refreshMs: REPORT_REFRESH_MS })
 
-  const trend = range === 'session' ? fromHistory(history) : farmMinutes(occupancy.data ?? [])
+  const trend = range === 'session' ? fromHistory(frozen ?? history) : farmMinutes(occupancy.data ?? [])
   const latest = trend.at(-1)
   const peakOutside = trend.reduce((peak, point) => Math.max(peak, point.outside), 0)
   const trendSummary = latest
@@ -82,9 +85,16 @@ export function LiveCharts({ history, reduceMotion, trendClassName, alertsClassN
         <figcaption className={styles.caption}>
           <div className={styles.captionRow}>
             <h2 id="herd-trend-title" className={styles.title}>Hato dentro y fuera de zona</h2>
+            <div className={styles.controls}>
+            {range === 'session' && <button type="button" className={styles.pause} aria-pressed={frozen !== null}
+              onClick={() => setFrozen(frozen ? null : [...history])}>
+              {frozen ? <Play size={14} strokeWidth={2.25} aria-hidden="true" /> : <Pause size={14} strokeWidth={2.25} aria-hidden="true" />}
+              {frozen ? 'Reanudar' : 'Pausar'}
+            </button>}
             <div className={styles.ranges} role="group" aria-label="Periodo de la gráfica">
               {RANGES.map(item => <button key={item.id} type="button" className={styles.range}
                 aria-pressed={range === item.id} onClick={() => setRange(item.id)}>{item.label}</button>)}
+            </div>
             </div>
           </div>
           <ul className={styles.legend}>
@@ -157,6 +167,16 @@ export function LiveCharts({ history, reduceMotion, trendClassName, alertsClassN
               </BarChart>
             </ResponsiveContainer>}
         </div>
+        {/* Table view of the stacked bars for screen readers; the wrapper clips it, not the table. */}
+        {days.length > 0 && <div className="visually-hidden">
+          <table>
+            <caption>Alertas por día y severidad</caption>
+            <thead><tr><th scope="col">Día</th><th scope="col">Críticas</th><th scope="col">Advertencias</th><th scope="col">Informativas</th><th scope="col">Total</th></tr></thead>
+            <tbody>{days.map(day => <tr key={day.day}>
+              <th scope="row">{dayLabel(day.day)}</th><td>{day.critical}</td><td>{day.warning}</td><td>{day.info}</td><td>{day.total}</td>
+            </tr>)}</tbody>
+          </table>
+        </div>}
       </figure>
     </GlassCard>
   </>
