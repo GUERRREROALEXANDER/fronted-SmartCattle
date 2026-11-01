@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react'
-import { ErrorState, GlassCard, Notice, Skeleton } from '../../components/ui'
-import { hasPicture } from '../../services'
+import { useReducedMotion } from 'motion/react'
+import { dataMode } from '../../api/config'
+import { Notice } from '../../components/ui'
+import { herdCount } from '../../live/liveState'
+import { useLive } from '../../live/useLive'
+import type { ResourceState } from '../../lib/useResource'
+import { hasPicture, type HerdCount } from '../../services'
 import { FadeUp, staggerDelay } from '../../motion'
-import { AlertStrip } from './AlertStrip'
-import { farmCondition, recentAlerts, statusHeadline } from './dashboardModel'
+import type { FarmEvent } from '../../types/domain'
+import { AlertCenter } from './AlertCenter'
+import { farmCondition, statusHeadline } from './dashboardModel'
 import { FarmStatusHeader } from './FarmStatusHeader'
 import { FieldLog } from './FieldLog'
 import { HerdSummary } from './HerdSummary'
@@ -21,65 +27,57 @@ function useNow(intervalMs = 30_000) {
   return now
 }
 
-/** Remembers when a polled value last changed identity, i.e. when fresh data arrived. */
-function useArrivalTime(marker: unknown): Date | null {
-  const [arrival, setArrival] = useState<{ marker: unknown; at: Date | null }>({ marker: null, at: null })
-  if (marker !== null && marker !== undefined && marker !== arrival.marker) setArrival({ marker, at: new Date() })
-  return arrival.at
-}
-
-const areas = { metrics: styles.metrics, plan: styles.plan, trend: styles.trend, zones: styles.zones }
+const areas = { metrics: styles.metrics, plan: styles.plan, trend: styles.trend, alerts: styles.chart }
 
 export function DashboardPage() {
-  const data = useDashboardData()
+  const live = useLive()
+  const data = useDashboardData(live.cameras.map(camera => camera.id))
   const now = useNow()
-  const events = data.events.data ?? []
-  const alerts = recentAlerts(events, now)
-  const eventsReady = data.events.status !== 'loading'
-  const cameras = data.cameras.data ?? null
-  const backendOffline = data.status.data?.backend === 'offline'
-  const updatedAt = useArrivalTime(data.events.data)
-  // Stale or missing events cannot prove the farm is calm.
-  const hasFreshEvents = data.events.status === 'success' && !backendOffline
-  const condition = farmCondition(alerts, hasFreshEvents)
+  const reduceMotion = useReducedMotion() === true
+  const offline = live.connection === 'offline'
+  const known = live.updatedAt !== null && !offline
+  const open = live.alerts.filter(alert => alert.status === 'open')
+  // Stale or missing data cannot prove the farm is calm.
+  const condition = farmCondition(open, known)
   const videoIds = data.snapshots.data
     ? new Set(Object.entries(data.snapshots.data).filter(([, snapshot]) => hasPicture(snapshot.stream)).map(([id]) => id))
     : undefined
+  const events: ResourceState<FarmEvent[]> & { reload: () => void } = live.updatedAt
+    ? { status: 'success', data: live.events, source: dataMode === 'mock' ? 'mock' : 'api', error: null, reload: live.refresh }
+    : { status: 'loading', data: null, source: null, error: null, reload: live.refresh }
+
+  // The detected count is the same live number the tiles and the plan show, never a separate poll.
+  const count = herdCount(live)
+  const detected: ResourceState<HerdCount | null> = live.updatedAt
+    ? { status: 'success', data: count && { count: count.total, countedAt: live.updatedAt }, source: events.source ?? 'api', error: null }
+    : { status: 'loading', data: null, source: null, error: null }
 
   return <div className={styles.page}>
     <FadeUp>
       <FarmStatusHeader
         farmName={data.farm.data?.name ?? null}
         condition={condition}
-        headline={eventsReady ? statusHeadline(condition, alerts.length) : null}
+        headline={live.updatedAt || offline ? statusHeadline(condition, open.length) : null}
         status={data.status.data ?? null}
-        cameras={cameras}
+        cameras={live.updatedAt ? live.cameras : null}
         withVideo={videoIds ? videoIds.size : null}
-        updatedAt={updatedAt} />
+        updatedAt={live.updatedAt} />
     </FadeUp>
 
-    {(backendOffline || alerts.length > 0) && <FadeUp delay={staggerDelay(1)} className={styles.alerts}>
-      {backendOffline && <Notice tone="critical" title="Sin conexión con el servidor">
-        Se muestra la última información recibida. Se reintenta automáticamente cada 15 segundos.
-      </Notice>}
-      <AlertStrip alerts={alerts} cameras={cameras} now={now} />
+    {offline && <FadeUp delay={staggerDelay(1)} className={styles.alerts}>
+      <Notice tone="critical" title="Sin conexión con el servidor">
+        Se muestra la última información recibida. Se reintenta automáticamente.
+      </Notice>
     </FadeUp>}
 
     <div className={styles.grid}>
-      {data.plan.status === 'loading' && <GlassCard padding="md" className={styles.plan}>
-        <Skeleton height="26rem" radius="var(--radius-lg)" />
-      </GlassCard>}
-      {data.plan.data && <LiveMonitor plan={data.plan.data} cameras={cameras} alerts={alerts}
-        stale={backendOffline} withVideo={videoIds} areas={areas} />}
-      {data.plan.status === 'success' && !data.plan.data && <GlassCard padding="md" className={styles.plan}>
-        <ErrorState
-          title="Plano no disponible"
-          description="El servidor todavía no ofrece la geometría de la finca ni la ubicación de las cámaras." />
-      </GlassCard>}
-      <HerdSummary card className={styles.herd} delay={staggerDelay(6)}
-        registered={data.registered} detected={data.detected} stale={backendOffline} />
-      <FieldLog className={styles.log} delay={staggerDelay(7)}
-        events={data.events} cameras={cameras} securityHours={data.securityHours.data ?? null} now={now} />
+      <LiveMonitor stale={offline} withVideo={videoIds} reduceMotion={reduceMotion} areas={areas} />
+      <AlertCenter className={styles.alertCenter} delay={staggerDelay(6)} alerts={live.alerts} cameras={live.cameras}
+        now={now} onAction={live.updateAlert} reduceMotion={reduceMotion} />
+      <HerdSummary card className={styles.herd} delay={staggerDelay(9)}
+        registered={data.registered} detected={detected} stale={offline} />
+      <FieldLog className={styles.log} delay={staggerDelay(10)}
+        events={events} cameras={live.cameras} securityHours={data.securityHours.data ?? null} now={now} />
     </div>
   </div>
 }

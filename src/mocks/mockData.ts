@@ -1,4 +1,5 @@
-// DEVELOPMENT MOCK DATA. Not backend data. Replace with real API responses when the backend supports them.
+// Demo data for VITE_DATA_SOURCE=mock only. The api and hybrid modes never read this file; the mock
+// services and the mock live feed (mockLiveFeed.ts) stand in for the backend and the AI service.
 import type {
   Alert, AlertReport, Camera, EventKind, Farm, FarmEvent, FrameDetections, LiveMetrics, Lot, OccupancySample, SafeZone, SystemStatus,
 } from '../types/domain'
@@ -7,8 +8,8 @@ import { isInsideZone, isWithinBounds } from '../services/mappers'
 import { demoFeedBoxes, demoFeedCameraId, demoFeedZoneOutline } from './mockCameraFeed'
 
 export const mockFarm: Farm = { id: 'farm-san-jose', name: 'San José' }
-export const mockRegisteredCattle = 144
-export const mockDetectedCattle = 143
+export const mockRegisteredCattle = 22
+export const mockDetectedCattle = 21
 export const mockCameras: Camera[] = [
   { id: 'main-entrance', name: 'Entrada principal', location: 'Acceso vehicular', status: 'online', lastSeenAt: new Date() },
   { id: 'corral', name: 'Corral', location: 'Corral central', status: 'online', lastSeenAt: new Date() },

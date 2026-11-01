@@ -1,113 +1,161 @@
-import { useId } from 'react'
-import { useReducedMotion } from 'motion/react'
+import { useId, useState } from 'react'
 import {
-  Area,
-  Bar,
-  BarChart,
-  CartesianGrid,
-  ComposedChart,
-  LabelList,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  Area, Bar, BarChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts'
-import { GlassCard } from '../../components/ui'
+import { GlassCard, Skeleton } from '../../components/ui'
+import type { HerdPoint } from '../../live/liveState'
+import { useResource } from '../../lib/useResource'
 import { staggerDelay } from '../../motion'
+import { getAlertReport, getOccupancyHistory } from '../../services'
+import type { AlertDay } from '../../types/domain'
+import { clock, farmMinutes, weekDays, type TrendPoint } from './dashboardModel'
 import { ChartTooltip } from '../analytics/ChartTooltip'
-import type { LiveChartPoint, LiveHerdSnapshot } from './liveHerd'
 import styles from './LiveCharts.module.css'
 
-const axisTick = { fill: 'var(--color-ink-subtle)', fontFamily: 'var(--font-sans)', fontSize: 11 }
-const trendValue = (value: number | string, name: string) => name.includes('%') ? `${value} %` : String(value)
+// Palettes checked with the dataviz validator (CVD, normal vision, contrast) against the light surface:
+// trend brand/alarm-ink, severity info/warning/alarm-ink. All tokens, no new colors.
+const series = { inside: 'var(--color-brand)', outside: 'var(--color-alarm-ink)' }
+const severity = { info: 'var(--color-info)', warning: 'var(--color-warning)', critical: 'var(--color-alarm-ink)' } as const
+const severityLabel = { info: 'Informativa', warning: 'Advertencia', critical: 'Crítica' } as const
 
-export function LiveCharts({ snapshot, points, trendClassName, zonesClassName, staggerFrom = 0 }: {
-  snapshot: LiveHerdSnapshot
-  points: readonly LiveChartPoint[]
+const axisTick = { fill: 'var(--color-ink-subtle)', fontFamily: 'var(--font-sans)', fontSize: 11 }
+const grid = { stroke: 'var(--color-rule)', strokeOpacity: 0.7, strokeDasharray: '3 6', vertical: false } as const
+const surfaceRing = { stroke: 'var(--color-surface-raised)', strokeWidth: 2 }
+
+type Range = 'session' | 'hours'
+const RANGES: { id: Range; label: string }[] = [{ id: 'session', label: 'Sesión' }, { id: 'hours', label: 'Últimas 6 h' }]
+const HOURS = 6
+const HOUR_MS = 3_600_000
+const HISTORY_REFRESH_MS = 60_000
+const REPORT_REFRESH_MS = 5 * 60_000
+
+const fromHistory = (history: readonly HerdPoint[]): TrendPoint[] =>
+  history.map(point => ({ at: point.at.getTime(), label: clock(point.at, true), inside: point.inside, outside: point.outside }))
+
+/** "2026-10-31" → "vie 31". Parsed as a local day, never shifted by the time zone. */
+function dayLabel(day: string): string {
+  const [year, month, date] = day.split('-').map(Number)
+  return new Date(year, month - 1, date).toLocaleDateString('es-CO', { weekday: 'short', day: 'numeric' }).replace('.', '')
+}
+
+export function LiveCharts({ history, reduceMotion, trendClassName, alertsClassName, staggerFrom = 0 }: {
+  /** This session's farm-wide head count from the live channel. */
+  history: readonly HerdPoint[]
+  reduceMotion: boolean
   trendClassName?: string
-  zonesClassName?: string
-  /** Stagger index of the first card. */
+  alertsClassName?: string
   staggerFrom?: number
 }) {
-  const animate = !useReducedMotion()
-  const gradientId = `live-${useId().replace(/:/g, '')}`
-  const trendSummary = `Últimos 60 segundos: ahora ${snapshot.insidePercentage} % del ganado dentro del perímetro y ${snapshot.detectionsPerMinute} detecciones por minuto.`
-  const zoneSummary = `Alertas por zona: ${snapshot.zones.map(zone => `${zone.name} ${zone.alerts}`).join(', ')}.`
-  const data = [...points]
+  const [range, setRange] = useState<Range>('session')
+  const gradientId = `trend-${useId().replace(/:/g, '')}`
+  const occupancy = useResource(signal => {
+    const end = new Date()
+    return getOccupancyHistory({ start: new Date(end.getTime() - HOURS * HOUR_MS), end }, { signal })
+  }, { key: range, refreshMs: range === 'hours' ? HISTORY_REFRESH_MS : undefined })
+  const report = useResource(signal => {
+    const end = new Date()
+    const start = new Date(end)
+    start.setDate(start.getDate() - 6)
+    start.setHours(0, 0, 0, 0)
+    return getAlertReport({ start, end }, { signal })
+  }, { refreshMs: REPORT_REFRESH_MS })
+
+  const trend = range === 'session' ? fromHistory(history) : farmMinutes(occupancy.data ?? [])
+  const latest = trend.at(-1)
+  const peakOutside = trend.reduce((peak, point) => Math.max(peak, point.outside), 0)
+  const trendSummary = latest
+    ? `${RANGES.find(item => item.id === range)!.label}: ahora ${latest.inside} dentro y ${latest.outside} fuera de zona; máximo fuera ${peakOutside}.`
+    : 'Todavía no hay conteos de las cámaras.'
+  const trendLoading = range === 'hours' && occupancy.status === 'loading'
+  const days: AlertDay[] = report.data ? weekDays(report.data.days, new Date()) : []
+  const weekTotal = days.reduce((sum, day) => sum + day.total, 0)
+  const weekCritical = days.reduce((sum, day) => sum + day.critical, 0)
+  const ack = report.data?.avgMinutesToAcknowledge
+  const animate = !reduceMotion
+  // The session line grows with every push; replaying the entrance each time would keep it invisible.
+  const animateTrend = animate && range === 'hours'
 
   return <>
     <GlassCard as="section" padding="none" delay={staggerDelay(staggerFrom)}
-      className={[styles.card, trendClassName].filter(Boolean).join(' ')} aria-label="Gráfica de los últimos 60 segundos">
-      <figure className={styles.figure} aria-labelledby="live-trend-title">
+      className={[styles.card, trendClassName].filter(Boolean).join(' ')} aria-labelledby="herd-trend-title">
+      <figure className={styles.figure}>
         <figcaption className={styles.caption}>
-          <h2 id="live-trend-title" className={styles.title}>Últimos 60 segundos</h2>
-          <ul className={styles.legend} aria-hidden="true">
-            <li><span className={styles.swatchInside} />Dentro del perímetro (%)</li>
-            <li><span className={styles.swatchDetections} />Detecciones/min</li>
+          <div className={styles.captionRow}>
+            <h2 id="herd-trend-title" className={styles.title}>Hato dentro y fuera de zona</h2>
+            <div className={styles.ranges} role="group" aria-label="Periodo de la gráfica">
+              {RANGES.map(item => <button key={item.id} type="button" className={styles.range}
+                aria-pressed={range === item.id} onClick={() => setRange(item.id)}>{item.label}</button>)}
+            </div>
+          </div>
+          <ul className={styles.legend}>
+            <li><span className={styles.swatch} style={{ background: series.inside }} aria-hidden="true" />Dentro de zona</li>
+            <li><span className={styles.swatch} style={{ background: series.outside }} aria-hidden="true" />Fuera de zona</li>
           </ul>
         </figcaption>
         <div className={styles.plot} role="img" aria-label={trendSummary}>
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 8, right: 0, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id={`${gradientId}-inside`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-brand)" stopOpacity={0.34} />
-                  <stop offset="100%" stopColor="var(--color-mint)" stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id={`${gradientId}-detections`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-info)" stopOpacity={0.2} />
-                  <stop offset="100%" stopColor="var(--color-sky)" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="var(--color-rule)" strokeOpacity={0.7} strokeDasharray="3 6" vertical={false} />
-              <XAxis dataKey="label" minTickGap={48} tick={axisTick} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="percent" domain={[0, 100]} width={40} unit="%" tick={axisTick} tickLine={false} axisLine={false} />
-              <YAxis yAxisId="detections" orientation="right" width={34} allowDecimals={false}
-                domain={[0, (max: number) => Math.max(40, Math.ceil(max * 1.2 / 40) * 40)]} tickCount={5} tick={axisTick} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTooltip formatValue={trendValue} />} cursor={{ stroke: 'var(--color-rule-strong)', strokeDasharray: '3 4' }}
-                wrapperStyle={{ outline: 'none' }} />
-              <Area yAxisId="detections" type="monotone" dataKey="detections" name="Detecciones/min"
-                stroke="var(--color-info)" fill={`url(#${gradientId}-detections)`} strokeWidth={2.25}
-                dot={false} activeDot={{ r: 4.5, fill: 'var(--color-info)', stroke: 'var(--color-surface-raised)', strokeWidth: 2 }}
-                isAnimationActive={animate} animationDuration={600} animationEasing="ease-out" />
-              <Area yAxisId="percent" type="monotone" dataKey="insidePercentage" name="Dentro del perímetro (%)"
-                stroke="var(--color-brand)" fill={`url(#${gradientId}-inside)`} strokeWidth={2.75}
-                dot={false} activeDot={{ r: 4.5, fill: 'var(--color-brand)', stroke: 'var(--color-surface-raised)', strokeWidth: 2 }}
-                isAnimationActive={animate} animationDuration={600} animationEasing="ease-out" />
-            </ComposedChart>
-          </ResponsiveContainer>
+          {trendLoading ? <Skeleton height="100%" radius="var(--radius-md)" />
+            : trend.length < 2 ? <p className={styles.empty}>
+              {range === 'session' ? 'La línea aparece en cuanto las cámaras envían su segundo conteo.' : 'El servidor no tiene conteos de las últimas horas.'}
+            </p>
+            : <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={trend} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+                <defs>
+                  <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={series.inside} stopOpacity={0.22} />
+                    <stop offset="100%" stopColor={series.inside} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid {...grid} />
+                <XAxis dataKey="label" minTickGap={56} tick={axisTick} tickLine={false} axisLine={false} />
+                <YAxis width={32} allowDecimals={false} domain={[0, (max: number) => Math.max(4, Math.ceil(max * 1.15))]}
+                  tick={axisTick} tickLine={false} axisLine={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ stroke: 'var(--color-rule-strong)', strokeDasharray: '3 4' }}
+                  wrapperStyle={{ outline: 'none' }} />
+                <Area type="monotone" dataKey="inside" name="Dentro de zona" stroke={series.inside} strokeWidth={2}
+                  fill={`url(#${gradientId})`} dot={false} activeDot={{ r: 4, fill: series.inside, ...surfaceRing }}
+                  isAnimationActive={animateTrend} animationDuration={400} animationEasing="ease-out" />
+                <Line type="monotone" dataKey="outside" name="Fuera de zona" stroke={series.outside} strokeWidth={2}
+                  dot={false} activeDot={{ r: 4, fill: series.outside, ...surfaceRing }}
+                  isAnimationActive={animateTrend} animationDuration={400} animationEasing="ease-out" />
+              </ComposedChart>
+            </ResponsiveContainer>}
         </div>
       </figure>
     </GlassCard>
 
     <GlassCard as="section" padding="none" delay={staggerDelay(staggerFrom + 1)}
-      className={[styles.card, zonesClassName].filter(Boolean).join(' ')} aria-label="Gráfica de alertas por zona">
-      <figure className={styles.figure} aria-labelledby="zone-alerts-title">
+      className={[styles.card, alertsClassName].filter(Boolean).join(' ')} aria-labelledby="alert-days-title">
+      <figure className={styles.figure}>
         <figcaption className={styles.caption}>
-          <h2 id="zone-alerts-title" className={styles.title}>Alertas por zona</h2>
-          <p className={styles.note}>Cada salida suma una alerta a su lote.</p>
+          <h2 id="alert-days-title" className={styles.title}>Alertas de los últimos 7 días</h2>
+          <p className={styles.note}>
+            {report.data ? `${weekTotal} alertas, ${weekCritical} críticas` : 'Cargando el reporte…'}
+            {ack !== null && ack !== undefined && ` · se reconocen en ${Math.round(ack)} min en promedio`}
+          </p>
+          <ul className={styles.legend}>
+            {(['critical', 'warning', 'info'] as const).map(level => <li key={level}>
+              <span className={styles.swatch} style={{ background: severity[level] }} aria-hidden="true" />{severityLabel[level]}
+            </li>)}
+          </ul>
         </figcaption>
-        <div className={`${styles.plot} ${styles.bars}`} role="img" aria-label={zoneSummary}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={snapshot.zones} margin={{ top: 20, right: 4, bottom: 0, left: 0 }}>
-              <defs>
-                <linearGradient id={`${gradientId}-bar`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-alarm)" stopOpacity={0.92} />
-                  <stop offset="100%" stopColor="var(--color-peach)" stopOpacity={0.75} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid stroke="var(--color-rule)" strokeOpacity={0.7} strokeDasharray="3 6" vertical={false} />
-              <XAxis dataKey="name" interval={0} tick={axisTick} tickLine={false} axisLine={false} />
-              <YAxis width={26} allowDecimals={false} domain={[0, (max: number) => Math.max(3, max + 1)]}
-                tick={axisTick} tickLine={false} axisLine={false} />
-              <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--color-hover)', radius: 10 }} wrapperStyle={{ outline: 'none' }} />
-              <Bar dataKey="alerts" name="Alertas" fill={`url(#${gradientId}-bar)`}
-                radius={[10, 10, 4, 4]} maxBarSize={44} background={{ fill: 'var(--glass-fill-subtle)', radius: 10 }}
-                isAnimationActive={animate} animationDuration={700} animationEasing="ease-out">
-                <LabelList dataKey="alerts" position="top" fill="var(--color-alarm-ink)" fontSize={12} fontWeight={700} />
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+        <div className={`${styles.plot} ${styles.bars}`} role="img"
+          aria-label={`Alertas por día: ${days.map(day => `${dayLabel(day.day)} ${day.total} (${day.critical} críticas)`).join(', ')}.`}>
+          {report.status === 'loading' ? <Skeleton height="100%" radius="var(--radius-md)" />
+            : weekTotal === 0 ? <p className={styles.empty}>Sin alertas registradas esta semana.</p>
+            : <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={days.map(day => ({ ...day, label: dayLabel(day.day) }))} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
+                <CartesianGrid {...grid} />
+                <XAxis dataKey="label" interval={0} tick={axisTick} tickLine={false} axisLine={false} />
+                <YAxis width={28} allowDecimals={false} domain={[0, (max: number) => Math.max(3, max)]}
+                  tick={axisTick} tickLine={false} axisLine={false} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'var(--color-hover)', radius: 8 }} wrapperStyle={{ outline: 'none' }} />
+                {/* Bottom to top: informative, warning, critical. A 2px surface stroke separates the segments. */}
+                {(['info', 'warning', 'critical'] as const).map(level => <Bar key={level} dataKey={level} stackId="severity"
+                  name={severityLabel[level]} fill={severity[level]} stroke="var(--color-surface-raised)" strokeWidth={2}
+                  radius={level === 'critical' ? [4, 4, 0, 0] : 0} maxBarSize={30}
+                  isAnimationActive={animate} animationDuration={500} animationEasing="ease-out" />)}
+              </BarChart>
+            </ResponsiveContainer>}
         </div>
       </figure>
     </GlassCard>

@@ -1,6 +1,6 @@
 import { dataMode } from '../api/config'
 import { getJson } from '../api/httpClient'
-import { parseAlertReport, parseEventReport, parseLiveMetrics, parseOccupancyHistory } from '../api/parsers'
+import { parseAlertReport, parseLiveMetrics, parseOccupancyHistory } from '../api/parsers'
 import { buildMockAlertReport, buildMockLiveMetrics, buildMockOccupancyHistory } from '../mocks/mockData'
 import type { AlertReport, LiveMetrics, OccupancySample, Sourced } from '../types/domain'
 import { resolveSource } from './dataSource'
@@ -57,25 +57,6 @@ export async function getAlertReport(window: ReportWindow, options: ServiceOptio
       })),
       total: report.total, avgMinutesToAcknowledge: report.avg_minutes_to_acknowledge, avgMinutesToResolve: report.avg_minutes_to_resolve,
     },
-    source,
-  }
-}
-
-export interface EventDayByCamera { day: string; cameraId: string; total: number; info: number; warning: number; critical: number }
-
-/** Detections per day and camera (GET /api/reports/events). */
-export async function getEventReport(window: ReportWindow, options: ServiceOptions = {}): Promise<Sourced<EventDayByCamera[]>> {
-  const source = resolveSource('backend', options.mode ?? dataMode)
-  if (source === 'mock') {
-    await waitForMock(options)
-    return { data: [], source }
-  }
-  const report = parseEventReport(await getJson<unknown>('/api/reports/events', {
-    ...options,
-    query: { start: window.start.toISOString(), end: window.end.toISOString(), tz: timeZone() },
-  }))
-  return {
-    data: report.days.map(day => ({ day: day.day, cameraId: day.camera_id, total: day.total, info: day.low, warning: day.medium, critical: day.high })),
     source,
   }
 }
