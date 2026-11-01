@@ -1,5 +1,6 @@
 import { dataMode, type DataMode } from '../../api/config'
-import { AuthError, type LoginInput, type RegisterInput, type Session } from '../../types/auth'
+import type { LoginInput, RegisterInput, Session } from '../../types/auth'
+import { createApiAuthService } from './apiAuthService'
 import { createMockAuthService } from './mockAuthService'
 
 export interface AuthService {
@@ -9,14 +10,11 @@ export interface AuthService {
   logout(): Promise<void>
 }
 
+/**
+ * `api` and `hybrid` sign in against the backend; only `mock` keeps the demo accounts in the browser.
+ */
 export function createAuthService(mode: DataMode = dataMode): AuthService {
-  if (mode === 'api') return {
-    getSession: async () => null,
-    login: async () => { throw new AuthError('unavailable') },
-    register: async () => { throw new AuthError('unavailable') },
-    logout: async () => {},
-  }
-  return createMockAuthService()
+  return mode === 'mock' ? createMockAuthService() : createApiAuthService()
 }
 
 export const authService = createAuthService()

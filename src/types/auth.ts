@@ -1,7 +1,8 @@
 import type { UserRole } from './domain'
 
-export interface AuthUser { id: string; username: string; name: string; email: string; role: UserRole; farmId: string }
-export interface Session { user: AuthUser; issuedAt: string /* ISO */; source: 'mock' }
+/** `farmId` is null for backend accounts: the farm is looked up with GET /api/farms. */
+export interface AuthUser { id: string; username: string; name: string; email: string; role: UserRole; farmId: string | null }
+export interface Session { user: AuthUser; issuedAt: string /* ISO */; source: 'mock' | 'api' }
 export interface LoginInput { identifier: string; password: string }
 export interface RegisterInput { username: string; name?: string; email: string; password: string }
 export type AuthErrorCode = 'invalid_credentials' | 'email_taken' | 'username_taken' | 'rate_limited' | 'unavailable' | 'storage'

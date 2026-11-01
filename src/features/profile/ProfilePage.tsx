@@ -41,7 +41,7 @@ export function ProfilePage() {
         <div><dt>Nombre</dt><dd>{user.name}</dd></div>
         <div><dt>Correo electrónico</dt><dd>{user.email}</dd></div>
         <div><dt>Rol</dt><dd>{role}</dd></div>
-        <div><dt>Identificador de finca</dt><dd className="tabular">{user.farmId}</dd></div>
+        <div><dt>Identificador de finca</dt><dd className="tabular">{user.farmId ?? 'Asignada por el servidor'}</dd></div>
       </dl>
 
       <div className={styles.actions}>

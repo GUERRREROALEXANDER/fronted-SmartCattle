@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataMode } from '../../api/config'
+import { tokenStore } from '../../api/session'
 import { authService } from '../../services/auth/authService'
 import { AuthError, type Session } from '../../types/auth'
 import { AuthContext, type AuthContextValue } from './useAuth'
@@ -20,6 +21,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => { active = false }
   }, [])
 
+  // A token the backend rejects (expired, revoked, account deactivated) signs the person out at once.
+  useEffect(() => tokenStore.onRejected(() => {
+    revision.current += 1
+    setSession(null)
+    setStatus('anonymous')
+  }), [])
+
   async function authenticate(operation: () => Promise<Session>) {
     const current = ++revision.current
     try {
@@ -34,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
   const value: AuthContextValue = {
-    status, session, isDemo: dataMode !== 'api',
+    status, session, isDemo: dataMode === 'mock',
     login: input => authenticate(() => authService.login(input)),
     register: input => authenticate(() => authService.register(input)),
     async logout() {
