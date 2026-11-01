@@ -5,7 +5,8 @@ import { EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/u
 import { can } from '../../lib/permissions'
 import { useResource } from '../../lib/useResource'
 import { FadeUp, StaggerItem, staggerDelay } from '../../motion'
-import { hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
+import { hasPicture, listEvents, loadCameraSnapshots } from '../../services'
+import { useLiveCameras } from '../../live/useLiveCameras'
 import type { Severity } from '../../types/domain'
 import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
 import { CameraCard } from './CameraCard'
@@ -19,7 +20,7 @@ export function CamerasPage() {
     return () => clearInterval(timer)
   }, [])
 
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 5_000 })
+  const cameras = useLiveCameras()
   const events = useResource(signal => listEvents({ signal }), { refreshMs: 15_000 })
   const ids = (cameras.data ?? []).map(camera => camera.id)
   const snapshots = useResource(signal => loadCameraSnapshots(ids, signal), { key: ids.join(','), refreshMs: 15_000 })

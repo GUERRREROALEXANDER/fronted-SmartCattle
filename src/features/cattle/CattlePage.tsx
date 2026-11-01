@@ -7,7 +7,8 @@ import { EmptyState, ErrorState, PageHeader, SkeletonText } from '../../componen
 import { formatCount, formatTime } from '../../lib/format'
 import { useResource } from '../../lib/useResource'
 import { duration, ease, FadeUp, staggerDelay } from '../../motion'
-import { getDetectedCattleCount, getRegisteredCattleCount, hasPicture, listCameras, listEvents, loadCameraSnapshots } from '../../services'
+import { getDetectedCattleCount, getRegisteredCattleCount, hasPicture, listEvents, loadCameraSnapshots } from '../../services'
+import { useLiveCameras } from '../../live/useLiveCameras'
 import { cameraName } from '../dashboard/dashboardModel'
 import { HerdSummary } from '../dashboard/HerdSummary'
 import { cattleEvents, herdByCamera, visibleTotals } from './cattleModel'
@@ -23,7 +24,7 @@ export function CattlePage() {
 
   const registered = useResource(signal => getRegisteredCattleCount({ signal }))
   const detected = useResource(signal => getDetectedCattleCount({ signal }), { refreshMs: 15_000 })
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 15_000 })
+  const cameras = useLiveCameras({ onlineOnly: true })
   const events = useResource(signal => listEvents({ signal }), { refreshMs: 15_000 })
   const ids = (cameras.data ?? []).map(camera => camera.id)
   const frames = useResource(signal => loadCameraSnapshots(ids, signal), { key: ids.join(','), refreshMs: 15_000 })
