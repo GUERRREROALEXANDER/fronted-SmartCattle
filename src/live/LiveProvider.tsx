@@ -5,7 +5,7 @@ import { tokenStore } from '../api/session'
 import { alarm } from '../lib/alarm'
 import { eventCatalog } from '../lib/eventCatalog'
 import { acknowledgeAlert, getLiveMetrics, listAlerts, listAllCameras, listEvents, resolveAlert } from '../services'
-import type { Alert } from '../types/domain'
+import type { Alert, Camera } from '../types/domain'
 import { liveSocketUrl, openLiveSocket, type SocketState } from './liveSocket'
 import { initialLiveState, liveReducer, type LiveConnection } from './liveState'
 import { LiveContext, type LiveContextValue } from './useLive'
@@ -15,9 +15,10 @@ const POLL_MS = 5_000
 const SAFETY_REFRESH_MS = 60_000
 const PRUNE_MS = 2_000
 
-function alarmReason(alert: Alert): string {
+function alarmReason(alert: Alert, cameras: readonly Camera[]): string {
   const label = alert.kind ? eventCatalog[alert.kind].label : alert.message
-  return alert.cameraId ? `${label} · ${alert.cameraId}` : label
+  if (!alert.cameraId) return label
+  return `${label} · ${cameras.find(camera => camera.id === alert.cameraId)?.name ?? alert.cameraId}`
 }
 
 /**
@@ -115,11 +116,11 @@ export function LiveProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const critical = new Map(state.alerts.filter(alert => alert.status === 'open' && alert.severity === 'critical').map(alert => [alert.id, alert]))
     for (const [id, alert] of critical) {
-      if (!alarmed.current.has(id)) alarm.raise(`alert:${id}`, alarmReason(alert))
+      if (!alarmed.current.has(id)) alarm.raise(`alert:${id}`, alarmReason(alert, state.cameras))
     }
     for (const id of alarmed.current) if (!critical.has(id)) alarm.clear(`alert:${id}`)
     alarmed.current = new Set(critical.keys())
-  }, [state.alerts])
+  }, [state.alerts, state.cameras])
   useEffect(() => () => { for (const id of alarmed.current) alarm.clear(`alert:${id}`) }, [])
 
   const updateAlert = useCallback(async (id: string, action: 'acknowledge' | 'resolve') => {

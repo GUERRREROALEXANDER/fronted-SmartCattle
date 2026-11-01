@@ -1,5 +1,5 @@
 import { polygonInteriorPoint } from '../simulation/geometry'
-import type { SimulationLot } from '../simulation/herdSimulation'
+import type { SceneLot } from './sceneLots'
 
 export const OVERVIEW_PRESET_ID = 'overview'
 
@@ -10,7 +10,7 @@ export interface CameraPreset {
   target: [number, number, number]
 }
 
-export function buildCameraPresets(lots: readonly SimulationLot[]): CameraPreset[] {
+export function buildCameraPresets(lots: readonly SceneLot[]): CameraPreset[] {
   const overview: CameraPreset = {
     id: OVERVIEW_PRESET_ID,
     label: 'Vista general',

@@ -1,6 +1,6 @@
 import { Color, DoubleSide, MeshPhysicalMaterial, MeshStandardMaterial } from 'three'
 import type { Material, Texture } from 'three'
-import type { PersonRole } from '../../simulation/herdSimulation'
+type PersonRole = 'worker' | 'visitor'
 import {
   clothTexture,
   denimTexture,

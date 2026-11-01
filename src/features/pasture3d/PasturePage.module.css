@@ -156,3 +156,9 @@
 @media (prefers-reduced-motion: reduce) {
   .liveDot::after { animation: none; opacity: 0; }
 }
+
+/* People on the farm without any animal outside: a security notice, not an alarm. */
+.bannerWarning {
+  background: var(--color-warning-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 30%, transparent), var(--shadow-overlay);
+}

@@ -5,7 +5,7 @@ import {
   pointInPolygon,
   type WorldPoint,
 } from '../simulation/geometry'
-import type { SimulationLot } from '../simulation/herdSimulation'
+import type { SceneLot } from './sceneLots'
 import { mulberry32, randomRange } from '../simulation/rng'
 import type { RockPlacement } from '../kit/nature/Rocks'
 import type { TreePlacement, TreeTone } from '../kit/nature/Trees'
@@ -30,7 +30,7 @@ const TONES: readonly TreeTone[] = ['dark', 'mid', 'mid', 'light']
 
 function isClear(
   point: WorldPoint,
-  lots: readonly SimulationLot[],
+  lots: readonly SceneLot[],
   track: readonly WorldPoint[],
   taken: readonly WorldPoint[],
   clearance: number,
@@ -51,7 +51,7 @@ function isClear(
 }
 
 export function buildScenery(
-  lots: readonly SimulationLot[],
+  lots: readonly SceneLot[],
   track: readonly WorldPoint[],
   seed = 7,
 ) {

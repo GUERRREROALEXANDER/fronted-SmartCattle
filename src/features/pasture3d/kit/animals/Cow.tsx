@@ -12,14 +12,32 @@ import {
 } from 'three'
 import type { AnimationAction, AnimationClip, Group, Object3D, SkinnedMesh } from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
-import type { SimulationCow } from '../../simulation/herdSimulation'
+import type { CowCoat } from '../../../../live/herdMotion'
 import { ALERT_COLOR } from '../materials'
 import { hashString } from '../noise'
 import { heightAt } from '../terrain/heightfield'
 import { alertPulse, COW_MODEL_URL, cowMaterial, prepareCowTemplate } from './cowModel'
 
+/** What the model reads every frame; the live herd agents provide it. */
+export interface CowPose {
+  id: string
+  coat: CowCoat
+  position: { x: number; z: number }
+  heading: number
+  state: 'grazing' | 'walking' | 'returning'
+  speed: number
+  escapeRequested: boolean
+  /** 0 → 1 while the animal appears, 1 → 0 while it leaves the picture. Defaults to 1. */
+  presence?: number
+}
+
+/** Appear and leave from 90 % size, never from nothing. */
+function presenceScale(presence = 1): number {
+  return 0.9 + 0.1 * Math.min(1, Math.max(0, presence))
+}
+
 export interface CowProps {
-  cow: SimulationCow
+  cow: CowPose
   /** Outside its lot: red rim light and a pulsing ring on the ground. */
   alert?: boolean
   paused?: boolean
@@ -88,6 +106,8 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
     if (root) {
       root.position.set(cow.position.x, heightAt(cow.position.x, cow.position.z), cow.position.z)
       root.rotation.y = -cow.heading
+      root.scale.setScalar(presenceScale(cow.presence))
+      root.visible = (cow.presence ?? 1) > 0.02
     }
     if (alert) {
       alertPulse.value = shouldReduceMotion ? 1 : 0.5 + 0.5 * Math.sin(state.clock.elapsedTime * 4)

@@ -3,7 +3,6 @@ import { useFrame } from '@react-three/fiber'
 import { useReducedMotion } from 'motion/react'
 import { MathUtils } from 'three'
 import type { Group } from 'three'
-import type { SimulationPerson } from '../../simulation/herdSimulation'
 import { hashString } from '../noise'
 import { heightAt } from '../terrain/heightfield'
 import {
@@ -30,8 +29,19 @@ import {
 } from './humanGeometry'
 import { outfitFor } from './outfits'
 
+/** What the figure reads every frame; the live herd agents provide it. */
+export interface PersonPose {
+  id: string
+  role: 'worker' | 'visitor'
+  position: { x: number; z: number }
+  heading: number
+  speed: number
+  /** 0 → 1 while the person appears, 1 → 0 while they leave the picture. Defaults to 1. */
+  presence?: number
+}
+
 export interface PersonProps {
-  person: SimulationPerson
+  person: PersonPose
   paused?: boolean
 }
 
@@ -60,6 +70,9 @@ export function Person({ person, paused = false }: PersonProps) {
     if (root) {
       root.position.set(person.position.x, heightAt(person.position.x, person.position.z), person.position.z)
       root.rotation.y = -person.heading
+      const presence = Math.min(1, Math.max(0, person.presence ?? 1))
+      root.scale.setScalar(0.9 + 0.1 * presence)
+      root.visible = presence > 0.02
     }
     if (paused) return
 

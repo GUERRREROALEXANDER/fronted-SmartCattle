@@ -2,7 +2,10 @@ import { useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { ACESFilmicToneMapping, Color } from 'three'
+import type { HerdAgent } from '../../../live/herdMotion'
+import type { ZoneSummary } from '../../../live/herdSummary'
 import type { FarmPlan } from '../../../services/farmLayout'
+import type { CameraStatus } from '../../../types/domain'
 import { Cow } from '../kit/animals/Cow'
 import { Sky } from '../kit/environment/Sky'
 import { SUN_DIRECTION } from '../kit/environment/sun'
@@ -19,16 +22,21 @@ import { WaterTrough } from '../kit/structures/WaterTrough'
 import { Ground } from '../kit/terrain/Ground'
 import { extendTrack } from '../kit/terrain/paths'
 import { Track } from '../kit/terrain/Track'
-import type { ZoneSummary } from '../simulation/herdSimulation'
-import type { HerdSimulationController } from '../simulation/useHerdSimulation'
 import { CameraRig } from './CameraRig'
 import type { CameraPreset } from './cameraPresets'
 import { CowLabel } from './CowLabel'
+import { AgentRing, CameraBeacon, DetectionLabel, ObjectBeacon } from './LiveMarkers'
+import { sceneLots, sceneTrack } from './sceneLots'
 import { BARN_POSITION, buildCameraPoles, buildScenery, PERIMETER, TROUGH_POSITION } from './scenery'
 
 export interface PastureSceneProps {
   plan: FarmPlan
-  herd: HerdSimulationController
+  agents: readonly HerdAgent[]
+  /** Advances the live herd; called every frame. */
+  step: (delta: number) => void
+  zones: readonly ZoneSummary[]
+  cameraStatus: ReadonlyMap<string, CameraStatus>
+  cameraNames: ReadonlyMap<string, string>
   preset: CameraPreset
   presetRequest: number
   showNames: boolean
@@ -46,24 +54,21 @@ const CLEARINGS = [
   { x: TROUGH_POSITION.x, z: TROUGH_POSITION.z, radius: 1.8 },
 ]
 
-function HerdDriver({ tick }: { tick: (delta: number) => void }) {
-  useFrame((_, delta) => tick(delta))
+function HerdDriver({ step }: { step: (delta: number) => void }) {
+  useFrame((_, delta) => step(delta))
   return null
 }
 
-export function PastureScene({ plan, herd, preset, presetRequest, showNames, reduceMotion }: PastureSceneProps) {
-  const { simulation, zones, escapedCowIds, paused, tick } = herd
-  const road = useMemo(() => extendTrack(simulation.track), [simulation])
-  const scenery = useMemo(() => buildScenery(simulation.lots, road), [simulation, road])
+export function PastureScene({
+  plan, agents, step, zones, cameraStatus, cameraNames, preset, presetRequest, showNames, reduceMotion,
+}: PastureSceneProps) {
+  const lots = useMemo(() => sceneLots(plan), [plan])
+  const track = useMemo(() => sceneTrack(plan), [plan])
+  const road = useMemo(() => extendTrack(track), [track])
+  const scenery = useMemo(() => buildScenery(lots, road), [lots, road])
   const cameraPoles = useMemo(() => buildCameraPoles(plan), [plan])
-  const zonesById = useMemo(
-    () => new Map<string, ZoneSummary>(zones.map(zone => [zone.lotId, zone])),
-    [zones],
-  )
-  const lotNames = useMemo(
-    () => new Map(simulation.lots.map(lot => [lot.id, lot.name])),
-    [simulation],
-  )
+  const breached = useMemo(() => new Set(zones.filter(zone => zone.breached).map(zone => zone.lotId)), [zones])
+  const lotNames = useMemo(() => new Map(lots.map(lot => [lot.id, lot.name])), [lots])
 
   return (
     <Canvas
@@ -92,41 +97,48 @@ export function PastureScene({ plan, herd, preset, presetRequest, showNames, red
         shadow-camera-far={200}
       />
 
-      <Ground lots={simulation.lots} track={road} yards={YARDS} />
+      <Ground lots={lots} track={road} yards={YARDS} />
       <Track points={road} width={2.6} />
-      <Grass lots={simulation.lots} track={road} clearings={CLEARINGS} windy={!reduceMotion} />
+      <Grass lots={lots} track={road} clearings={CLEARINGS} windy={!reduceMotion} />
 
       <PerimeterFence halfX={PERIMETER.halfX} halfZ={PERIMETER.halfZ} track={road} />
-      {simulation.lots.map(lot => (
-        <ZoneFence
-          key={lot.id}
-          lot={lot}
-          track={simulation.track}
-          breached={zonesById.get(lot.id)?.breached ?? false}
-        />
+      {lots.map(lot => (
+        <ZoneFence key={lot.id} lot={lot} track={track} breached={breached.has(lot.id)} />
       ))}
 
       <Barn position={[BARN_POSITION.x, 0, BARN_POSITION.z]} />
       <WaterTrough position={[TROUGH_POSITION.x, 0, TROUGH_POSITION.z]} heading={Math.PI / 2} />
       {cameraPoles.map(pole => (
-        <CameraPole key={pole.id} position={pole.position} heading={pole.heading} />
+        <group key={pole.id}>
+          <CameraPole position={pole.position} heading={pole.heading} />
+          <CameraBeacon position={pole.position} status={cameraStatus.get(pole.id) ?? 'offline'}
+            label={cameraNames.get(pole.id) ?? pole.id} showLabel={showNames} reduceMotion={reduceMotion} />
+        </group>
       ))}
       <Trees trees={scenery.trees} />
       <Rocks clusters={scenery.rocks} />
 
-      {simulation.cows.map(cow => {
-        const escaped = escapedCowIds.has(cow.id)
-        const lotName = lotNames.get(cow.lotId) ?? cow.lotId
+      {agents.map(agent => {
+        const lotName = lotNames.get(agent.lotId) ?? agent.lotId
+        if (agent.kind === 'cow') {
+          return (
+            <group key={agent.id}>
+              <Cow cow={agent} alert={agent.outside}>
+                {agent.outside && <CowLabel cowName={agent.name} lotName={lotName} variant="alert" />}
+                {!agent.outside && showNames && <CowLabel cowName={agent.name} lotName={lotName} variant="name" />}
+              </Cow>
+              <AgentRing agent={agent} reduceMotion={reduceMotion} />
+            </group>
+          )
+        }
         return (
-          <Cow key={cow.id} cow={cow} alert={escaped} paused={paused}>
-            {escaped && <CowLabel cowName={cow.name} lotName={lotName} variant="alert" />}
-            {!escaped && showNames && <CowLabel cowName={cow.name} lotName={lotName} variant="name" />}
-          </Cow>
+          <group key={agent.id}>
+            {agent.kind === 'person' ? <Person person={agent} /> : <ObjectBeacon agent={agent} />}
+            <AgentRing agent={agent} reduceMotion={reduceMotion} />
+            <DetectionLabel agent={agent} lotName={lotName} />
+          </group>
         )
       })}
-      {simulation.people.map(person => (
-        <Person key={person.id} person={person} paused={paused} />
-      ))}
 
       <OrbitControls
         makeDefault
@@ -139,7 +151,7 @@ export function PastureScene({ plan, herd, preset, presetRequest, showNames, red
         screenSpacePanning={false}
       />
       <CameraRig preset={preset} request={presetRequest} reduceMotion={reduceMotion} />
-      <HerdDriver tick={tick} />
+      <HerdDriver step={step} />
     </Canvas>
   )
 }

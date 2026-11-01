@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { LogIn, LogOut } from 'lucide-react'
 import { duration, ease } from '../../../motion'
-import { eventSentence, type HerdLogEntry } from '../simulation/useHerdSimulation'
+import { eventSentence, type HerdLogEntry } from '../../../live/herdSummary'
 import styles from './ExitLog.module.css'
 
 const timeFormat = new Intl.DateTimeFormat('es-CO', {
