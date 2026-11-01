@@ -34,8 +34,8 @@ export function ZonePanel({ zones, activePresetId, onSelect }: ZonePanelProps) {
                 className={`${styles.zone} ${zone.breached ? styles.breached : ''}`}
                 aria-pressed={activePresetId === zone.lotId}
                 onClick={() => onSelect(zone.lotId)}
-                whileHover={reduce ? undefined : { y: -2 }}
-                whileTap={reduce ? undefined : { scale: 0.98 }}
+                whileHover={reduce ? undefined : { transform: 'translateY(-2px)' }}
+                whileTap={reduce ? undefined : { transform: 'scale(0.98)' }}
                 transition={hoverSpring}
               >
                 <PulseRing active={zone.breached} className={styles.badgeRing}>

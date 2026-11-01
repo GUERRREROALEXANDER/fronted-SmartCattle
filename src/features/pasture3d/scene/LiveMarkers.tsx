@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import { Camera as CameraIcon, ScanEye, UserRound } from 'lucide-react'
@@ -64,23 +64,15 @@ export function AgentRing({ agent, reduceMotion }: { agent: HerdAgent; reduceMot
   )
 }
 
-/** Floating tag for a detected person or unknown object, with the detector's confidence. */
+/** Tag content for a detected person or unknown object, with the detector's confidence. */
 export function DetectionLabel({ agent, lotName }: { agent: HerdAgent; lotName: string }) {
-  const groupRef = useRef<Group>(null)
-  useFrame(() => {
-    groupRef.current?.position.set(agent.position.x, heightAt(agent.position.x, agent.position.z), agent.position.z)
-  })
   const Icon = agent.kind === 'person' ? UserRound : ScanEye
   const confidence = agent.confidence === null ? '' : ` · ${Math.round(agent.confidence * 100)} %`
   return (
-    <group ref={groupRef}>
-      <Html position={[0, 2.25, 0]} center zIndexRange={Z_INDEX_RANGE} pointerEvents="none">
-        <span className={`${styles.label} ${styles.person}`}>
-          <Icon size={15} strokeWidth={2} aria-hidden="true" />
-          {agent.kind === 'person' ? 'Persona' : agent.name} en {lotName}{confidence}
-        </span>
-      </Html>
-    </group>
+    <span className={`${styles.label} ${styles.person}`}>
+      <Icon size={15} strokeWidth={2} aria-hidden="true" />
+      {agent.kind === 'person' ? 'Persona' : agent.name} en {lotName}{confidence}
+    </span>
   )
 }
 
@@ -110,12 +102,14 @@ const beaconGeometry = new SphereGeometry(0.11, 16, 12)
  * Status light on top of a camera pole. Online cameras breathe slowly (state indication); offline and
  * failed ones stay still so motion itself means "this camera is alive".
  */
-export function CameraBeacon({ position, status, label, showLabel, reduceMotion }: {
+export function CameraBeacon({ position, status, label, showLabel, reduceMotion, portal }: {
   position: [number, number, number]
   status: CameraStatus
   label: string
   showLabel: boolean
   reduceMotion: boolean
+  /** Stable DOM home for the label (see LabelPool). */
+  portal: RefObject<HTMLElement>
 }) {
   const ref = useRef<Mesh>(null)
   const material = useRef<MeshBasicMaterial>(null)
@@ -133,13 +127,12 @@ export function CameraBeacon({ position, status, label, showLabel, reduceMotion 
       <mesh ref={ref} geometry={beaconGeometry}>
         <meshBasicMaterial ref={material} color={STATUS_COLOR[status]} transparent toneMapped={false} />
       </mesh>
-      {showLabel && (
-        <Html position={[0, 0.55, 0]} center zIndexRange={Z_INDEX_RANGE} pointerEvents="none">
-          <span className={`${styles.label} ${styles.camera}`} data-status={status}>
-            <CameraIcon size={14} strokeWidth={2} aria-hidden="true" />{label} · {STATUS_TEXT[status]}
-          </span>
-        </Html>
-      )}
+      {/* Mounted for the camera's whole life; toggling only swaps its content (see LabelPool). */}
+      <Html portal={portal} position={[0, 0.55, 0]} center zIndexRange={Z_INDEX_RANGE} pointerEvents="none">
+        {showLabel && <span className={`${styles.label} ${styles.camera}`} data-status={status}>
+          <CameraIcon size={14} strokeWidth={2} aria-hidden="true" />{label} · {STATUS_TEXT[status]}
+        </span>}
+      </Html>
     </group>
   )
 }

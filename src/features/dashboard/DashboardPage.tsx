@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react'
 import { useReducedMotion } from 'motion/react'
 import { dataMode } from '../../api/config'
 import { Notice } from '../../components/ui'
 import { herdCount } from '../../live/liveState'
 import { useLive } from '../../live/useLive'
+import { useNow } from '../../lib/useNow'
 import type { ResourceState } from '../../lib/useResource'
 import { hasPicture, type HerdCount } from '../../services'
 import { FadeUp, staggerDelay } from '../../motion'
@@ -16,16 +16,6 @@ import { HerdSummary } from './HerdSummary'
 import { LiveMonitor } from './LiveMonitor'
 import { useDashboardData } from './useDashboardData'
 import styles from './DashboardPage.module.css'
-
-/** Keeps relative times ("hace 5 minutos") fresh without re-fetching. */
-function useNow(intervalMs = 30_000) {
-  const [now, setNow] = useState(() => new Date())
-  useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), intervalMs)
-    return () => clearInterval(timer)
-  }, [intervalMs])
-  return now
-}
 
 const areas = { metrics: styles.metrics, plan: styles.plan, trend: styles.trend, alerts: styles.chart }
 

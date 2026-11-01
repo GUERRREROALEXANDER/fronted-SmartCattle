@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useRef, type CSSProperties } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { ACESFilmicToneMapping, Color } from 'three'
@@ -25,6 +25,7 @@ import { Track } from '../kit/terrain/Track'
 import { CameraRig } from './CameraRig'
 import type { CameraPreset } from './cameraPresets'
 import { CowLabel } from './CowLabel'
+import { LabelPool, type FloatingLabel } from './LabelPool'
 import { AgentRing, CameraBeacon, DetectionLabel, ObjectBeacon } from './LiveMarkers'
 import { sceneLots, sceneTrack } from './sceneLots'
 import { BARN_POSITION, buildCameraPoles, buildScenery, PERIMETER, TROUGH_POSITION } from './scenery'
@@ -59,6 +60,8 @@ function HerdDriver({ step }: { step: (delta: number) => void }) {
   return null
 }
 
+const LABEL_LAYER: CSSProperties = { position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }
+
 export function PastureScene({
   plan, agents, step, zones, cameraStatus, cameraNames, preset, presetRequest, showNames, reduceMotion,
 }: PastureSceneProps) {
@@ -68,9 +71,28 @@ export function PastureScene({
   const scenery = useMemo(() => buildScenery(lots, road), [lots, road])
   const cameraPoles = useMemo(() => buildCameraPoles(plan), [plan])
   const breached = useMemo(() => new Set(zones.filter(zone => zone.breached).map(zone => zone.lotId)), [zones])
+  const labelLayer = useRef<HTMLDivElement>(null!)
   const lotNames = useMemo(() => new Map(lots.map(lot => [lot.id, lot.name])), [lots])
+  // Alerts first, then people, then the optional names, so the urgent tags keep their slots steady.
+  const labels = useMemo<FloatingLabel[]>(() => {
+    const lotName = (agent: HerdAgent) => lotNames.get(agent.lotId) ?? agent.lotId
+    const alerts: FloatingLabel[] = []
+    const detections: FloatingLabel[] = []
+    const names: FloatingLabel[] = []
+    for (const agent of agents) {
+      if (agent.kind !== 'cow') {
+        detections.push({ id: agent.id, agent, height: 2.25, content: <DetectionLabel agent={agent} lotName={lotName(agent)} /> })
+      } else if (agent.outside) {
+        alerts.push({ id: agent.id, agent, height: 2.35, content: <CowLabel cowName={agent.name} lotName={lotName(agent)} variant="alert" /> })
+      } else if (showNames) {
+        names.push({ id: agent.id, agent, height: 2.05, content: <CowLabel cowName={agent.name} lotName={lotName(agent)} variant="name" /> })
+      }
+    }
+    return [...alerts, ...detections, ...names]
+  }, [agents, lotNames, showNames])
 
   return (
+    <>
     <Canvas
       dpr={[1, 1.75]}
       shadows="percentage"
@@ -112,33 +134,22 @@ export function PastureScene({
         <group key={pole.id}>
           <CameraPole position={pole.position} heading={pole.heading} />
           <CameraBeacon position={pole.position} status={cameraStatus.get(pole.id) ?? 'offline'}
-            label={cameraNames.get(pole.id) ?? pole.id} showLabel={showNames} reduceMotion={reduceMotion} />
+            label={cameraNames.get(pole.id) ?? pole.id} showLabel={showNames} reduceMotion={reduceMotion} portal={labelLayer} />
         </group>
       ))}
       <Trees trees={scenery.trees} />
       <Rocks clusters={scenery.rocks} />
 
-      {agents.map(agent => {
-        const lotName = lotNames.get(agent.lotId) ?? agent.lotId
-        if (agent.kind === 'cow') {
-          return (
-            <group key={agent.id}>
-              <Cow cow={agent} alert={agent.outside}>
-                {agent.outside && <CowLabel cowName={agent.name} lotName={lotName} variant="alert" />}
-                {!agent.outside && showNames && <CowLabel cowName={agent.name} lotName={lotName} variant="name" />}
-              </Cow>
-              <AgentRing agent={agent} reduceMotion={reduceMotion} />
-            </group>
-          )
-        }
-        return (
-          <group key={agent.id}>
-            {agent.kind === 'person' ? <Person person={agent} /> : <ObjectBeacon agent={agent} />}
-            <AgentRing agent={agent} reduceMotion={reduceMotion} />
-            <DetectionLabel agent={agent} lotName={lotName} />
-          </group>
-        )
-      })}
+      {agents.map(agent => agent.kind === 'cow'
+        ? <group key={agent.id}>
+          <Cow cow={agent} alert={agent.outside} />
+          <AgentRing agent={agent} reduceMotion={reduceMotion} />
+        </group>
+        : <group key={agent.id}>
+          {agent.kind === 'person' ? <Person person={agent} /> : <ObjectBeacon agent={agent} />}
+          <AgentRing agent={agent} reduceMotion={reduceMotion} />
+        </group>)}
+      <LabelPool labels={labels} portal={labelLayer} />
 
       <OrbitControls
         makeDefault
@@ -153,5 +164,8 @@ export function PastureScene({
       <CameraRig preset={preset} request={presetRequest} reduceMotion={reduceMotion} />
       <HerdDriver step={step} />
     </Canvas>
+    {/* Stable home for every <Html> label: their roots mount once instead of moving when the canvas connects. */}
+    <div ref={labelLayer} style={LABEL_LAYER} />
+    </>
   )
 }

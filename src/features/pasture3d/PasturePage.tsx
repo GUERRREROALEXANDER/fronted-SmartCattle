@@ -4,6 +4,10 @@ import { OctagonAlert, UserRound } from 'lucide-react'
 import { ConnectionChip, ErrorState, PageHeader } from '../../components/ui'
 import { describeApiError } from '../../api/errors'
 import { zoneSummaries, useExitLog } from '../../live/herdSummary'
+import { herdCount } from '../../live/liveState'
+import { useNow } from '../../lib/useNow'
+import { AlertCenter } from '../dashboard/AlertCenter'
+import { LiveMetrics } from '../dashboard/LiveMetrics'
 import { useFarmLive, useHerdMotion } from '../../live/useHerdMotion'
 import { duration, ease, FadeUp, staggerDelay } from '../../motion'
 import { buildCameraPresets, OVERVIEW_PRESET_ID } from './scene/cameraPresets'
@@ -42,6 +46,9 @@ export function PasturePage() {
   const cameraStatus = useMemo(() => new Map(live.cameras.map(item => [item.id, item.status])), [live.cameras])
   const cameraNames = useMemo(() => new Map(live.cameras.map(item => [item.id, item.name])), [live.cameras])
 
+  const now = useNow()
+  const count = herdCount(live)
+
   const selectPreset = (id: string) => setCamera(previous => ({ id, request: previous.request + 1 }))
 
   return (
@@ -54,6 +61,10 @@ export function PasturePage() {
           cerca de ese lote se marca en rojo.
         </p>
       </FadeUp>
+
+      {/* The same live numbers as the dashboard, so the scene and the counts never disagree. */}
+      <LiveMetrics className={styles.metrics} staggerFrom={1} count={count} history={live.history} metrics={live.metrics}
+        cameras={live.cameras} alerts={live.alerts} reduceMotion={reduce} />
 
       {plan.status === 'error' && !planData ? (
         <ErrorState {...describeApiError(plan.error)} />
@@ -94,7 +105,7 @@ export function PasturePage() {
                         className={`${styles.banner} ${breached.length === 0 ? styles.bannerWarning : ''}`}
                         initial={{ opacity: 0, transform: reduce ? 'none' : 'translateY(-12px)' }}
                         animate={{ opacity: 1, transform: 'translateY(0px)' }}
-                        exit={{ opacity: 0 }}
+                        exit={{ opacity: 0, transform: reduce ? 'none' : 'translateY(-12px)' }}
                         transition={{ duration: reduce ? duration.micro : duration.state, ease: ease.out }}
                       >
                         {breached.length > 0
@@ -127,6 +138,7 @@ export function PasturePage() {
 
           <FadeUp delay={staggerDelay(2)} className={styles.side}>
             <ZonePanel zones={zones} activePresetId={camera.id} onSelect={selectPreset} />
+            <AlertCenter alerts={live.alerts} cameras={live.cameras} now={now} onAction={live.updateAlert} reduceMotion={reduce} />
             <ExitLog entries={log} />
           </FadeUp>
         </div>

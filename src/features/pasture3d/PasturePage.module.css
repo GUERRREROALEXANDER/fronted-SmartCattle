@@ -2,6 +2,7 @@
 
 .head { margin-bottom: var(--space-6); }
 .head > header { margin-bottom: var(--space-1); }
+.metrics { margin-bottom: var(--space-6); }
 
 .demo {
   display: inline-flex;
