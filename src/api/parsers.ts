@@ -70,14 +70,14 @@ export function parseLiveMetrics(body: unknown): ApiLiveMetrics {
   }
 }
 
-function parseFarm(value: unknown): ApiFarm {
+export function parseFarm(value: unknown): ApiFarm {
   if (!isObject(value) || !isCount(value.id) || !isString(value.name) || !isCount(value.lot_count)) return invalid('farm')
   return { id: value.id, name: value.name, location: optional(value.location, isString), area_hectares: optional(value.area_hectares, isNumber), lot_count: value.lot_count }
 }
 
 export const parseFarmsResponse = (body: unknown): ApiFarmsResponse => list(body, 'farms response', parseFarm)
 
-function parseLot(value: unknown): ApiLot {
+export function parseLot(value: unknown): ApiLot {
   if (!isObject(value) || !isCount(value.id) || !isCount(value.farm_id) || !isString(value.name) ||
     !oneOf(['paddock', 'stable', 'pen', 'pasture'] as const)(value.kind) || typeof value.active !== 'boolean') return invalid('lot')
   return {

@@ -1,7 +1,7 @@
 import { dataMode } from '../api/config'
 import { ApiError } from '../api/errors'
-import { getJson } from '../api/httpClient'
-import { parseFarmsResponse, parseLotsResponse, parseUser } from '../api/parsers'
+import { getJson, postJson } from '../api/httpClient'
+import { parseFarm, parseFarmsResponse, parseLotsResponse, parseUser } from '../api/parsers'
 import { parseCamerasResponse } from '../api/validate'
 import { demoAccounts } from '../mocks/mockAuth'
 import { mockCameras, mockFarm, mockLots, mockSecurityHours } from '../mocks/mockData'
@@ -25,6 +25,40 @@ export async function getCurrentFarm(options: ServiceOptions = {}): Promise<Sour
   }
   const [farm] = parseFarmsResponse(await getJson<unknown>('/api/farms', options)).items
   return { data: farm ? { id: String(farm.id), name: farm.name, location: farm.location, areaHectares: farm.area_hectares } : null, source }
+}
+
+export interface FarmSetupLot { name: string; cameraId: string | null }
+
+/**
+ * What the first-run setup collects. A whole farm keeps its own name and any number of lots; a person
+ * who only manages one lot gets a farm named after that lot, holding that single lot, because the
+ * backend files every lot under a farm.
+ */
+export interface FarmSetup {
+  kind: 'farm' | 'lot'
+  name: string
+  location: string
+  lots: FarmSetupLot[]
+}
+
+/** Registers the farm (POST /api/farms) and then each lot (POST /api/farms/{id}/lots). */
+export async function setUpFarm(setup: FarmSetup, options: ServiceOptions = {}): Promise<Farm> {
+  const name = setup.name.trim()
+  const location = setup.location.trim()
+  const lots = (setup.kind === 'lot' ? [{ name, cameraId: setup.lots[0]?.cameraId ?? null }] : setup.lots)
+    .map(lot => ({ ...lot, name: lot.name.trim() }))
+    .filter(lot => lot.name)
+  const source = resolveSource('backend', options.mode ?? dataMode)
+  if (source === 'mock') {
+    await waitForMock(options)
+    return { ...mockFarm, name, location: location || null }
+  }
+  const farm = parseFarm(await postJson<unknown>('/api/farms', { name, ...(location ? { location } : {}) }, options))
+  // One at a time so a duplicated lot name fails on that lot, with the earlier ones already saved.
+  for (const lot of lots) {
+    await postJson<unknown>(`/api/farms/${farm.id}/lots`, { name: lot.name, ...(lot.cameraId ? { camera_id: lot.cameraId } : {}) }, options)
+  }
+  return { id: String(farm.id), name: farm.name, location: farm.location, areaHectares: farm.area_hectares }
 }
 
 /** Lots of the current farm (GET /api/farms/{id}/lots). Empty when no farm is registered. */
