@@ -123,10 +123,13 @@ describe('demo authentication', () => {
   })
 
   it('preserves unavailable authentication in API mode', async () => {
+    // The backend is down: never let this test depend on whether one happens to run on localhost.
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
     const service = createAuthService('api')
     expect(await service.getSession()).toBeNull()
     await expect(service.login({ identifier: '', password: '' })).rejects.toMatchObject({ code: 'unavailable' })
     await expect(service.register({ username: '', email: '', password: '' })).rejects.toMatchObject({ code: 'unavailable' })
     await expect(service.logout()).resolves.toBeUndefined()
+    vi.unstubAllGlobals()
   })
 })

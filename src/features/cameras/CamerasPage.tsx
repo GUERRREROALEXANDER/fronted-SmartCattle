@@ -10,6 +10,7 @@ import { useLiveCameras } from '../../live/useLiveCameras'
 import type { Severity } from '../../types/domain'
 import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
 import { CameraCard } from './CameraCard'
+import { CameraConnect } from './CameraConnect'
 import styles from './CamerasPage.module.css'
 
 export function CamerasPage() {
@@ -73,8 +74,8 @@ export function CamerasPage() {
       </StaggerItem>)}
     </div>}
 
-    {session && can(session.user.role, 'cameras:configure') && list.length > 0 && <p className={styles.note}>
-      Agregar cámaras o cambiar su zona estará disponible cuando el servidor lo permita.
-    </p>}
+    {session && can(session.user.role, 'cameras:configure') && <FadeUp delay={staggerDelay(2)}>
+      <CameraConnect cameras={list} onChanged={cameras.reload} />
+    </FadeUp>}
   </div>
 }

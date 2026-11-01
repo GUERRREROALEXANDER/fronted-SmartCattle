@@ -17,7 +17,11 @@ export interface FarmEvent {
   severitySource: 'backend' | 'catalog'
 }
 export type CameraStatus = 'online' | 'connecting' | 'offline' | 'error'
-export interface Camera { id: string; name: string; location: string; status: CameraStatus; lastSeenAt: Date | null; lastError?: string | null }
+export interface Camera {
+  id: string; name: string; location: string; status: CameraStatus; lastSeenAt: Date | null; lastError?: string | null
+  /** Address of the AI service (live.py) streaming this camera, when it reported one. */
+  streamUrl?: string | null
+}
 // Coordinates range from 0 to 1.
 export type NormalizedBounds = readonly [xMin: number, yMin: number, xMax: number, yMax: number]
 export type NormalizedPoint = readonly [x: number, y: number]
