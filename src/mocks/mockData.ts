@@ -1,5 +1,7 @@
 // DEVELOPMENT MOCK DATA. Not backend data. Replace with real API responses when the backend supports them.
-import type { Camera, EventKind, Farm, FarmEvent, FrameDetections, SafeZone, SystemStatus } from '../types/domain'
+import type {
+  Alert, AlertReport, Camera, EventKind, Farm, FarmEvent, FrameDetections, LiveMetrics, Lot, OccupancySample, SafeZone, SystemStatus,
+} from '../types/domain'
 import { eventCatalog } from '../lib/eventCatalog'
 import { isInsideZone, isWithinBounds } from '../services/mappers'
 import { demoFeedBoxes, demoFeedCameraId, demoFeedZoneOutline } from './mockCameraFeed'
@@ -110,4 +112,79 @@ export function buildMockFarmEvents(now = new Date()): FarmEvent[] {
       severitySource: template.kind === 'possible_intrusion' ? 'backend' : 'catalog',
     }
   }).sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime())
+}
+
+/** Lots of the demo farm; each camera watches one. */
+export const mockLots: Lot[] = [
+  { id: 'lot-5', name: 'Lote 5', kind: 'pasture', areaSquareMeters: 52_000, capacity: 60, cameraId: 'south-pasture', active: true },
+  { id: 'lot-3', name: 'Lote 3', kind: 'pasture', areaSquareMeters: 48_000, capacity: 50, cameraId: 'north-pasture', active: true },
+  { id: 'lot-corral', name: 'Corral', kind: 'pen', areaSquareMeters: 6_000, capacity: 20, cameraId: 'corral', active: true },
+  { id: 'lot-access', name: 'Acceso', kind: 'paddock', areaSquareMeters: 5_000, capacity: 14, cameraId: 'main-entrance', active: true },
+]
+
+/** Restricted hours for security events (local time, wraps past midnight). */
+export const mockSecurityHours = { restrictedFrom: 19, restrictedTo: 5 }
+
+const minute = 60_000
+
+/** Alerts raised by the demo events, a few already handled. */
+export function buildMockAlerts(now = new Date()): Alert[] {
+  return buildMockFarmEvents(now).map((event, index): Alert => {
+    const handled = index >= 3
+    return {
+      id: `mock-alert-${index + 1}`, eventId: event.id, cameraId: event.cameraId, kind: event.kind,
+      message: eventCatalog[event.kind].label, severity: event.severity,
+      status: index === 0 ? 'open' : index === 1 ? 'acknowledged' : handled ? 'resolved' : 'open',
+      createdAt: event.receivedAt,
+      acknowledgedAt: index === 1 || handled ? new Date(event.receivedAt.getTime() + 4 * minute) : null,
+      resolvedAt: handled ? new Date(event.receivedAt.getTime() + 18 * minute) : null,
+    }
+  })
+}
+
+export function buildMockLiveMetrics(now = new Date()): LiveMetrics {
+  const frames = mockCameras.map(camera => buildMockFrameDetections(camera.id, now))
+  const cows = frames.flatMap(frame => frame.detections.filter(item => item.label === 'cow'))
+  const outside = cows.filter(item => item.insideSafeZone === false).length
+  const alerts = buildMockAlerts(now)
+  return {
+    camerasTotal: mockCameras.length, camerasOnline: mockCameras.filter(camera => camera.status === 'online').length, staleCameras: 0,
+    cattleInside: cows.length - outside, cattleOutside: outside, cattleTotal: cows.length,
+    openAlerts: alerts.filter(alert => alert.status === 'open').length,
+    eventsLastHour: buildMockFarmEvents(now).filter(event => now.getTime() - event.occurredAt.getTime() <= 60 * minute).length,
+    systemStatus: 'operational', generatedAt: new Date(now),
+  }
+}
+
+/** A smooth day of head counts per camera, one sample per minute. */
+export function buildMockOccupancyHistory(start: Date, end: Date): OccupancySample[] {
+  const samples: OccupancySample[] = []
+  const first = Math.ceil(start.getTime() / minute) * minute
+  const step = Math.max(minute, Math.ceil((end.getTime() - first) / 720 / minute) * minute)
+  mockCameras.forEach((camera, cameraIndex) => {
+    const herd = 6 + cameraIndex * 3
+    for (let at = first; at < end.getTime(); at += step) {
+      const wave = Math.sin(at / 3_600_000 + cameraIndex)
+      const outside = wave > 0.86 ? 1 + Math.round((wave - 0.86) * 10) : 0
+      samples.push({ cameraId: camera.id, minute: new Date(at), inside: herd - outside, outside })
+    }
+  })
+  return samples
+}
+
+export function buildMockAlertReport(start: Date, end: Date): AlertReport {
+  const alerts = buildMockAlerts(end).filter(alert => alert.createdAt >= start && alert.createdAt < end)
+  const byDay = new Map<string, AlertReport['days'][number]>()
+  for (const alert of alerts) {
+    const day = alert.createdAt.toLocaleDateString('en-CA')
+    const entry = byDay.get(day) ?? { day, total: 0, info: 0, warning: 0, critical: 0, open: 0, acknowledged: 0, resolved: 0 }
+    entry.total += 1
+    entry[alert.severity] += 1
+    entry[alert.status] += 1
+    byDay.set(day, entry)
+  }
+  return {
+    days: [...byDay.values()].sort((a, b) => a.day.localeCompare(b.day)), total: alerts.length,
+    avgMinutesToAcknowledge: 4, avgMinutesToResolve: 18,
+  }
 }

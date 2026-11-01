@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { FarmPlan } from '../../../mocks/mockFarmPlan'
+import type { FarmPlan } from '../../../services/farmLayout'
 import { pointInPolygon } from './geometry'
 import {
   createHerdSimulation,

@@ -1,4 +1,4 @@
-import type { FarmPlan } from '../../../mocks/mockFarmPlan'
+import type { FarmPlan } from '../../../services/farmLayout'
 import {
   closestPointOnPolygon,
   planToWorld,
