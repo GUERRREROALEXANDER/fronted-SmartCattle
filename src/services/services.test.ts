@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/errors'
+import { tokenStore } from '../api/session'
 import { eventCatalog } from '../lib/eventCatalog'
 import { buildMockFarmEvents, buildMockFrameDetections, mockCameras, mockDetectedCattle, mockFarm, mockRegisteredCattle, mockSafeZones } from '../mocks/mockData'
 import type { ApiEvent } from '../types/api'
@@ -115,6 +116,16 @@ describe('camera services', () => {
       source: 'api', data: { kind: 'mjpeg', url: 'http://localhost:8090/video.mjpg', width: 640, height: 352, annotated: true },
     })
     expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8090/status', expect.anything())
+  })
+  it('never sends the session token to the AI service', async () => {
+    tokenStore.set('jwt-123', 3600)
+    try {
+      const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json(live))
+      expect((await getCameraStream('camera-01', { mode: 'api', fetchImpl, now, aiServiceUrl })).data?.kind).toBe('mjpeg')
+      expect(fetchImpl.mock.calls[0][1]?.headers).toBeUndefined()
+    } finally {
+      tokenStore.clear()
+    }
   })
   it('uses the public stream URL the camera reported to the backend', async () => {
     const tunnel = 'https://abc-def.trycloudflare.com'
