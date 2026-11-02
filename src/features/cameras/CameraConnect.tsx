@@ -1,11 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Cctv, Plug, Radar, Smartphone, Trash2, Wifi } from 'lucide-react'
-import { aiServiceUrl } from '../../api/config'
 import { describeApiError } from '../../api/errors'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import {
-  addCamera, isAddedCamera, removeCamera, scanCameras, serviceRoot, waitForCamera, type CameraScan, type CameraSource, type FoundCamera,
+  activeService, addCamera, cameraProblem, isAddedCamera, removeCamera, scanCameras, serviceRoot, waitForCamera, type CameraScan, type CameraSource, type FoundCamera,
 } from '../../services'
 import type { Camera, CameraStatus } from '../../types/domain'
 import styles from './CameraConnect.module.css'
@@ -46,8 +45,7 @@ type Mode = 'ip' | 'url'
  */
 export function CameraConnect({ cameras, onChanged, previews = true }: { cameras: readonly Camera[]; onChanged?: () => void; previews?: boolean }) {
   const reduce = useReducedMotion()
-  const reported = cameras.find(camera => camera.streamUrl)?.streamUrl
-  const serviceBase = reported ? serviceRoot(reported) : aiServiceUrl
+  const serviceBase = activeService(cameras)
   const [scan, setScan] = useState<CameraScan | null>(null)
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState('')
@@ -69,7 +67,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
     try {
       setScan(await scanCameras(serviceBase))
     } catch (error) {
-      setScanError(describeApiError(error).description)
+      setScanError(cameraProblem(error) ?? describeApiError(error).description)
     } finally {
       setScanning(false)
     }
@@ -109,7 +107,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
         : 'La cámara no respondió a tiempo. Comprueba que esté encendida y en la misma red que este PC.' })
     } catch (error) {
       const { title, description } = describeApiError(error)
-      setResult({ tone: 'critical', text: `${title}. ${description}` })
+      setResult({ tone: 'critical', text: cameraProblem(error) ?? `${title}. ${description}` })
     } finally {
       setConnecting(false)
     }
@@ -124,7 +122,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       refreshList()
     } catch (error) {
       const { title, description } = describeApiError(error)
-      setResult({ tone: 'critical', text: `${title}. ${description}` })
+      setResult({ tone: 'critical', text: cameraProblem(error) ?? `${title}. ${description}` })
     } finally {
       setRemoving('')
     }

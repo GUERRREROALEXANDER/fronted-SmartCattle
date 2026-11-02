@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { ApiError } from '../api/errors'
 import { tokenStore } from '../api/session'
-import { addCamera, getCameraServiceState, isAddedCamera, removeCamera, serviceRoot } from './cameraSetupService'
+import { activeService, addCamera, cameraProblem, getCameraServiceState, isAddedCamera, removeCamera, serviceRoot } from './cameraSetupService'
 
 const answer = { status: 'connecting', camera_id: 'cam-192-168-1-50-554-a1b2', stream_url: 'http://localhost:8090/cameras/cam-192-168-1-50-554-a1b2' }
 
@@ -14,6 +15,15 @@ describe('camera setup service', () => {
     expect(isAddedCamera(answer.stream_url)).toBe(true)
     expect(isAddedCamera('http://localhost:8090')).toBe(false)
     expect(isAddedCamera(null)).toBe(false)
+  })
+  it('talks to a service that is up, not to one that stopped', () => {
+    const camera = (id: string, status: 'online' | 'offline', streamUrl: string | null) =>
+      ({ id, name: id, location: '', status, lastSeenAt: null, streamUrl })
+    const dead = camera('a', 'offline', 'https://old-tunnel.example')
+    const up = camera('b', 'online', 'http://192.168.1.10:8090/cameras/b')
+    expect(activeService([dead, up], 'http://fallback')).toBe('http://192.168.1.10:8090')
+    expect(activeService([dead], 'http://fallback')).toBe('http://fallback')
+    expect(activeService([], 'http://fallback')).toBe('http://fallback')
   })
   it('adds a camera with only what the person typed', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json(answer, { status: 202 }))
@@ -39,6 +49,21 @@ describe('camera setup service', () => {
     expect(authorization).toEqual(['Bearer jwt-123', 'Bearer jwt-123', undefined])
     expect(fetchImpl.mock.calls[1][0]).toBe('http://localhost:8090/cameras/cam-webcam-1')
     expect(fetchImpl.mock.calls[1][1]?.method).toBe('DELETE')
+  })
+  it.each([
+    [422, 'This camera needs its password: none is saved on this PC yet', /contraseña/],
+    [422, 'This server runs in the cloud and cannot reach that address.', /nube/],
+    [422, 'The camera address must be rtsp://, http://, an IP address or a webcam number', /Revisa la dirección/],
+    [409, 'This PC already runs 8 added cameras; remove one first', /máximo/],
+    [403, 'Origin not allowed', /SMARTCATTLE_LIVE_ORIGINS/],
+    [403, 'Sign in to the dashboard to do this', /sesión/],
+  ])('explains a %i answer: %s', (status, detail, text) => {
+    expect(cameraProblem(new ApiError('http', 'refused', { status, detail }))).toMatch(text)
+  })
+  it('leaves other failures to the general messages', () => {
+    expect(cameraProblem(new ApiError('network', 'down'))).toBeNull()
+    expect(cameraProblem(new ApiError('http', 'broken', { status: 500 }))).toBeNull()
+    expect(cameraProblem(new Error('other'))).toBeNull()
   })
   it('rejects an answer without the new camera', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ status: 'connecting' }, { status: 202 }))

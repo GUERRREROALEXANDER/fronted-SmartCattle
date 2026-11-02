@@ -1,5 +1,7 @@
 import { aiServiceUrl } from '../api/config'
+import { ApiError } from '../api/errors'
 import { getJson, requestJson } from '../api/httpClient'
+import type { Camera } from '../types/domain'
 import type { ServiceOptions } from './options'
 
 // Talks to the AI service (live.py), not to the backend: it is the program that opens the camera and runs YOLO.
@@ -45,6 +47,12 @@ export function serviceRoot(streamUrl: string): string {
 /** True for a camera added from the dashboard, the only kind that can be removed from it. */
 export const isAddedCamera = (streamUrl: string | null | undefined) => Boolean(streamUrl && serviceRoot(streamUrl) !== streamUrl)
 
+/** The AI service to talk to: one with a camera online. A stopped service or an old tunnel leaves its URL behind. */
+export function activeService(cameras: readonly Camera[], fallback = aiServiceUrl): string {
+  const reported = cameras.find(camera => camera.status === 'online' && camera.streamUrl)?.streamUrl
+  return reported ? serviceRoot(reported) : fallback
+}
+
 export interface AddedCamera { cameraId: string; streamUrl: string }
 
 /** Adds a camera next to the ones already running (POST /cameras). It answers at once and connects in the background. */
@@ -62,6 +70,24 @@ export async function addCamera(baseUrl: string, source: CameraSource, options: 
   const added = await requestJson<{ camera_id?: unknown; stream_url?: unknown }>('/cameras', { ...options, baseUrl, method: 'POST', body, timeoutMs: 10_000 })
   if (typeof added.camera_id !== 'string' || typeof added.stream_url !== 'string') throw new Error('Respuesta del servicio de IA no válida')
   return { cameraId: added.camera_id, streamUrl: added.stream_url }
+}
+
+/** What to do about a camera the AI service refused, in the person's words; null when it is not one of its answers. */
+export function cameraProblem(error: unknown): string | null {
+  if (!(error instanceof ApiError)) return null
+  const detail = error.detail ?? ''
+  if (error.status === 422) {
+    if (/password/i.test(detail)) return 'Esta cámara necesita su contraseña. Abre «Usuario, contraseña y ruta de la cámara» y escríbela.'
+    if (/cloud/i.test(detail)) return 'El servicio de IA está en la nube y no llega a esa dirección. Usa la dirección pública de la cámara, o corre el servicio de IA en un PC de la misma red.'
+    return 'Revisa la dirección: debe ser una IP, un enlace rtsp:// o http://, o un número de webcam.'
+  }
+  if (error.status === 409) return 'Este servicio de IA ya tiene el máximo de cámaras agregadas. Quita una antes de agregar otra.'
+  if (error.status === 403) {
+    return /origin/i.test(detail)
+      ? 'El servicio de IA no tiene autorizada esta página. Agrega su dirección a SMARTCATTLE_LIVE_ORIGINS en el PC del servicio.'
+      : 'El servicio de IA no pudo comprobar tu sesión. Vuelve a entrar y, si sigue igual, revisa que llegue al backend.'
+  }
+  return null
 }
 
 /** Stops a camera added from the dashboard (DELETE /cameras/<id>). */
