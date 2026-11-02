@@ -160,7 +160,8 @@ flowchart TB
 
 ```text
 src/
-  api/          HTTP client, configuration, typed errors
+  api/          HTTP client (every method), configuration, typed errors,
+                response validation, and the stored session's access token
   app/          App root, router, navigation config, auth context and guards
   assets/       Images (login photo, with embedded provenance)
   components/
@@ -168,6 +169,8 @@ src/
     ui/         Reusable UI primitives (GlassCard, BrandMark, Button, TextField, StatusPill, ...)
   features/     One folder per section (auth, dashboard, monitoring, events, videos, pasture3d, ...)
   lib/          Pure helpers: event catalog, permissions, safe storage, zone alarm
+                (`permissions.ts` mirrors the roles the backend enforces; it
+                shapes the interface and protects nothing)
   motion/       Motion presets and primitives: FadeUp, Reveal, StaggerItem, CountUp,
                 AnimatedNumber, DeltaChip, PulseRing, MaskedText
   mocks/        The only place with fictional data (clearly labeled)
@@ -180,7 +183,11 @@ docs/
   screenshots/  Images used in this README
 ```
 
-Tests live next to the code they cover (`*.test.ts`).
+Tests live next to the code they cover (`*.test.ts`). They run in Node and
+render components with `renderToStaticMarkup`, so they cover what a component
+produces rather than how it behaves under interaction -- which is why the
+assertions are about the text and structure a user would be given, not about
+clicks.
 
 ---
 
@@ -191,14 +198,25 @@ The backend (`SmartCattle-Backend`) is a FastAPI service backed by PostgreSQL (S
 | Method | Path | Response | Used for |
 |---|---|---|---|
 | GET | `/health` | `{ "status": "ok" }` | Backend online/offline indicator |
-| GET | `/api/status` | `version`, `ai_service.configured`, `storage` | System status. `configured` means an AI URL is set, **not** that the AI is online. |
-| GET | `/api/animals` | `{ items, total }` | Registered cattle count |
-| GET | `/api/events` | Latest 1000 events, newest first | Alerts and history |
-| GET | `/api/cameras` | `{ items, total }` | Camera list and status |
-| POST | `/api/videos/analyses` | Saved analysis | Stores the summary of a finished video analysis |
+| GET | `/api/status` | `version`, `ai_service.configured`, `storage`, `auth_enabled` | System status. `configured` means an AI URL is set, **not** that the AI is online. `auth_enabled` false means sign-in is switched off on that deployment. |
+| POST | `/api/auth/register`, `/api/auth/login` | token + user | Sign-up and sign-in |
+| GET | `/api/auth/me` | The signed-in user | Confirming a stored token |
+| GET | `/api/animals` | `{ items, total }` | The registered herd, and its count |
+| POST, PATCH | `/api/animals`, `/api/animals/{tag}` | One animal | Registering and editing (**owner**) |
+| POST | `/api/animals/{tag}/deactivate` | One animal | Withdrawing an animal (**owner**). There is no DELETE. |
+| GET | `/api/events` | Newest first; filters `camera_id`, `level`, `event_type`, and `limit`/`offset` | Alerts and history |
+| GET | `/api/cameras`, `/api/cameras/{id}` | `{ items, total }` / one camera | Camera list and status |
+| GET | `/api/zones` | `{ items, total }` | Safe zones (**signed in**) |
+| POST, PATCH, DELETE | `/api/zones/...` | One zone | Editing a safe zone (**owner**) |
+| POST | `/api/videos/analyses` | Saved analysis | Stores a finished analysis (**signed in**) |
 | GET | `/api/videos/analyses`, `/api/videos/analyses/{id}` | Analyses list / one analysis | Analysis history |
 | GET | `/api/metrics/summary` | Aggregated counts | Metrics summary |
-| POST | `/api/ai/events`, PUT `/api/ai/cameras/{id}/status` | — | AI service only (API key). **The frontend never calls them.** |
+| POST | `/api/ai/events`, PUT `/api/ai/cameras/{id}/status`, PUT `/api/animals/{tag}/detection` | — | AI service only (API key). **The frontend never calls them.** |
+
+`POST /api/videos/analyses` needs a signed-in user rather than the AI key,
+because it is called by the browser and `AI_API_KEY` cannot live in a `VITE_`
+variable -- those are public in the bundle. That is also why it was the one
+unauthenticated path into the shared events table until users existed.
 
 Event shape (mirrored in `src/types/api.ts`):
 
@@ -210,22 +228,48 @@ Event shape (mirrored in `src/types/api.ts`):
   "detected_object": "cow",
   "confidence": 0.95,
   "timestamp": "2026-10-03T15:30:00Z",
-  "received_at": "2026-10-03T15:30:01Z"
+  "received_at": "2026-10-03T15:30:01Z",
+  "level": "high"
 }
 ```
 
-The backend's CORS policy allows `GET` and `POST`, the headers `Content-Type` and `X-API-Key`, and no credentials. Real authentication will need a CORS change on the backend (an `Authorization` header or credentials).
+`level` is the backend's severity, derived from the confidence (0.9 and above
+is `high`, below 0.6 is `low`). The frontend maps it to its own vocabulary and
+records `severitySource: 'backend'`; the per-type default in `eventCatalog`
+remains the fallback for a backend that predates the field.
+
+`timestamp` is the AI service's clock and `received_at` is the backend's. The
+events list is sorted by `timestamp`, because that is when the thing happened,
+while the backend returns them ordered by `received_at` -- the only clock it
+controls.
+
+The backend's CORS policy allows `GET`, `POST` and `PUT`, the headers
+`Content-Type`, `X-API-Key`, `Authorization` and `X-Request-ID`, and no
+credentials. `Authorization` has to be on that list or the browser's preflight
+succeeds and the real request arrives with the header stripped, so every
+authenticated call fails as unauthenticated with nothing in the logs to
+explain it. `X-Request-ID` is also exposed, so the app can read the id back
+off a response and quote it in an error report.
 
 ### What the backend does not provide yet
 
 The frontend never invents endpoints. Until these capabilities exist, the UI uses labeled demo data or shows that the capability is unavailable:
 
-- Authentication, sessions, users, roles, farms and worker invitations
-- Video streaming, per-frame detections and video uploads (analyses store only their summary)
-- Safe-zone geometry
+- Farms and worker invitations. Authentication, sessions, users and roles now
+  exist; a worker account is created by registering and then changing
+  `users.role` in the database, and there is no farm entity -- one deployment
+  is one farm, which is why the profile shows no farm identifier.
+- Video streaming, per-frame detections and video uploads (analyses store only
+  their summary)
 - Person or vehicle detection, day/night security rules
-- Event severity, zone, evidence and review state
+- Event zone, evidence and review state. Event **severity** now comes from the
+  backend, derived from the detection confidence.
+- Password recovery, which needs an email sender
 - Real-time push (WebSocket/SSE) and notifications
+
+Safe-zone geometry is no longer on this list: zones are stored, so a zone
+drawn in the browser survives a reload and reaches the service that compares
+detections against it.
 
 ---
 
@@ -247,9 +291,16 @@ flowchart TD
 
 | Capability | `mock` | `hybrid` | `api` |
 |---|---|---|---|
-| System status, events, registered cattle | demo | **API** | **API** |
-| Cameras, detections, safe zones, detected count, farm | demo | demo | unavailable |
-| Authentication | demo | demo | unavailable |
+| System status, events, registered herd, safe zones | demo | **API** | **API** |
+| **Authentication** | demo | **API** | **API** |
+| Cameras, detections, detected count, farm | demo | demo | unavailable |
+
+Authentication is the row that does not follow the pattern, and deliberately
+so. Every other capability falls back to demo data in `hybrid`; sign-in does
+not, because a session that is not real cannot protect anything and is
+indistinguishable from one that is. It used to fall back, which meant the
+deployed app -- running in `hybrid` -- authenticated against unsalted SHA-256
+hashes in `localStorage`.
 
 Rules:
 
@@ -258,7 +309,10 @@ Rules:
 - In `mock` mode the backend is never contacted, so the server pill reads **"Servidor: modo demostración"**, never "en línea". Only a real `/health` reply with `status: "ok"` shows the server online.
 - A failed backend call is never replaced with demo data. Screens show the cause (no connection, timeout, HTTP 401/404/422/5xx or an unexpected response). If a background refresh fails, the last data stays on screen with a warning.
 - Backend responses are validated in `src/api/validate.ts`. Events with an `event_type` the frontend does not know are skipped with a console warning, so one new type does not hide the rest.
-- An empty `/api/animals` list is a normal state ("No hay animales registrados"), not an error.
+- An empty `/api/animals` list is a normal state ("No hay animales registrados"), not an error. The empty state says what registering the herd buys, because counting what a camera sees cannot tell you which animal is missing.
+- A write that needs the owner role is not offered to a worker. The backend
+  answers 403 either way; hiding the control prevents a mistake rather than an
+  attacker.
 - Demo detections are deterministic (seeded per camera) so screenshots and tests are stable.
 - Event kinds that the backend does not emit yet (`person_detected`, `possible_intrusion`, ...) exist only in demo data.
 
@@ -282,50 +336,118 @@ Severity from the catalog is a presentation default (`severitySource: 'catalog'`
 
 ## Authentication
 
-The backend has no authentication yet, so login and registration run against a **demo service** behind the `AuthService` interface. Replacing it with a real implementation does not touch the screens.
+Sign-in goes to the backend. The demo service is still there, behind the same
+`AuthService` interface, and it is used **only** when `VITE_DATA_SOURCE=mock`.
+
+That distinction matters: `hybrid` used to fall back to the demo service, so
+the deployed app -- which runs in hybrid -- authenticated against unsalted
+SHA-256 hashes in `localStorage`. Authentication is the one capability where
+falling back to a demo is worse than failing, because a session that is not
+real cannot protect anything and looks exactly like one that is.
 
 ```mermaid
 sequenceDiagram
     actor U as User
     participant P as LoginPage
     participant C as AuthProvider
-    participant S as AuthService (mock)
+    participant S as apiAuthService
+    participant B as Backend
     participant L as localStorage (guarded)
 
-    U->>P: username or email + password
+    U->>P: email + password
     P->>P: validate fields
     P->>C: login(input)
     C->>S: login(input)
-    S->>S: SHA-256 hash of password
-    S->>L: read demo users
-    alt credentials match
-        S->>L: save session
-        S-->>C: Session
+    S->>B: POST /api/auth/login
+    alt credentials accepted
+        B-->>S: access token + user
+        S->>L: save session with the token
+        S-->>C: Session (source: 'api')
         C-->>P: authenticated
         P->>U: redirect to requested page
-    else wrong credentials
+    else rejected
+        B-->>S: 401
         S-->>C: AuthError("invalid_credentials")
         C-->>P: error
         P->>U: inline error in an aria-live region
     end
 ```
 
-- **Demo accounts** (password `demo1234`): `carmen.rojas` / `dueno@sanjose.demo` (owner) and `julian.perez` / `trabajador@sanjose.demo` (worker). Sign in with the username or the email; the "Cuentas de demostración" disclosure fills them in.
-- Registration asks for username, email, password and confirmation, with a live password strength meter and a caps-lock warning. It always creates an **owner**. Workers will join through an invitation from the owner, which needs backend support.
-- After repeated failed attempts the form locks for a short cooldown with a visible countdown.
-- "Recordarme" and "¿Olvidaste tu contraseña?" are visual only for now: the demo always keeps the session, and password recovery needs backend support (the link explains this).
+### What the backend decides
+
+- **One message for every failure.** A wrong password, an unknown address and
+  a deactivated account all return the same 401. Distinguishing them would
+  turn the form into a way to find out which addresses have accounts, so the
+  interface shows one message because there is no detail to show.
+- **The first account registered is the owner**, and every later one is a
+  worker. The client cannot ask for a role; it reads the one that comes back.
+- **Passwords are limited to 72 bytes**, which is bcrypt's limit. Accented
+  letters are two bytes in UTF-8, so the message says bytes rather than
+  letters -- a password well under 72 characters can still exceed it.
+- **A session lasts an hour** (`ACCESS_TOKEN_MINUTES` on the backend). There
+  is no refresh token, so expiry ends the session and `AuthProvider` signs the
+  user out on a timer rather than letting every request start failing with a
+  401.
+
+### Restoring a session
+
+`getSession()` confirms the stored token against `GET /api/auth/me` instead of
+trusting it. A well-formed token stops working when the account is deactivated
+or the deployment's signing secret is replaced, and both leave something that
+looks perfectly valid in storage.
+
+Only a 401 clears the session. A network failure or a server error keeps it,
+because a dropped connection is not a signed-out user -- and on a rural link
+that is the normal case rather than the exceptional one.
+
+### Demo accounts
+
+Only in `mock` mode. Password `demo1234`: `carmen.rojas` /
+`dueno@sanjose.demo` (owner) and `julian.perez` / `trabajador@sanjose.demo`
+(worker). Sign in with the username or the email; the "Cuentas de
+demostración" disclosure fills them in.
+
+A demo session carries **no token**, which is what makes it unusable against
+the backend rather than quietly half-working. The profile page labels it, so a
+write that cannot reach a server is not a mystery.
 
 | Sign up |
 |---|
 | ![Registration form with the password strength meter](docs/screenshots/register-desktop.png) |
-- Passwords are stored as SHA-256 hashes, never in plain text. All storage access is wrapped in `try/catch` and falls back to memory.
-- In `api` mode the login shows "Inicio de sesión no disponible" instead of pretending to work.
-- Route guards and permissions (`src/lib/permissions.ts`) only shape the UI. **The backend must enforce access.**
+
+- Registration asks for email, password and confirmation, with a live password
+  strength meter and a caps-lock warning.
+- After repeated failed attempts the backend refuses the address for a while
+  and the form shows the countdown. The lockout is keyed on the address rather
+  than the connection, because the farm staff share one.
+- "Recordarme" and "¿Olvidaste tu contraseña?" are still visual only: the
+  session already persists, and password recovery needs an email sender the
+  backend does not have.
+
+### Roles
+
+`users.role` is `owner` or `worker`. The backend enforces it on every write;
+`src/lib/permissions.ts` shapes the interface so a worker is not offered a
+control whose every use returns 403. **The guard in the browser is a courtesy,
+not a control.**
 
 | Permission | Owner | Worker |
 |---|---|---|
 | `monitoring:view`, `events:view`, `events:review` | yes | yes |
+| `herd:edit`, `zones:edit` | yes | no |
 | `farm:edit`, `workers:manage`, `cameras:configure`, `alerts:configure`, `security-hours:configure` | yes | no |
+
+`RequireAuth` accepts an optional `role`, and a worker reaching an owner route
+is redirected to the dashboard rather than shown an error: they are signed in
+and simply cannot be there.
+
+### What is still missing
+
+- No password recovery, and no email sender to build it on.
+- No invitation flow, so a worker account is created by registering and then
+  changing `users.role` in the database.
+- No way to sign out other devices. The backend has no revocation list, so a
+  token works until it expires; replacing `JWT_SECRET` signs everyone out.
 
 ---
 

@@ -1,0 +1,40 @@
+.panel { display: grid; gap: var(--space-4); }
+
+.counts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--space-3); margin: 0;
+}
+.counts > div {
+  display: grid; gap: var(--space-1);
+  padding: var(--space-3); border-radius: var(--radius-md);
+  background: var(--surface-subtle); border: 1px solid var(--border-subtle);
+}
+.counts dt { margin: 0; font-size: var(--text-xs); color: var(--color-ink-subtle); }
+.counts dd { margin: 0; font-size: var(--text-xl); font-weight: 600; }
+
+/* A lost animal is the one thing on this panel that should catch the eye. */
+.alarming { border-color: var(--color-critical-border, var(--border-strong)); }
+.alarming dd { color: var(--color-critical, inherit); }
+
+.summary {
+  display: grid; gap: var(--space-2); margin: 0;
+  font-size: var(--text-sm); color: var(--color-ink-muted);
+}
+.summary span { display: flex; align-items: center; gap: var(--space-2); }
+
+.allWell { margin: 0; font-size: var(--text-sm); color: var(--color-ink-muted); }
+
+.table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+.table th, .table td {
+  padding: var(--space-2) var(--space-3); text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.table th { font-size: var(--text-xs); color: var(--color-ink-subtle); font-weight: 600; }
+.table tbody tr:last-child td { border-bottom: 0; }
+
+/* The table is the widest thing here; it scrolls inside itself rather than
+   making the page scroll sideways. */
+@media (max-width: 40rem) {
+  .panel { overflow-x: auto; }
+  .table { min-width: 24rem; }
+}

@@ -1,5 +1,6 @@
 import { dataMode, type DataMode } from '../../api/config'
-import { AuthError, type LoginInput, type RegisterInput, type Session } from '../../types/auth'
+import type { LoginInput, RegisterInput, Session } from '../../types/auth'
+import { createApiAuthService } from './apiAuthService'
 import { createMockAuthService } from './mockAuthService'
 
 export interface AuthService {
@@ -9,14 +10,20 @@ export interface AuthService {
   logout(): Promise<void>
 }
 
+/**
+ * Which authentication the app uses.
+ *
+ * `mock` keeps the demo accounts in this browser, so the app can be shown
+ * without a server running. Everything else authenticates against the backend.
+ *
+ * `hybrid` used to fall back to the mock, which meant the deployed app -- which
+ * runs in hybrid -- signed people in against unsalted SHA-256 hashes in
+ * localStorage. Authentication is the one capability where falling back to a
+ * demo is worse than failing: a session that is not real cannot protect
+ * anything, and it looks exactly like one that is.
+ */
 export function createAuthService(mode: DataMode = dataMode): AuthService {
-  if (mode === 'api') return {
-    getSession: async () => null,
-    login: async () => { throw new AuthError('unavailable') },
-    register: async () => { throw new AuthError('unavailable') },
-    logout: async () => {},
-  }
-  return createMockAuthService()
+  return mode === 'mock' ? createMockAuthService() : createApiAuthService()
 }
 
 export const authService = createAuthService()

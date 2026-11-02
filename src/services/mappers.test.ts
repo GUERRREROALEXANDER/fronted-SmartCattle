@@ -10,7 +10,8 @@ describe('toFarmEvent', () => {
       id: event.id, event_type: 'cattle_out_of_zone', camera_id: event.cameraId,
       detected_object: event.detectedObject, confidence: event.confidence,
       timestamp: event.occurredAt.toISOString(), received_at: event.receivedAt.toISOString(),
-    })).toEqual({ ...event, severity: 'warning', severitySource: 'catalog' })
+      level: 'medium',
+    })).toEqual({ ...event, severity: 'warning', severitySource: 'backend' })
   })
 })
 
@@ -43,5 +44,15 @@ describe('zone polygons', () => {
     const base = { id: 'z', cameraId: 'c', name: 'Z', bounds: [0.1, 0.2, 0.9, 0.8] as const }
     expect(isInsideZone(box, base)).toBe(true)
     expect(isInsideZone(box, { ...base, outline })).toBe(false)
+  })
+})
+
+describe('backend severity', () => {
+  it('uses the level the backend derived from the confidence', () => {
+    const event = toFarmEvent({
+      id: 'e1', event_type: 'cattle_out_of_zone', camera_id: 'camera-01', detected_object: 'cow', confidence: 0.95,
+      timestamp: '2026-10-03T15:30:00Z', received_at: '2026-10-03T15:30:01Z', level: 'high',
+    })
+    expect(event).toMatchObject({ severity: 'critical', severitySource: 'backend' })
   })
 })

@@ -57,7 +57,7 @@ function PasswordStrengthMeter({ id, strength }: { id: string; strength: Passwor
 }
 
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
-  const { login, register, isDemo } = useAuth()
+  const { login, register, isDemoMode } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const reduce = useReducedMotion()
@@ -100,7 +100,8 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const strengthId = `${formId}-password-strength`
   const strength = getPasswordStrength(values.password)
   const errors: Record<Field, string | null> = {
-    identifier: serverErrors.identifier ?? validateIdentifier(values.identifier),
+    // Backend accounts sign in with their email; only the demo accounts also accept a username.
+    identifier: serverErrors.identifier ?? (isDemoMode ? validateIdentifier(values.identifier) : validateEmail(values.identifier)),
     username: serverErrors.username ?? validateUsername(values.username),
     email: serverErrors.email ?? validateEmail(values.email),
     password: serverErrors.password ?? (isRegistration ? validateNewPassword(values.password) : validatePassword(values.password)),
@@ -264,8 +265,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             <TextField label="Correo electrónico" type="email" autoComplete="email" inputMode="email"
               autoCapitalize="none" spellCheck={false} leadingIcon={Mail} {...fieldProps('email')} />
           </motion.div> : <motion.div key="login-identifier" className={styles.animatedField} {...entrance}>
-            <TextField label="Usuario o correo" autoComplete="username" autoCapitalize="none" spellCheck={false}
-              leadingIcon={UserRound} {...fieldProps('identifier')} />
+            {isDemoMode
+              ? <TextField label="Usuario o correo" autoComplete="username" autoCapitalize="none" spellCheck={false}
+                leadingIcon={UserRound} {...fieldProps('identifier')} />
+              : <TextField label="Correo electrónico" type="email" autoComplete="username" inputMode="email"
+                autoCapitalize="none" spellCheck={false} leadingIcon={Mail} {...fieldProps('identifier')} />}
           </motion.div>}
         </AnimatePresence>
       </motion.div>
@@ -347,7 +351,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       </motion.div></motion.div>
     </motion.form>
 
-    {!isRegistration && isDemo && <motion.details className={styles.demo} {...rise(4)}>
+    {!isRegistration && isDemoMode && <motion.details className={styles.demo} {...rise(4)}>
       <summary>
         <span className={styles.demoIcon} aria-hidden="true"><UsersRound size={16} strokeWidth={2} /></span>
         <span className={styles.demoSummaryText}>Cuentas de demostración</span>

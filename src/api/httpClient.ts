@@ -1,15 +1,72 @@
 import { apiBaseUrl, normalizeBaseUrl } from './config'
 import { ApiError } from './errors'
+import { tokenStore } from './session'
 
-export interface GetJsonOptions {
+export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
+
+export interface RequestOptions {
   signal?: AbortSignal
   timeoutMs?: number
   baseUrl?: string
   fetchImpl?: typeof fetch
+  /** Sent as JSON. Omitted for GET and DELETE, which carry no body. */
+  body?: unknown
+  /** Merged over the defaults. Used for Authorization. */
+  headers?: Record<string, string>
+  /** Bearer token; defaults to the signed-in session's. `null` sends none. */
+  token?: string | null
+  /** Query parameters; undefined and null values are left out. */
+  query?: Record<string, string | number | boolean | null | undefined>
 }
 
-export async function getJson<T>(path: string, options: GetJsonOptions = {}): Promise<T> {
-  const { signal, timeoutMs = 8000, baseUrl = apiBaseUrl, fetchImpl = fetch } = options
+export type GetJsonOptions = Omit<RequestOptions, 'body'>
+
+export interface RequestJsonOptions extends RequestOptions {
+  method?: HttpMethod
+}
+
+function buildUrl(baseUrl: string, path: string, query: RequestOptions['query']): string {
+  const url = `${normalizeBaseUrl(baseUrl)}/${path.replace(/^\/+/, '')}`
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (value !== undefined && value !== null) params.set(key, String(value))
+  }
+  const search = params.toString()
+  return search ? `${url}?${search}` : url
+}
+
+/** Reads `detail` out of a FastAPI error body, whatever shape it came in. */
+function errorDetail(body: unknown): string | undefined {
+  if (!body || typeof body !== 'object' || !('detail' in body)) return undefined
+  const { detail } = body as { detail: unknown }
+  if (typeof detail === 'string') return detail
+  // 422 returns an array of per-field errors. The first message is the one
+  // worth showing; the rest repeat the shape.
+  if (Array.isArray(detail)) {
+    const first = detail.find(item => item && typeof item === 'object' && 'msg' in item)
+    const msg = first && (first as { msg?: unknown }).msg
+    return typeof msg === 'string' ? msg : undefined
+  }
+  return undefined
+}
+
+/**
+ * One request, with the cancellation and timeout handling every caller needs.
+ *
+ * Previously this only did GET, with `method` hardcoded, so the first POST in
+ * the app reimplemented the abort wiring, the timeout and the error mapping in
+ * `videoAnalysisService`. Two copies of this logic is two places for a
+ * cancellation bug to live.
+ */
+export async function request<T>(
+  method: HttpMethod,
+  path: string,
+  options: RequestOptions = {},
+): Promise<T> {
+  const {
+    signal, timeoutMs = 8000, baseUrl = apiBaseUrl, fetchImpl = fetch, body, headers, query,
+  } = options
+  const token = options.token === undefined ? tokenStore.get() : options.token
   signal?.throwIfAborted()
   const controller = new AbortController()
   let abortReason: unknown
@@ -27,11 +84,25 @@ export async function getJson<T>(path: string, options: GetJsonOptions = {}): Pr
   signal?.addEventListener('abort', onAbort, { once: true })
   const timer = setTimeout(() => abort(new ApiError('timeout', 'Request timed out')), timeoutMs)
 
-  const request = async (): Promise<T> => {
+  const hasBody = body !== undefined && method !== 'GET' && method !== 'DELETE'
+  // Built once, and omitted entirely when empty: an empty headers object is
+  // not the same request as no headers at all for some proxies, and it makes
+  // the init object harder to assert on.
+  const requestHeaders: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
+    ...headers,
+  }
+  const hasHeaders = Object.keys(requestHeaders).length > 0
+
+  const send = async (): Promise<T> => {
     let response: Response
     try {
-      response = await fetchImpl(`${normalizeBaseUrl(baseUrl)}/${path.replace(/^\/+/, '')}`, {
-        method: 'GET', signal: controller.signal,
+      response = await fetchImpl(buildUrl(baseUrl, path, query), {
+        method,
+        signal: controller.signal,
+        ...(hasBody ? { body: JSON.stringify(body) } : {}),
+        ...(hasHeaders ? { headers: requestHeaders } : {}),
       })
     } catch {
       if (aborted) throw abortReason
@@ -40,16 +111,21 @@ export async function getJson<T>(path: string, options: GetJsonOptions = {}): Pr
     if (!response.ok) {
       let detail: string | undefined
       try {
-        const body: unknown = await response.json()
-        if (body && typeof body === 'object' && 'detail' in body && typeof body.detail === 'string') {
-          detail = body.detail
-        }
+        detail = errorDetail(await response.json() as unknown)
       } catch {
         if (aborted) throw abortReason
         // An unreadable error body does not change the HTTP error kind.
       }
-      throw new ApiError('http', `HTTP request failed with status ${response.status}`, { status: response.status, detail })
+      // An expired or revoked token signs the person out everywhere at once.
+      if (response.status === 401 && token) tokenStore.reject()
+      const retryAfter = Number(response.headers?.get?.('Retry-After'))
+      throw new ApiError('http', `HTTP request failed with status ${response.status}`, {
+        status: response.status, detail, retryAfterMs: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : undefined,
+      })
     }
+    // 204 has no body, and response.json() on an empty body throws. A caller
+    // expecting nothing gets undefined rather than a parse error.
+    if (response.status === 204) return undefined as T
     try {
       return await response.json() as T
     } catch {
@@ -59,9 +135,34 @@ export async function getJson<T>(path: string, options: GetJsonOptions = {}): Pr
   }
 
   try {
-    return await Promise.race([request(), cancellation])
+    return await Promise.race([send(), cancellation])
   } finally {
     clearTimeout(timer)
     signal?.removeEventListener('abort', onAbort)
   }
+}
+
+export function getJson<T>(path: string, options: GetJsonOptions = {}): Promise<T> {
+  return request<T>('GET', path, options)
+}
+
+export function postJson<T>(path: string, body?: unknown, options: GetJsonOptions = {}): Promise<T> {
+  return request<T>('POST', path, { ...options, body })
+}
+
+export function patchJson<T>(path: string, body: unknown, options: GetJsonOptions = {}): Promise<T> {
+  return request<T>('PATCH', path, { ...options, body })
+}
+
+export function putJson<T>(path: string, body: unknown, options: GetJsonOptions = {}): Promise<T> {
+  return request<T>('PUT', path, { ...options, body })
+}
+
+export function deleteJson<T>(path: string, options: GetJsonOptions = {}): Promise<T> {
+  return request<T>('DELETE', path, options)
+}
+
+/** `request` with the method among the options, for a caller that decides it at runtime. */
+export function requestJson<T>(path: string, { method = 'GET', ...options }: RequestJsonOptions = {}): Promise<T> {
+  return request<T>(method, path, options)
 }
