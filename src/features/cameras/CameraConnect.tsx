@@ -18,6 +18,8 @@ const statusPill: Record<CameraStatus, { tone: 'safe' | 'warning' | 'critical' |
 }
 const kindLabel = { rtsp: 'Cámara IP (RTSP)', 'ip-webcam': 'Celular · IP Webcam', droidcam: 'Celular · DroidCam' } as const
 const ease = [0.23, 1, 0.32, 1] as const
+// The AI service tells the backend within seconds of a change, and nothing announces a removal: look a few times.
+const REFRESH_AFTER_MS = [0, 1500, 3500, 6000]
 
 /** A still from the AI service, refreshed every second; lighter than keeping one MJPEG stream per card open. */
 function LivePreview({ baseUrl, name }: { baseUrl: string; name: string }) {
@@ -40,8 +42,9 @@ type Mode = 'ip' | 'url'
 /**
  * The cameras the AI service reports, with their live picture, plus the way to add one: search the local
  * network, or type the camera's IP (and password) or a phone app's address / webcam number.
+ * Without `previews` the page already shows the cameras, so only the added ones are listed, to remove them.
  */
-export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera[]; onChanged?: () => void }) {
+export function CameraConnect({ cameras, onChanged, previews = true }: { cameras: readonly Camera[]; onChanged?: () => void; previews?: boolean }) {
   const reduce = useReducedMotion()
   const reported = cameras.find(camera => camera.streamUrl)?.streamUrl
   const serviceBase = reported ? serviceRoot(reported) : aiServiceUrl
@@ -57,6 +60,8 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
   const [connecting, setConnecting] = useState(false)
   const [removing, setRemoving] = useState('')
   const [result, setResult] = useState<{ tone: 'safe' | 'critical'; text: string } | null>(null)
+  const shown = previews ? cameras : cameras.filter(camera => isAddedCamera(camera.streamUrl))
+  const refreshList = () => REFRESH_AFTER_MS.forEach(delay => setTimeout(() => onChanged?.(), delay))
 
   const runScan = async () => {
     setScanning(true)
@@ -94,9 +99,7 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
       setPassword('')
       if (state.status === 'online') {
         setResult({ tone: 'safe', text: 'La cámara ya transmite y la IA está analizando la imagen.' })
-        onChanged?.()
-        // The service tells the backend within a second, so the list may need one more look to show it.
-        setTimeout(() => onChanged?.(), 2500)
+        refreshList()
         return
       }
       // A camera that never opened must not stay retrying in the background; connecting again starts it over.
@@ -118,7 +121,7 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
     setResult(null)
     try {
       await removeCamera(serviceRoot(camera.streamUrl), camera.id)
-      onChanged?.()
+      refreshList()
     } catch (error) {
       const { title, description } = describeApiError(error)
       setResult({ tone: 'critical', text: `${title}. ${description}` })
@@ -128,17 +131,17 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
   }
 
   return <div className={styles.wrap}>
-    <section aria-labelledby="camera-list-title">
-      <h2 id="camera-list-title" className={styles.title}>Cámaras conectadas a la IA</h2>
-      {cameras.length === 0
+    {(previews || shown.length > 0) && <section aria-labelledby="camera-list-title">
+      <h2 id="camera-list-title" className={styles.title}>{previews ? 'Cámaras conectadas a la IA' : 'Cámaras agregadas'}</h2>
+      {shown.length === 0
         ? <p className={styles.note}>
           Todavía ninguna cámara reporta al servidor. Enciende el servicio de IA en el PC de la finca y conecta una cámara abajo.
         </p>
         : <ul className={styles.grid}>
-          {cameras.map(camera => <GlassCard as="li" key={camera.id} padding="none" className={styles.card}>
-            {camera.streamUrl
+          {shown.map(camera => <GlassCard as="li" key={camera.id} padding="none" className={styles.card}>
+            {previews && (camera.streamUrl
               ? <LivePreview baseUrl={camera.streamUrl} name={camera.name} />
-              : <div className={styles.preview}><span className={styles.previewEmpty}>Sin servicio de video</span></div>}
+              : <div className={styles.preview}><span className={styles.previewEmpty}>Sin servicio de video</span></div>)}
             <div className={styles.cardBody}>
               <strong>{camera.name}</strong>
               <StatusPill {...statusPill[camera.status]} />
@@ -150,7 +153,7 @@ export function CameraConnect({ cameras, onChanged }: { cameras: readonly Camera
             </div>}
           </GlassCard>)}
         </ul>}
-    </section>
+    </section>}
 
     <GlassCard as="section" padding="lg" aria-labelledby="camera-connect-title" className={styles.connect}>
       <div className={styles.connectHead}>

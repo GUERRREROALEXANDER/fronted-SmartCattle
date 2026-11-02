@@ -75,7 +75,7 @@ export function CamerasPage() {
     </div>}
 
     {session && can(session.user.role, 'cameras:configure') && <FadeUp delay={staggerDelay(2)}>
-      <CameraConnect cameras={list} onChanged={cameras.reload} />
+      <CameraConnect cameras={list} onChanged={cameras.reload} previews={false} />
     </FadeUp>}
   </div>
 }
