@@ -11,7 +11,7 @@ export function toCamera(camera: ApiCamera): Camera {
   return {
     id: camera.id, name: number ? `Cámara ${number}` : camera.id, location: 'Cámara IP',
     status: camera.status, lastSeenAt: camera.last_online_at ? new Date(camera.last_online_at) : null,
-    lastError: camera.last_error,
+    lastError: camera.last_error, streamUrl: camera.stream_url,
   }
 }
 

@@ -99,7 +99,7 @@ describe('camera services', () => {
   it.each(['api', 'hybrid'] as const)('lists backend cameras in %s mode', async mode => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: [backendCamera], total: 1 }))
     await expect(listCameras({ mode, fetchImpl, now })).resolves.toEqual({
-      source: 'api', data: [{ id: 'camera-01', name: 'Cámara 01', location: 'Cámara IP', status: 'online', lastSeenAt: now, lastError: null }],
+      source: 'api', data: [{ id: 'camera-01', name: 'Cámara 01', location: 'Cámara IP', status: 'online', lastSeenAt: now, lastError: null, streamUrl: null }],
     })
     expect(fetchImpl).toHaveBeenCalledWith(expect.stringMatching(/\/api\/cameras$/), expect.objectContaining({ method: 'GET' }))
   })
@@ -116,6 +116,11 @@ describe('camera services', () => {
       source: 'api', data: { kind: 'mjpeg', url: 'http://localhost:8090/video.mjpg', width: 640, height: 352, annotated: true },
     })
     expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8090/status', expect.anything())
+  })
+  it('keeps the stream URL each camera reported', async () => {
+    const url = 'http://192.168.1.10:8090/cameras/cam-1'
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: [{ ...backendCamera, stream_url: url }], total: 1 }))
+    expect((await listCameras({ mode: 'api', fetchImpl, now })).data?.[0].streamUrl).toBe(url)
   })
   it('never sends the session token to the AI service', async () => {
     tokenStore.set('jwt-123', 3600)
