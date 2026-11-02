@@ -90,6 +90,8 @@ function toAuthError(error: unknown): AuthError {
     // address and a deactivated account, on purpose. Showing one message is
     // not a loss of detail: there is no detail to show.
     401: 'invalid_credentials',
+    // Only the owner creates accounts on this deployment. A login never answers 403.
+    403: 'registration_closed',
     409: 'email_taken',
     // Authentication is switched off on this deployment: JWT_SECRET is unset.
     503: 'unavailable',

@@ -81,6 +81,7 @@ export function cameraProblem(error: unknown): string | null {
     if (/cloud/i.test(detail)) return 'El servicio de IA está en la nube y no llega a esa dirección. Usa la dirección pública de la cámara, o corre el servicio de IA en un PC de la misma red.'
     return 'Revisa la dirección: debe ser una IP, un enlace rtsp:// o http://, o un número de webcam.'
   }
+  if (error.status === 429) return 'Demasiados intentos seguidos. Espera un minuto y vuelve a intentarlo.'
   if (error.status === 409) return 'Este servicio de IA ya tiene el máximo de cámaras agregadas. Quita una antes de agregar otra.'
   if (error.status === 403) {
     return /origin/i.test(detail)
