@@ -34,6 +34,10 @@ describe('parseLiveMessage', () => {
     expect(parseLiveMessage('{"type":"video.progress","data":{}}')).toBeNull()
     expect(parseLiveMessage('{"type":"detections","data":{"camera_id":"c"}}')).toBeNull()
     expect(parseLiveMessage('not json')).toBeNull()
+    expect(parseLiveMessage('{"type":"camera.removed","data":{}}')).toBeNull()
+  })
+  it('reads the removal of a camera', () => {
+    expect(parseLiveMessage('{"type":"camera.removed","data":{"id":"cam-1"}}')).toEqual({ type: 'camera.removed', cameraId: 'cam-1' })
   })
 })
 
@@ -65,6 +69,14 @@ describe('liveReducer', () => {
     const state = liveReducer(loaded(), { type: 'message', at, message: { type: 'camera.status', camera: camera('camera-03') } })
     expect(state.cameras.map(item => item.id)).toEqual(['camera-01', 'camera-02', 'camera-03'])
     expect(state.metrics).toMatchObject({ camerasTotal: 3, camerasOnline: 3 })
+  })
+  it('forgets a camera that was removed, on every screen at once', () => {
+    const frame = { cameraId: 'camera-02', capturedAt: at, detections: [] }
+    let state = liveReducer(loaded(), { type: 'message', at, message: { type: 'detections', frame } })
+    state = liveReducer(state, { type: 'message', at, message: { type: 'camera.removed', cameraId: 'camera-02' } })
+    expect(state.cameras.map(item => item.id)).toEqual(['camera-01'])
+    expect(state.frames['camera-02']).toBeUndefined()
+    expect(state.metrics).toMatchObject({ camerasTotal: 1 })
   })
   it('drops boxes once they are stale', () => {
     const frame = { cameraId: 'camera-01', capturedAt: at, detections: [] }

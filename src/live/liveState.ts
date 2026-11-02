@@ -120,6 +120,14 @@ function applyMessage(state: LiveState, message: LiveMessage, at: Date): LiveSta
         metrics: metrics && { ...metrics, camerasOnline: countOnline(cameras), camerasTotal: cameras.length },
       }
     }
+    case 'camera.removed': {
+      const cameras = state.cameras.filter(camera => camera.id !== message.cameraId)
+      const without = <T,>(items: Record<string, T>) => Object.fromEntries(Object.entries(items).filter(([id]) => id !== message.cameraId))
+      return {
+        ...state, cameras, occupancy: without(state.occupancy), frames: without(state.frames),
+        metrics: metrics && { ...metrics, camerasOnline: countOnline(cameras), camerasTotal: cameras.length },
+      }
+    }
     case 'event.created':
       if (state.events.some(event => event.id === message.event.id)) return state
       return {

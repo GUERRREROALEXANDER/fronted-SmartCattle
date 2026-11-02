@@ -9,6 +9,7 @@ export type LiveMessage =
   | { type: 'event.created'; event: FarmEvent }
   | { type: 'alert.created' | 'alert.updated'; alert: Alert }
   | { type: 'camera.status'; camera: Camera }
+  | { type: 'camera.removed'; cameraId: string }
   | { type: 'occupancy.updated'; occupancy: Occupancy }
   | { type: 'detections'; frame: FrameDetections }
   | { type: 'pong' }
@@ -41,6 +42,8 @@ export function parseLiveMessage(raw: unknown): LiveMessage | null {
         const [camera] = parseCamerasResponse({ items: [data], total: 1 }).items
         return { type: 'camera.status', camera: toCamera(camera) }
       }
+      case 'camera.removed':
+        return isObject(data) && typeof data.id === 'string' ? { type: 'camera.removed', cameraId: data.id } : null
       case 'occupancy.updated': {
         const occupancy = parseOccupancy(data)
         return {
