@@ -95,7 +95,7 @@ function toAuthError(error: unknown): AuthError {
     503: 'unavailable',
   }
   if (error.status === 429) {
-    return new AuthError('rate_limited')
+    return new AuthError('rate_limited', { retryAfterMs: error.retryAfterMs })
   }
   if (error.status === 422) {
     // The only 422 a correct client can provoke is the bcrypt byte limit,
@@ -134,7 +134,11 @@ export interface ApiAuthOptions {
 export function createApiAuthService({
   storage = safeStorage, now = () => new Date(), fetchImpl, baseUrl,
 }: ApiAuthOptions = {}): AuthService {
+  // token: null because this service states its own Authorization: a stale
+  // session must not ride along on a sign-in, nor a wrong password read as a
+  // rejected token.
   const options = {
+    token: null,
     ...(fetchImpl ? { fetchImpl } : {}),
     ...(baseUrl ? { baseUrl } : {}),
   }

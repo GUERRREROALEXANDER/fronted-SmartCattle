@@ -41,3 +41,43 @@ export function authHeaders(storage: SafeStorage = safeStorage): Record<string, 
   const token = readAccessToken(storage)
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
+
+export interface TokenStore {
+  /** The current token, or null when there is none or it has expired. */
+  get(): string | null
+  clear(): void
+  /** Called when the backend rejects the token (HTTP 401 or WebSocket 4401). */
+  onRejected(listener: () => void): () => void
+  reject(): void
+}
+
+/**
+ * The token as the request layer and the live socket need it: the same stored
+ * session, so there is no second copy to drift, plus the announcement that lets
+ * one rejected request sign the person out everywhere at once.
+ */
+export function createTokenStore(storage: SafeStorage = safeStorage, now: () => number = Date.now): TokenStore {
+  const listeners = new Set<() => void>()
+  return {
+    get() {
+      const stored = storage.getJson<unknown>(SESSION_STORAGE_KEY)
+      if (!isUsable(stored)) return null
+      if (stored.expiresAt && Date.parse(stored.expiresAt) <= now()) {
+        storage.remove(SESSION_STORAGE_KEY)
+        return null
+      }
+      return stored.accessToken!
+    },
+    clear() { storage.remove(SESSION_STORAGE_KEY) },
+    onRejected(listener) {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+    reject() {
+      storage.remove(SESSION_STORAGE_KEY)
+      for (const listener of [...listeners]) listener()
+    },
+  }
+}
+
+export const tokenStore = createTokenStore()

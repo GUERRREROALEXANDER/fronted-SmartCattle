@@ -55,3 +55,5 @@
   .title { font-size: var(--text-2xl); }
   .description { font-size: var(--text-base); }
 }
+
+.panelInner.wide { max-width: 720px; }

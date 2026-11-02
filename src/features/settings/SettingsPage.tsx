@@ -7,7 +7,8 @@ import { eventCatalog, severityLabel } from '../../lib/eventCatalog'
 import { can, type Permission } from '../../lib/permissions'
 import { useResource } from '../../lib/useResource'
 import { duration, ease, FadeUp, staggerDelay } from '../../motion'
-import { getCurrentFarm, getFarmPlan, getSecurityHours, listCameras, listFarmMembers, listSafeZones } from '../../services'
+import { getCurrentFarm, getFarmPlan, getSecurityHours, listFarmMembers, listSafeZones } from '../../services'
+import { useLiveCameras } from '../../live/useLiveCameras'
 import type { EventKind, SafeZone, Sourced, UserRole } from '../../types/domain'
 import styles from './SettingsPage.module.css'
 
@@ -32,7 +33,7 @@ export function SettingsPage() {
   const farm = useResource(signal => getCurrentFarm({ signal }))
   const plan = useResource(signal => getFarmPlan({ signal }))
   const members = useResource(signal => listFarmMembers({ signal }))
-  const cameras = useResource(signal => listCameras({ signal }))
+  const cameras = useLiveCameras()
   const hours = useResource(signal => getSecurityHours({ signal }))
   const ids = (cameras.data ?? []).map(camera => camera.id)
   const zones = useResource(signal => loadZones(ids, signal), { key: ids.join(',') })

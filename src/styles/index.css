@@ -1,3 +1,8 @@
+/* Tailwind v4 without Preflight: the project's own base.css stays the reset. */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
 @import './tokens.css';
 @import './base.css';
 @import './motion.css';

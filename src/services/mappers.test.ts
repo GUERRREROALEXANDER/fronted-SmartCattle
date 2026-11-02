@@ -46,3 +46,13 @@ describe('zone polygons', () => {
     expect(isInsideZone(box, { ...base, outline })).toBe(false)
   })
 })
+
+describe('backend severity', () => {
+  it('uses the level the backend derived from the confidence', () => {
+    const event = toFarmEvent({
+      id: 'e1', event_type: 'cattle_out_of_zone', camera_id: 'camera-01', detected_object: 'cow', confidence: 0.95,
+      timestamp: '2026-10-03T15:30:00Z', received_at: '2026-10-03T15:30:01Z', level: 'high',
+    })
+    expect(event).toMatchObject({ severity: 'critical', severitySource: 'backend' })
+  })
+})

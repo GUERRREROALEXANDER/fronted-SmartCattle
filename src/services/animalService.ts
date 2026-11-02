@@ -6,7 +6,8 @@ import { buildMockHerd } from '../mocks/mockHerd'
 import type { Animal, AnimalStatus, Sourced } from '../types/domain'
 import type { ApiAnimal } from '../types/api'
 import { resolveSource } from './dataSource'
-import { requestHeaders, resolveMockOnly, waitForMock, type ServiceOptions } from './options'
+import { getLiveMetrics } from './metricsService'
+import { requestHeaders, waitForMock, type ServiceOptions } from './options'
 
 /** The backend speaks snake_case and ISO strings; the interface wants Dates. */
 export function toAnimal(animal: ApiAnimal): Animal {
@@ -117,6 +118,15 @@ export async function tagExists(tag: string, options: ServiceOptions = {}): Prom
 /** Farm-wide count from the vision service, with the time it was taken. Not the sum of what camera images show. */
 export interface HerdCount { count: number; countedAt: Date }
 
-export function getDetectedCattleCount(options: ServiceOptions = {}): Promise<Sourced<HerdCount | null>> {
-  return resolveMockOnly(options, now => ({ count: mockDetectedCattle, countedAt: new Date(now) }))
+/** The AI's current head count across every camera (cattle_total of GET /api/metrics/live). */
+export async function getDetectedCattleCount(options: ServiceOptions = {}): Promise<Sourced<HerdCount | null>> {
+  const source = resolveSource('backend', options.mode ?? dataMode)
+  if (source === 'mock') {
+    await waitForMock(options)
+    return { data: { count: mockDetectedCattle, countedAt: new Date(options.now ?? new Date()) }, source }
+  }
+  const metrics = await getLiveMetrics(options)
+  // Without a single camera report the AI has not counted anything yet: that is not "zero cows".
+  if (metrics.data.camerasTotal === 0) return { data: null, source }
+  return { data: { count: metrics.data.cattleTotal, countedAt: metrics.data.generatedAt }, source }
 }

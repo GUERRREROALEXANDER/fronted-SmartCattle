@@ -26,6 +26,20 @@ export async function listCameras(options: ServiceOptions = {}): Promise<Sourced
 }
 
 /**
+ * Every camera the AI service has reported, with its effective status, so the farm view can show a
+ * camera that dropped offline or failed instead of hiding it.
+ */
+export async function listAllCameras(options: ServiceOptions = {}): Promise<Sourced<Camera[]>> {
+  const source = resolveSource('backend', options.mode ?? dataMode)
+  if (source === 'mock') {
+    await waitForMock(options)
+    const now = options.now ?? new Date()
+    return { data: mockCameras.map(camera => ({ ...camera, lastSeenAt: new Date(now) })), source }
+  }
+  return { data: parseCamerasResponse(await getJson<unknown>('/api/cameras', options)).items.map(toCamera), source }
+}
+
+/**
  * Where the camera picture comes from. Outside mock mode the local AI service streams its camera
  * as MJPEG with boxes and safe zone already drawn in.
  */

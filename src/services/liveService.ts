@@ -33,7 +33,8 @@ export async function getLiveSource(cameraId: string, options: ServiceOptions = 
   const baseUrl = await liveBaseUrl(cameraId, options)
   if (!baseUrl) return null
   try {
-    const status = parseLiveStatus(await getJson<unknown>('/status', { ...options, baseUrl, timeoutMs: 6000 }))
+    // No session token: live.py has no accounts, its CORS preflight rejects Authorization, and the URL may be a public tunnel.
+    const status = parseLiveStatus(await getJson<unknown>('/status', { ...options, baseUrl, token: null, timeoutMs: 6000 }))
     return status.camera_id === cameraId ? { baseUrl, status } : null
   } catch (error) {
     if (!isNetworkFailure(error, options)) throw error

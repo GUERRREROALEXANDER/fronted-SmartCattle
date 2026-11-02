@@ -1,22 +1,22 @@
-import { Activity, BellRing, ShieldCheck, UserRound, type LucideIcon } from 'lucide-react'
+import { BellRing, Cctv, ShieldAlert, ShieldCheck, type LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { GlassCard } from '../../components/ui'
+import type { HerdCount, HerdPoint } from '../../live/liveState'
 import { AnimatedNumber, DeltaChip, PulseRing, staggerDelay } from '../../motion'
-import { liveSessionDeltas, type LiveHerdSnapshot } from './liveHerd'
+import type { Alert, Camera, LiveMetrics as LiveMetricsData } from '../../types/domain'
 import styles from './LiveMetrics.module.css'
 
 type Tone = 'safe' | 'alarm' | 'info' | 'person'
 
-function MetricCard({ icon: Icon, tone, label, delta, deltaLabel, children, caption, index, pulse = false }: {
+function MetricCard({ icon: Icon, tone, label, delta, children, caption, index, pulse = false }: {
   icon: LucideIcon
   tone: Tone
   label: string
-  delta: ReactNode
-  deltaLabel: string
+  delta?: ReactNode
   children: ReactNode
   caption: ReactNode
   index: number
-  /** Pulses only while an animal is outside right now. */
+  /** Pulses only while the state it reports needs attention right now. */
   pulse?: boolean
 }) {
   return <GlassCard as="li" padding="none" delay={staggerDelay(index)} className={`${styles.card} ${styles[tone]}`}>
@@ -24,7 +24,7 @@ function MetricCard({ icon: Icon, tone, label, delta, deltaLabel, children, capt
       <PulseRing active={pulse} className={styles.iconRing}>
         <span className={styles.icon}><Icon size={20} strokeWidth={2} aria-hidden="true" /></span>
       </PulseRing>
-      <span className={styles.delta} title={deltaLabel}>{delta}</span>
+      {delta && <span className={styles.delta}>{delta}</span>}
     </div>
     <p className={styles.label}>{label}</p>
     <p className={styles.value}>{children}</p>
@@ -32,48 +32,64 @@ function MetricCard({ icon: Icon, tone, label, delta, deltaLabel, children, capt
   </GlassCard>
 }
 
-export function LiveMetrics({ snapshot, baseline, className, staggerFrom = 0 }: {
-  snapshot: LiveHerdSnapshot
-  baseline: LiveHerdSnapshot
+const unknown = <span className={styles.unknown}>—</span>
+
+/** The four numbers a farmer checks first, all from the live backend state. */
+export function LiveMetrics({ count, history, metrics, cameras, alerts, reduceMotion, className, staggerFrom = 0 }: {
+  count: HerdCount | null
+  history: readonly HerdPoint[]
+  metrics: LiveMetricsData | null
+  cameras: readonly Camera[]
+  alerts: readonly Alert[]
+  reduceMotion: boolean
   className?: string
   /** Stagger index of the first tile, so the page enters as one sequence. */
   staggerFrom?: number
 }) {
-  const deltas = liveSessionDeltas(snapshot, baseline)
-  const outside = snapshot.totalCount - snapshot.insideCount
-  const percentFormat = (value: number) => `${Math.round(value)} %`
+  const first = history[0]
+  const insidePercent = count && count.total > 0 ? Math.round(count.inside / count.total * 100) : null
+  const online = cameras.filter(camera => camera.status === 'online').length
+  const failing = cameras.filter(camera => camera.status === 'error').length
+  const open = alerts.filter(alert => alert.status === 'open')
+  const critical = open.filter(alert => alert.severity === 'critical').length
+  const openCount = metrics?.openAlerts ?? open.length
+  const outside = count?.outside ?? 0
 
   return <section className={[styles.section, className].filter(Boolean).join(' ')} aria-labelledby="live-metrics-title">
     <div className={styles.heading}>
-      <h2 id="live-metrics-title" className={styles.title}>Métricas en tiempo real</h2>
-      <span className={styles.session}>▲▼ frente al inicio de la sesión</span>
+      <h2 id="live-metrics-title" className={styles.title}>Ahora en la finca</h2>
+      {first && <span className={styles.session}>▲▼ frente al inicio de la sesión</span>}
     </div>
     <ul className={styles.grid}>
-      <MetricCard index={staggerFrom} icon={ShieldCheck} tone={outside > 0 ? 'alarm' : 'safe'} pulse={outside > 0} label="Ganado dentro del perímetro"
-        deltaLabel="Cambio en puntos porcentuales"
-        delta={<DeltaChip value={deltas.insidePercentage} goodWhen="up" format={value => `${value} p. p.`} />}
-        caption={outside > 0 ? `${outside} fuera del perímetro` : 'Todo el hato dentro'}>
-        <AnimatedNumber value={snapshot.insideCount} />
-        <span className={styles.total}>/{snapshot.totalCount}</span>
-        <AnimatedNumber className={styles.percent} value={snapshot.insidePercentage} format={percentFormat} />
+      <MetricCard index={staggerFrom} icon={ShieldCheck} tone="safe" label="Ganado dentro de su zona"
+        delta={count && first && <DeltaChip value={count.inside - first.inside} goodWhen="up" />}
+        caption={count ? `${count.total} contadas por las cámaras` : 'Ninguna cámara ha contado todavía'}>
+        {count ? <>
+          <AnimatedNumber value={count.inside} />
+          <span className={styles.total}>/{count.total}</span>
+          {insidePercent !== null && <AnimatedNumber className={styles.percent} value={insidePercent} format={value => `${Math.round(value)} %`} />}
+        </> : unknown}
       </MetricCard>
-      <MetricCard index={staggerFrom + 1} icon={BellRing} tone={snapshot.alertCount > 0 ? 'alarm' : 'safe'} label="Alertas emitidas"
-        deltaLabel="Alertas nuevas en esta sesión"
-        delta={<DeltaChip value={deltas.alertCount} goodWhen="down" />}
-        caption="Salidas del perímetro en la sesión">
-        <AnimatedNumber value={snapshot.alertCount} />
+      <MetricCard index={staggerFrom + 1} icon={ShieldAlert} tone={outside > 0 ? 'alarm' : 'safe'} pulse={outside > 0 && !reduceMotion}
+        label="Fuera de zona"
+        delta={count && first && <DeltaChip value={outside - first.outside} goodWhen="down" />}
+        caption={outside > 0 ? 'Revisa el lote marcado en rojo' : count ? 'Todo el hato dentro' : 'Sin conteo'}>
+        {count ? <AnimatedNumber value={outside} /> : unknown}
       </MetricCard>
-      <MetricCard index={staggerFrom + 2} icon={Activity} tone="info" label="Detecciones por minuto"
-        deltaLabel="Cambio en detecciones por minuto"
-        delta={<DeltaChip value={deltas.detectionsPerMinute} goodWhen="up" />}
-        caption="Ventana móvil de 10 segundos">
-        <AnimatedNumber value={snapshot.detectionsPerMinute} />
+      <MetricCard index={staggerFrom + 2} icon={Cctv} tone={failing > 0 || (cameras.length > 0 && online === 0) ? 'person' : 'info'}
+        label="Cámaras en línea"
+        caption={cameras.length === 0 ? 'El servicio de IA no reporta cámaras'
+          : failing > 0 ? `${failing} con error` : online < cameras.length ? `${cameras.length - online} sin conexión` : 'Todas transmitiendo'}>
+        <AnimatedNumber value={online} />
+        <span className={styles.total}>/{cameras.length}</span>
       </MetricCard>
-      <MetricCard index={staggerFrom + 3} icon={UserRound} tone="person" label="Personas detectadas"
-        deltaLabel="Cambio en personas detectadas"
-        delta={<DeltaChip value={deltas.peopleCount} goodWhen="down" />}
-        caption="Recorriendo el camino junto al lindero">
-        <AnimatedNumber value={snapshot.peopleCount} />
+      <MetricCard index={staggerFrom + 3} icon={BellRing} tone={critical > 0 ? 'alarm' : openCount > 0 ? 'person' : 'safe'}
+        pulse={critical > 0 && !reduceMotion} label="Alertas abiertas"
+        caption={<>
+          {critical > 0 ? `${critical} críticas · ` : ''}
+          {metrics ? `${metrics.eventsLastHour} eventos en la última hora` : 'Sin datos de eventos'}
+        </>}>
+        <AnimatedNumber value={openCount} />
       </MetricCard>
     </ul>
   </section>

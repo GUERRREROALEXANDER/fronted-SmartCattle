@@ -1,7 +1,7 @@
 import { OctagonAlert, ShieldCheck } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import { AnimatedNumber, PulseRing } from '../../../motion'
-import type { ZoneSummary } from '../simulation/herdSimulation'
+import type { ZoneSummary } from '../../../live/herdSummary'
 import styles from './ZonePanel.module.css'
 
 export interface ZonePanelProps {
@@ -19,11 +19,14 @@ export function ZonePanel({ zones, activePresetId, onSelect }: ZonePanelProps) {
     <section className={styles.panel} aria-labelledby="pasture-zones-title">
       <div className={styles.head}>
         <h2 id="pasture-zones-title" className={styles.title}>Zonas seguras</h2>
-        <p className={styles.hint}>Elige una zona para acercar la cámara.</p>
+        <p className={styles.hint}>Conteo de la IA por lote. Elige uno para acercar la vista.</p>
       </div>
       <ul className={styles.list}>
         {zones.map(zone => {
-          const label = zone.breached ? `Fuera de zona${zone.outside > 1 ? ` (${zone.outside})` : ''}` : 'Dentro'
+          const people = zone.people > 0 ? ` · ${zone.people === 1 ? '1 persona' : `${zone.people} personas`}` : ''
+          const label = !zone.watched
+            ? 'Sin cámara'
+            : (zone.breached ? `Fuera de zona${zone.outside > 1 ? ` (${zone.outside})` : ''}` : 'Dentro') + people
           return (
             <li key={zone.lotId}>
               <motion.button
@@ -31,8 +34,8 @@ export function ZonePanel({ zones, activePresetId, onSelect }: ZonePanelProps) {
                 className={`${styles.zone} ${zone.breached ? styles.breached : ''}`}
                 aria-pressed={activePresetId === zone.lotId}
                 onClick={() => onSelect(zone.lotId)}
-                whileHover={reduce ? undefined : { y: -2 }}
-                whileTap={reduce ? undefined : { scale: 0.98 }}
+                whileHover={reduce ? undefined : { transform: 'translateY(-2px)' }}
+                whileTap={reduce ? undefined : { transform: 'scale(0.98)' }}
                 transition={hoverSpring}
               >
                 <PulseRing active={zone.breached} className={styles.badgeRing}>
@@ -44,8 +47,10 @@ export function ZonePanel({ zones, activePresetId, onSelect }: ZonePanelProps) {
                 </PulseRing>
                 <span className={styles.name}>{zone.lotName}</span>
                 <span className={`${styles.count} tabular`}>
-                  <AnimatedNumber value={zone.inside} />/{zone.total}
-                  <span className={styles.countLabel}> dentro</span>
+                  {zone.watched ? <>
+                    <AnimatedNumber value={zone.inside} />/{zone.total}
+                    <span className={styles.countLabel}> dentro</span>
+                  </> : '—'}
                 </span>
                 <span className={styles.status}>{label}</span>
               </motion.button>

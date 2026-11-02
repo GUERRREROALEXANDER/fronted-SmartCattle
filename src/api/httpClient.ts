@@ -1,5 +1,6 @@
 import { apiBaseUrl, normalizeBaseUrl } from './config'
 import { ApiError } from './errors'
+import { tokenStore } from './session'
 
 export type HttpMethod = 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE'
 
@@ -12,9 +13,27 @@ export interface RequestOptions {
   body?: unknown
   /** Merged over the defaults. Used for Authorization. */
   headers?: Record<string, string>
+  /** Bearer token; defaults to the signed-in session's. `null` sends none. */
+  token?: string | null
+  /** Query parameters; undefined and null values are left out. */
+  query?: Record<string, string | number | boolean | null | undefined>
 }
 
 export type GetJsonOptions = Omit<RequestOptions, 'body'>
+
+export interface RequestJsonOptions extends RequestOptions {
+  method?: HttpMethod
+}
+
+function buildUrl(baseUrl: string, path: string, query: RequestOptions['query']): string {
+  const url = `${normalizeBaseUrl(baseUrl)}/${path.replace(/^\/+/, '')}`
+  const params = new URLSearchParams()
+  for (const [key, value] of Object.entries(query ?? {})) {
+    if (value !== undefined && value !== null) params.set(key, String(value))
+  }
+  const search = params.toString()
+  return search ? `${url}?${search}` : url
+}
 
 /** Reads `detail` out of a FastAPI error body, whatever shape it came in. */
 function errorDetail(body: unknown): string | undefined {
@@ -45,8 +64,9 @@ export async function request<T>(
   options: RequestOptions = {},
 ): Promise<T> {
   const {
-    signal, timeoutMs = 8000, baseUrl = apiBaseUrl, fetchImpl = fetch, body, headers,
+    signal, timeoutMs = 8000, baseUrl = apiBaseUrl, fetchImpl = fetch, body, headers, query,
   } = options
+  const token = options.token === undefined ? tokenStore.get() : options.token
   signal?.throwIfAborted()
   const controller = new AbortController()
   let abortReason: unknown
@@ -69,6 +89,7 @@ export async function request<T>(
   // not the same request as no headers at all for some proxies, and it makes
   // the init object harder to assert on.
   const requestHeaders: Record<string, string> = {
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
     ...headers,
   }
@@ -77,7 +98,7 @@ export async function request<T>(
   const send = async (): Promise<T> => {
     let response: Response
     try {
-      response = await fetchImpl(`${normalizeBaseUrl(baseUrl)}/${path.replace(/^\/+/, '')}`, {
+      response = await fetchImpl(buildUrl(baseUrl, path, query), {
         method,
         signal: controller.signal,
         ...(hasBody ? { body: JSON.stringify(body) } : {}),
@@ -95,7 +116,12 @@ export async function request<T>(
         if (aborted) throw abortReason
         // An unreadable error body does not change the HTTP error kind.
       }
-      throw new ApiError('http', `HTTP request failed with status ${response.status}`, { status: response.status, detail })
+      // An expired or revoked token signs the person out everywhere at once.
+      if (response.status === 401 && token) tokenStore.reject()
+      const retryAfter = Number(response.headers?.get?.('Retry-After'))
+      throw new ApiError('http', `HTTP request failed with status ${response.status}`, {
+        status: response.status, detail, retryAfterMs: Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : undefined,
+      })
     }
     // 204 has no body, and response.json() on an empty body throws. A caller
     // expecting nothing gets undefined rather than a parse error.
@@ -120,7 +146,7 @@ export function getJson<T>(path: string, options: GetJsonOptions = {}): Promise<
   return request<T>('GET', path, options)
 }
 
-export function postJson<T>(path: string, body: unknown, options: GetJsonOptions = {}): Promise<T> {
+export function postJson<T>(path: string, body?: unknown, options: GetJsonOptions = {}): Promise<T> {
   return request<T>('POST', path, { ...options, body })
 }
 
@@ -134,4 +160,9 @@ export function putJson<T>(path: string, body: unknown, options: GetJsonOptions 
 
 export function deleteJson<T>(path: string, options: GetJsonOptions = {}): Promise<T> {
   return request<T>('DELETE', path, options)
+}
+
+/** `request` with the method among the options, for a caller that decides it at runtime. */
+export function requestJson<T>(path: string, { method = 'GET', ...options }: RequestJsonOptions = {}): Promise<T> {
+  return request<T>(method, path, options)
 }
