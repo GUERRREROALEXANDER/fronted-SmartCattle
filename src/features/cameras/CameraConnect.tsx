@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Cctv, Plug, Radar, Smartphone, Trash2, Wifi } from 'lucide-react'
 import { describeApiError } from '../../api/errors'
+import { withSessionToken } from '../../api/session'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import {
   activeService, addCamera, cameraProblem, isAddedCamera, removeCamera, scanCameras, serviceRoot, waitForCamera, type CameraScan, type CameraSource, type FoundCamera,
@@ -28,10 +29,12 @@ function LivePreview({ baseUrl, name }: { baseUrl: string; name: string }) {
     const timer = setInterval(() => setTick(value => value + 1), 1000)
     return () => clearInterval(timer)
   }, [])
+  // A picture that failed is tried again every few seconds: the service may have been restarting.
+  const showPicture = !failed || tick % 5 === 0
   return <div className={styles.preview}>
-    {failed
+    {!showPicture
       ? <span className={styles.previewEmpty}><Cctv size={22} strokeWidth={1.75} aria-hidden="true" />Sin imagen todavía</span>
-      : <img src={`${baseUrl}/snapshot.jpg?t=${tick}`} alt={`Imagen en vivo de ${name} con las detecciones de la IA`}
+      : <img src={withSessionToken(`${baseUrl}/snapshot.jpg?t=${tick}`)} alt={`Imagen en vivo de ${name} con las detecciones de la IA`}
         onError={() => setFailed(true)} onLoad={() => setFailed(false)} />}
   </div>
 }

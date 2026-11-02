@@ -12,6 +12,16 @@ import type { Session } from '../types/auth'
 
 export const SESSION_STORAGE_KEY = 'smartcattle.session'
 
+/**
+ * A picture from a public AI service needs the session, and an <img> cannot send headers.
+ * Only over https: on a farm's own network that service asks for nothing, and the token would travel in clear.
+ */
+export function withSessionToken(url: string): string {
+  const token = tokenStore.get()
+  if (!token || !url.startsWith('https://')) return url
+  return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+}
+
 function isUsable(value: unknown): value is Session {
   if (!value || typeof value !== 'object') return false
   const { source, accessToken } = value as Partial<Session>

@@ -1,5 +1,6 @@
 import { dataMode } from '../api/config'
 import { getJson } from '../api/httpClient'
+import { withSessionToken } from '../api/session'
 import { parseCamerasResponse } from '../api/validate'
 import { mockCameras } from '../mocks/mockData'
 import { demoFeedCameraId, demoFeedSource } from '../mocks/mockCameraFeed'
@@ -48,5 +49,5 @@ export async function getCameraStream(cameraId: string, options: ServiceOptions 
   if (source === 'mock') return resolveMockOnly(options, (): StreamSource => cameraId === demoFeedCameraId ? demoFeedSource : { kind: 'none' })
   const live = await getLiveSource(cameraId, options)
   if (!live?.status.width || !live.status.height) return { data: { kind: 'none' }, source }
-  return { data: { kind: 'mjpeg', url: `${live.baseUrl}/video.mjpg`, width: live.status.width, height: live.status.height, annotated: true }, source }
+  return { data: { kind: 'mjpeg', url: withSessionToken(`${live.baseUrl}/video.mjpg`), width: live.status.width, height: live.status.height, annotated: true }, source }
 }
