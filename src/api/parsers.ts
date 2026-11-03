@@ -97,6 +97,7 @@ export function parseStreamDetection(value: unknown): ApiStreamDetection {
   return {
     track_id: optional(value.track_id, isCount), label: value.label, confidence: value.confidence,
     bbox: value.bbox as ApiStreamDetection['bbox'], inside_zone: value.inside_zone,
+    ...(value.posture === 'standing' || value.posture === 'walking' || value.posture === 'lying' ? { posture: value.posture } : {}),
   }
 }
 

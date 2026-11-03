@@ -45,6 +45,7 @@ export interface ApiCamera {
   stream_url: string | null // Public base URL of the AI service streaming this camera.
   last_error: string | null
   fps: number | null
+  display_name?: string | null // The name its owner gave it.
 }
 export interface ApiCamerasResponse { items: ApiCamera[]; total: number }
 export type ApiUserRole = 'owner' | 'worker'
@@ -104,6 +105,9 @@ export interface ApiAlertReport { days: ApiAlertDay[]; total: number; avg_minute
 export interface ApiEventDay { day: string; camera_id: string; total: number; low: number; medium: number; high: number }
 export interface ApiEventReport { days: ApiEventDay[]; total: number }
 
+/** What the AI estimates a cow is doing; absent when it cannot tell. */
+export type ApiPosture = 'standing' | 'walking' | 'lying'
+
 /** One box pushed by the backend on /ws/live; `bbox` is [x1, y1, x2, y2] from 0 to 1. */
 export interface ApiStreamDetection {
   track_id: number | null
@@ -111,6 +115,7 @@ export interface ApiStreamDetection {
   confidence: number
   bbox: [x1: number, y1: number, x2: number, y2: number]
   inside_zone: boolean
+  posture?: ApiPosture | null
 }
 export interface ApiOccupancy { camera_id: string; cattle_inside: number; cattle_outside: number; observed_at: string }
 

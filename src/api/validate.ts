@@ -100,7 +100,8 @@ export function parseCamerasResponse(body: unknown): ApiCamerasResponse {
       frame_width: (item.frame_width as number | null | undefined) ?? null, frame_height: (item.frame_height as number | null | undefined) ?? null,
       stream_url: (item.stream_url as string | null | undefined) ?? null,
       last_error: typeof item.last_error === 'string' ? item.last_error : null,
-      fps: typeof item.fps === 'number' && Number.isFinite(item.fps) ? item.fps : null }
+      fps: typeof item.fps === 'number' && Number.isFinite(item.fps) ? item.fps : null,
+      display_name: typeof item.display_name === 'string' ? item.display_name : null }
   })
   return { items, total: body.total }
 }
