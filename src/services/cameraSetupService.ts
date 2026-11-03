@@ -79,7 +79,15 @@ export function cameraProblem(error: unknown): string | null {
   if (!(error instanceof ApiError)) return null
   const detail = error.detail ?? ''
   if (error.status === 422) {
-    if (/password/i.test(detail)) return 'Esta cámara necesita su contraseña. Abre «Usuario, contraseña y ruta de la cámara» y escríbela.'
+    const silent = /No answer from ([^\s:]+):\d+ \(this PC is ([\d.]+)\)/.exec(detail)
+    if (silent) {
+      const [, host, own] = silent
+      const network = (address: string) => address.split('.').slice(0, 3).join('.')
+      return network(host) === network(own)
+        ? `${host} no responde. Comprueba que la cámara esté encendida y en este wifi, y que su IP no haya cambiado: mírala en la app de la cámara o en el router.`
+        : `${host} no está en tu red: este PC está en ${network(own)}.x. Busca la IP real de la cámara en su app o en el router.`
+    }
+    if (/password/i.test(detail)) return 'Esta cámara necesita su contraseña: escríbela en su tarjeta y pulsa Conectar. En Imou es el código de seguridad de la etiqueta.'
     if (/cloud/i.test(detail)) return 'El servicio de IA está en la nube y no llega a esa dirección. Usa la dirección pública de la cámara, o corre el servicio de IA en un PC de la misma red.'
     return 'Revisa la dirección: debe ser una IP, un enlace rtsp:// o http://, o un número de webcam.'
   }
