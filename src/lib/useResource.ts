@@ -22,7 +22,7 @@ const loading = { status: 'loading', data: null, source: null, error: null } as 
 export function useResource<T>(
   load: (signal: AbortSignal) => Promise<Sourced<T>>,
   { refreshMs, key = '' }: UseResourceOptions = {},
-): ResourceState<T> & { reload: () => void } {
+): ResourceState<T> & { reload: () => void; refresh: () => void } {
   const [entry, setEntry] = useState<{ key: string; state: ResourceState<T> }>({ key, state: loading })
   const [attempt, setAttempt] = useState(0)
   const loadRef = useRef(load)
@@ -59,7 +59,10 @@ export function useResource<T>(
     setAttempt(value => value + 1)
   }, [])
 
+  /** Loads again keeping what is on screen, so nothing unmounts and no half-typed form is lost. */
+  const refresh = useCallback(() => setAttempt(value => value + 1), [])
+
   // Data loaded for a previous key is never shown for the new one.
   const state = entry.key === key ? entry.state : loading
-  return { ...state, reload }
+  return { ...state, reload, refresh }
 }
