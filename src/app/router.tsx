@@ -10,8 +10,11 @@ import { ProfilePage } from '../features/profile/ProfilePage'
 import { NotFoundPage } from '../features/not-found/NotFoundPage'
 import { navItems, profileItem } from './navigation'
 import { RequireAuth } from './auth/RequireAuth'
+import { RequireFarm } from './auth/RequireFarm'
+import { SetupFarmPage } from '../features/setup/SetupFarmPage'
 import { RedirectIfAuthenticated } from './auth/RedirectIfAuthenticated'
 import { LoginPage } from '../features/auth/LoginPage'
+import { PhonePairPage } from '../features/cameras/PhonePairPage'
 import { RegisterPage } from '../features/auth/RegisterPage'
 
 const pages = {
@@ -31,6 +34,9 @@ const lazyPages: Record<string, LazyRouteFunction<RouteObject>> = {
 }
 
 export const router = createBrowserRouter([{
+  // Opened on a phone from the QR: no session there, the link's code stands in for one.
+  path: '/conectar-celular', Component: PhonePairPage, handle: { title: 'Agregar cámara' },
+}, {
   Component: RedirectIfAuthenticated,
   children: [
     { path: '/login', Component: LoginPage, handle: { title: 'Ingresar' } },
@@ -38,6 +44,8 @@ export const router = createBrowserRouter([{
   ],
 }, {
   Component: RequireAuth,
+  children: [{ path: '/setup', Component: SetupFarmPage, handle: { title: 'Configurar finca' } }, {
+  Component: RequireFarm,
   children: [{
   Component: AppShell,
   children: [
@@ -55,5 +63,6 @@ export const router = createBrowserRouter([{
     }] : []),
     { path: '*', Component: NotFoundPage, handle: { title: 'Página no encontrada' } },
   ],
+  }],
   }],
 }])
