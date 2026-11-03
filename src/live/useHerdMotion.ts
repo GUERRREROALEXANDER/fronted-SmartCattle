@@ -49,7 +49,7 @@ function createHerdStore(config: MotionConfig) {
     },
     getAgents: () => agents,
     publish() {
-      const next = [...motion.agents.values()].map(agent => `${agent.id}:${agent.outside ? 1 : 0}:${agent.leaving ? 1 : 0}`).join('|')
+      const next = [...motion.agents.values()].map(agent => `${agent.id}:${agent.outside ? 1 : 0}:${agent.leaving ? 1 : 0}:${agent.posture ?? ''}`).join('|')
       if (next === key) return
       key = next
       agents = [...motion.agents.values()]
