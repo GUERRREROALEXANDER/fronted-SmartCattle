@@ -189,7 +189,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       await new Promise(resolve => window.setTimeout(resolve, reduce ? 150 : 450))
       if (mounted.current) void navigate(destination, { replace: true })
     } catch (error) {
-      if (!isRegistration && error instanceof AuthError && error.code === 'rate_limited') {
+      if (isRegistration && error instanceof AuthError && error.code === 'rate_limited') {
+        setNotice({ tone: 'warning', title: 'Demasiadas cuentas nuevas', text: 'Se crearon muchas cuentas desde esta conexión en la última hora. Espera un rato o entra con una que ya tengas.' })
+      } else if (!isRegistration && error instanceof AuthError && error.code === 'rate_limited') {
         const retryAfterMs = Math.max(0, error.retryAfterMs ?? 30_000)
         setCooldownSeconds(Math.ceil(retryAfterMs / 1000))
         setCooldownEnd(deadlineIn(retryAfterMs))
