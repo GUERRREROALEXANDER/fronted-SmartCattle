@@ -76,7 +76,7 @@ describe('herd motion', () => {
   const config = { toSpace: (point: { x: number; y: number }) => ({ x: point.x, z: point.y }), cowSpeed: 10, personSpeed: 10, arriveRadius: 0.5 }
   const entity = (x: number) => ({
     id: 'c#1', kind: 'cow' as const, label: 'cow', cameraId: 'c', lotId: 'l', target: { x, y: 0 }, outside: false,
-    confidence: 0.9, source: 'box' as const, trackId: 1,
+    confidence: 0.9, source: 'box' as const, trackId: 1, posture: null,
   })
 
   it('places the first herd at once, then walks to new targets instead of teleporting', () => {
@@ -106,5 +106,25 @@ describe('herd motion', () => {
     syncHerd(motion, [entity(50)], { instant: true })
     stepHerd(motion, 0.016, { reduceMotion: true })
     expect(motion.agents.get('c#1')!.position.x).toBe(50)
+  })
+})
+
+describe('a cow reported lying', () => {
+  const config = { toSpace: (point: { x: number; y: number }) => ({ x: point.x, z: point.y }), cowSpeed: 10, personSpeed: 10, arriveRadius: 0.5 }
+  const lying = (x: number) => ({
+    id: 'c#2', kind: 'cow' as const, label: 'Vaca #2', cameraId: 'cam', lotId: 'lot', target: { x, y: 0.5 }, outside: false,
+    confidence: 0.9, source: 'box' as const, trackId: 2, posture: 'lying' as const,
+  })
+
+  it('does not walk when its box shifts a little', () => {
+    const motion = createHerdMotion(config)
+    syncHerd(motion, [lying(1)])
+    const agent = motion.agents.get('c#2')!
+    const before = { ...agent.position }
+    syncHerd(motion, [lying(2)])
+    for (let step = 0; step < 30; step++) stepHerd(motion, 0.1)
+    expect(agent.posture).toBe('lying')
+    expect(agent.state).toBe('grazing')
+    expect(agent.position).toEqual(before)
   })
 })
