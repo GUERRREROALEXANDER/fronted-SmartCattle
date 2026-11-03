@@ -50,6 +50,20 @@ export async function savePairedCamera(code: string, name: string, source: strin
   return toSaved(await postJson<unknown>('/api/cameras/paired', { code, name: name.trim(), source: source.trim() }, { ...options, token: null }))
 }
 
+/** Where this account's PC at the farm is reached right now; null while it is off or not linked yet. */
+export async function getFarmPc(options: ServiceOptions = {}): Promise<Sourced<string | null>> {
+  if ((options.mode ?? dataMode) === 'mock') return { source: 'mock', data: null }
+  const body = await getJson<{ url?: unknown }>('/api/farm-pc', options)
+  return { source: 'api', data: typeof body.url === 'string' ? body.url : null }
+}
+
+/** A code short enough to type on the farm's PC, which links it to this account. */
+export async function startFarmPcPairing(options: ServiceOptions = {}): Promise<Pairing> {
+  const body = await postJson<{ code?: unknown; expires_in?: unknown }>('/api/farm-pc/pairing', undefined, options)
+  if (typeof body.code !== 'string') throw new Error('Respuesta de vinculación no válida')
+  return { code: body.code, expiresInSeconds: typeof body.expires_in === 'number' ? body.expires_in : 600 }
+}
+
 /** What the AI service needs to open a saved camera. The login is typed each time: it is never stored. */
 export function connectionFor(source: string, login?: CameraLogin): CameraSource {
   if (!source.startsWith('rtsp://')) return { kind: 'url', url: source }
@@ -89,16 +103,10 @@ export function ipCameraSource(host: string, path = ''): string {
 
 const localNames = new Set(['localhost', '127.0.0.1', '[::1]'])
 
-/** Where this PC is reached on the farm's network, as the AI service sees it; null if it does not know. */
+/** This PC's address on the farm's wifi, as the AI service sees it; null if it does not know. */
 export async function getServiceHost(baseUrl = aiServiceUrl, options: ServiceOptions = {}): Promise<string | null> {
-  const body = await getJson<{ service_url?: unknown }>('/status', { ...options, baseUrl, token: null, timeoutMs: 6000 })
-  if (typeof body.service_url !== 'string') return null
-  try {
-    const { hostname } = new URL(body.service_url)
-    return localNames.has(hostname) ? null : hostname
-  } catch {
-    return null
-  }
+  const body = await getJson<{ lan_host?: unknown }>('/status', { ...options, baseUrl, token: null, timeoutMs: 6000 })
+  return typeof body.lan_host === 'string' && !localNames.has(body.lan_host) ? body.lan_host : null
 }
 
 /**
