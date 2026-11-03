@@ -1,5 +1,5 @@
 import type { FarmPlan, PlanLot, PlanPoint } from '../services/farmLayout'
-import type { FrameDetections, NormalizedBounds, Occupancy, SafeZone } from '../types/domain'
+import type { FrameDetections, NormalizedBounds, Occupancy, Posture, SafeZone } from '../types/domain'
 
 // Turns what each camera sees into positions on the farm plan. A camera watches one lot; the safe zone
 // drawn on its picture is mapped onto that lot's lindero, so a box the AI marks outside the zone lands
@@ -22,6 +22,8 @@ export interface TrackedEntity {
   /** 'box': placed from a real bounding box. 'count': the camera only reported how many. */
   source: 'box' | 'count'
   trackId: number | null
+  /** What the AI estimates it is doing; null when it cannot tell. */
+  posture: Posture | null
 }
 
 /** Picture area treated as the lot when the camera has no safe zone drawn yet. */
@@ -109,7 +111,7 @@ export function trackEntities({ plan, frames, occupancy, zones = {} }: TrackerIn
           id: trackId === null ? `${camera.cameraId}:${detection.label}:${index}` : `${camera.cameraId}#${trackId}`,
           kind: entityKind(detection.label), label: detection.label, cameraId: camera.cameraId, lotId: lot.id,
           target: lotPoint(lot, s, t), outside: detection.insideSafeZone === false || !(s >= 0 && s <= 1 && t >= 0 && t <= 1),
-          confidence: detection.confidence, source: 'box', trackId,
+          confidence: detection.confidence, source: 'box', trackId, posture: detection.posture ?? null,
         })
       })
       continue
@@ -125,7 +127,7 @@ export function trackEntities({ plan, frames, occupancy, zones = {} }: TrackerIn
       const t = outside ? 1 + OUTSIDE_MARGIN + unitHash(id, 2) * 0.1 : 0.12 + unitHash(id, 2) * 0.76
       entities.push({
         id, kind: 'cow', label: 'cow', cameraId: camera.cameraId, lotId: lot.id, target: lotPoint(lot, s, t),
-        outside, confidence: null, source: 'count', trackId: null,
+        outside, confidence: null, source: 'count', trackId: null, posture: null,
       })
     }
   }

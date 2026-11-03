@@ -36,8 +36,10 @@ export type StreamSource =
   | { kind: 'none' }
 // Coordinates range from 0 to 1, with a top-left origin.
 export interface NormalizedBox { x: number; y: number; width: number; height: number }
+/** What the AI estimates a cow is doing. */
+export type Posture = 'standing' | 'walking' | 'lying'
 /** `trackId` is the AI tracker's id, stable across frames of one camera; null when the source has no tracker. */
-export interface Detection { id: string; trackId?: number | null; label: string; confidence: number; box: NormalizedBox; insideSafeZone: boolean | null }
+export interface Detection { id: string; trackId?: number | null; label: string; confidence: number; box: NormalizedBox; insideSafeZone: boolean | null; posture?: Posture | null }
 export interface FrameDetections { cameraId: string; capturedAt: Date; detections: Detection[] }
 export interface SystemStatus {
   // 'not-checked' means mock mode; the backend was never contacted.
