@@ -83,9 +83,9 @@ export function PastureScene({
       if (agent.kind !== 'cow') {
         detections.push({ id: agent.id, agent, height: 2.25, content: <DetectionLabel agent={agent} lotName={lotName(agent)} /> })
       } else if (agent.outside) {
-        alerts.push({ id: agent.id, agent, height: 2.35, content: <CowLabel cowName={agent.name} lotName={lotName(agent)} variant="alert" /> })
+        alerts.push({ id: agent.id, agent, height: 2.35, content: <CowLabel cowName={agent.name} lotName={lotName(agent)} variant="alert" posture={agent.posture} /> })
       } else if (showNames) {
-        names.push({ id: agent.id, agent, height: 2.05, content: <CowLabel cowName={agent.name} lotName={lotName(agent)} variant="name" /> })
+        names.push({ id: agent.id, agent, height: 2.05, content: <CowLabel cowName={agent.name} lotName={lotName(agent)} variant="name" posture={agent.posture} /> })
       }
     }
     return [...alerts, ...detections, ...names]
