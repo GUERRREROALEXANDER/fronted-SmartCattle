@@ -9,7 +9,7 @@ const answer = (detail: string) => {
 
 describe('a camera that does not answer', () => {
   it('says when the address is on another network', () => {
-    expect(cameraProblem(answer('No answer from 192.168.1.30:554 (this PC is 192.168.100.62)'))).toMatch(/no está en tu red.*192\.168\.100\.x/)
+    expect(cameraProblem(answer('No answer from 192.168.1.30:554 (this PC is 192.168.100.62)'))).toMatch(/no está en la red.*192\.168\.100\.x/)
   })
 
   it('says when it is on this network and silent', () => {
