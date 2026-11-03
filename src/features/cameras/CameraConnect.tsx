@@ -7,8 +7,8 @@ import { withSessionToken } from '../../api/session'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
 import {
-  activeService, addCamera, cameraProblem, connectionFor, deleteSavedCamera, getServiceHost, ipCameraSource, listSavedCameras,
-  phoneLink, removeCamera, saveCamera, scanCameras, serviceRoot, startPairing, waitForCamera,
+  activeService, addCamera, addressProblem, cameraProblem, connectionFor, deleteSavedCamera, getServiceHost, ipCameraSource, listSavedCameras,
+  loginProblem, phoneLink, removeCamera, saveCamera, scanCameras, serviceRoot, startPairing, waitForCamera,
   type CameraScan, type FoundCamera, type SavedCamera,
 } from '../../services'
 import type { Camera, CameraStatus } from '../../types/domain'
@@ -93,14 +93,12 @@ function SavedCard({ camera, live, previews, busy, onConnect, onDisconnect, onDe
       <StatusPill {...statusPill[status]} />
     </div>
     {live?.lastError && !connected && <p className={styles.error}>{live.lastError}</p>}
-    {!connected && camera.source.startsWith('rtsp://') && <details className={`${styles.advanced} ${styles.login}`}>
-      <summary>Usuario y contraseña de la cámara</summary>
-      <div className={styles.fields}>
-        <TextField label="Usuario" value={username} onChange={event => setUsername(event.target.value)} autoComplete="off" hint="Vacío: admin." />
-        <TextField label="Contraseña" type="password" value={password} onChange={event => setPassword(event.target.value)}
-          autoComplete="new-password" hint="No se guarda: va directo al PC de la finca." />
-      </div>
-    </details>}
+    {!connected && camera.source.startsWith('rtsp://') && <div className={`${styles.fields} ${styles.login}`}>
+      <TextField label="Usuario de la cámara" name="camera-rtsp-user" value={username} onChange={event => setUsername(event.target.value)} autoComplete="off"
+        placeholder="admin" hint="No es tu correo. Vacío: admin." />
+      <TextField label="Contraseña de la cámara" name="camera-rtsp-secret" type="password" value={password} onChange={event => setPassword(event.target.value)}
+        autoComplete="new-password" hint="En Imou, el código de la etiqueta. No se guarda." />
+    </div>}
     <div className={styles.cardActions}>
       {connected
         ? <Button variant="secondary" size="sm" icon={Unplug} loading={busy} onClick={onDisconnect}>Desconectar</Button>
@@ -218,10 +216,16 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    const address = kind === 'ip' ? ipCameraSource(host, path) : url
+    const wrong = addressProblem(address)
+    if (wrong) {
+      setResult({ tone: 'critical', text: wrong })
+      return
+    }
     setSaving(true)
     setResult(null)
     try {
-      await saveCamera(name, kind === 'ip' ? ipCameraSource(host, path) : url)
+      await saveCamera(name, address)
       setName('')
       setHost('')
       setPath('')
@@ -238,6 +242,11 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   }
 
   const connect = async (camera: SavedCamera, username: string, password: string) => {
+    const wrong = loginProblem(username)
+    if (wrong) {
+      setResult({ tone: 'critical', text: wrong })
+      return
+    }
     setBusyId(camera.id)
     setResult(null)
     try {
@@ -369,9 +378,10 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
             placeholder="Potrero norte" autoComplete="off" />
           {kind === 'ip'
             ? <TextField label="Dirección IP" value={host} onChange={event => setHost(event.target.value)} required
-              placeholder="192.168.1.30" inputMode="decimal" autoComplete="off" />
+              placeholder="La que muestra la app de la cámara" inputMode="decimal" autoComplete="off"
+              hint="Si no la ves en la app, búscala en la lista de equipos del router." />
             : <TextField label="Dirección o número de webcam" value={url} onChange={event => setUrl(event.target.value)} required
-              placeholder="192.168.1.20:8080  ·  rtsp://…  ·  1" autoComplete="off"
+              placeholder="La que muestra la app, o 0 o 1" autoComplete="off"
               hint="IP Webcam: la dirección que muestra la app. Webcam o iVCam: su número (0 o 1)." />}
           {kind === 'ip' && <details className={styles.advanced}>
             <summary>Ruta de la cámara (solo si no es Imou ni Dahua)</summary>
