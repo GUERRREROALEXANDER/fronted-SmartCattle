@@ -1,14 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Cctv, Keyboard, Plug, QrCode as QrIcon, Radar, Smartphone, Trash2, Unplug, Usb, Wifi } from 'lucide-react'
+import { Cctv, Keyboard, Laptop, Plug, QrCode as QrIcon, Radar, Smartphone, Trash2, Unplug, Usb, Wifi } from 'lucide-react'
+import { aiServiceUrl } from '../../api/config'
 import { describeApiError } from '../../api/errors'
 import { skipCameraSetup } from '../../app/auth/cameraSetupSkip'
 import { withSessionToken } from '../../api/session'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
 import {
-  activeService, addCamera, addressProblem, cameraProblem, connectionFor, deleteSavedCamera, getServiceHost, ipCameraSource, listSavedCameras,
-  loginProblem, phoneLink, removeCamera, saveCamera, scanCameras, serviceRoot, startPairing, waitForCamera,
+  activeService, addCamera, addressProblem, cameraProblem, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, ipCameraSource, listSavedCameras,
+  loginProblem, phoneLink, removeCamera, saveCamera, scanCameras, serviceRoot, startFarmPcPairing, startPairing, waitForCamera,
   type CameraScan, type FoundCamera, type SavedCamera,
 } from '../../services'
 import type { Camera, CameraStatus } from '../../types/domain'
@@ -47,7 +48,7 @@ function LivePreview({ baseUrl, name }: { baseUrl: string; name: string }) {
 function Instructions() {
   return <div className={styles.help}>
     <ol className={styles.steps}>
-      <li><strong>Enciende la cámara</strong> y déjala en el mismo wifi que este PC.</li>
+      <li><strong>Enciende la cámara</strong> y déjala en el mismo wifi que el PC de la finca.</li>
       <li><strong>Agrégala</strong>: búscala en la red, escanea el QR con el celular o escribe su dirección.</li>
       <li><strong>Pulsa Conectar</strong>. Hasta entonces no se abre el video ni trabaja la IA.</li>
     </ol>
@@ -71,8 +72,46 @@ function Instructions() {
   </div>
 }
 
+const DOWNLOAD = 'https://github.com/GUERRREROALEXANDER/modelo-de-IA-yolo-ultralytics-SmartCattel/archive/refs/heads/main.zip'
+
+/** Shown while no PC answers for this account: without one at the farm, nothing can open its cameras. */
+function FarmPcPanel() {
+  const [code, setCode] = useState('')
+  const [problem, setProblem] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  const show = async () => {
+    setLoading(true)
+    setProblem('')
+    try {
+      setCode((await startFarmPcPairing()).code)
+    } catch (error) {
+      setProblem(describeApiError(error).description)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return <GlassCard as="section" padding="lg" aria-labelledby="farm-pc-title" className={styles.connect}>
+    <h2 id="farm-pc-title" className={styles.title}>Enciende el PC de la finca</h2>
+    <p className={styles.note}>
+      Las cámaras solo se pueden abrir desde dentro de la red de la finca, así que allí debe haber un PC encendido con internet. Después podrás ver todo desde cualquier sitio. Si ya lo enlazaste, solo enciéndelo: esta página lo detectará sola.
+    </p>
+    <ol className={styles.steps}>
+      <li>En ese PC, <a href={DOWNLOAD}>descarga el programa</a> y descomprímelo.</li>
+      <li>Abre <strong>Iniciar SmartCattle</strong>. La primera vez tarda varios minutos.</li>
+      <li>Cuando te lo pida, escribe este código. Sirve una vez y dura 10 minutos.</li>
+    </ol>
+    {code
+      ? <p className={styles.pairCode} aria-label={`Código: ${code}`}>{code}</p>
+      : <Button variant="secondary" icon={Laptop} loading={loading} onClick={show} className={styles.action}>Mostrar código</Button>}
+    {problem && <p className={styles.error} role="alert">{problem}</p>}
+  </GlassCard>
+}
+
 /** One saved camera: its state, and the buttons that open and close it. */
-function SavedCard({ camera, live, previews, busy, onConnect, onDisconnect, onDelete }: {
+function SavedCard({ camera, live, previews, busy, canConnect, onConnect, onDisconnect, onDelete }: {
+  canConnect: boolean
   camera: SavedCamera
   live: Camera | undefined
   previews: boolean
@@ -102,7 +141,7 @@ function SavedCard({ camera, live, previews, busy, onConnect, onDisconnect, onDe
     <div className={styles.cardActions}>
       {connected
         ? <Button variant="secondary" size="sm" icon={Unplug} loading={busy} onClick={onDisconnect}>Desconectar</Button>
-        : <Button size="sm" icon={Plug} loading={busy} onClick={() => { onConnect(username, password); setPassword('') }}>Conectar</Button>}
+        : <Button size="sm" icon={Plug} loading={busy} disabled={!canConnect} onClick={() => { onConnect(username, password); setPassword('') }}>Conectar</Button>}
       <Button variant="ghost" size="sm" icon={Trash2} disabled={busy} onClick={onDelete} aria-label={`Quitar ${name}`}>Quitar</Button>
     </div>
   </GlassCard>
@@ -154,7 +193,9 @@ type Kind = 'ip' | 'url'
  */
 export function CameraConnect({ cameras, onChanged, previews = true }: { cameras: readonly Camera[]; onChanged?: () => void; previews?: boolean }) {
   const reduce = useReducedMotion()
-  const serviceBase = activeService(cameras)
+  const farmPc = useResource(signal => getFarmPc({ signal }), { refreshMs: 10_000 })
+  // This account's PC, once it answers; a service set up for this page otherwise, as when everything runs on one PC.
+  const serviceBase = activeService(cameras, farmPc.data || aiServiceUrl)
   const [waitingForPhone, setWaitingForPhone] = useState(false)
   const saved = useResource(signal => listSavedCameras({ signal }))
   const [way, setWay] = useState<Way>('scan')
@@ -312,7 +353,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   return <div className={styles.wrap}>
     <Instructions />
 
-    {!serviceBase && <p className={styles.error}>El servicio de IA no está corriendo en este PC, así que no se puede buscar ni conectar cámaras.</p>}
+    {!serviceBase && farmPc.status !== 'loading' && <FarmPcPanel />}
     {result && <p className={result.tone === 'safe' ? styles.ok : styles.error} role="status">{result.text}</p>}
 
     <section aria-labelledby="camera-list-title">
@@ -321,7 +362,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       {saved.data && list.length === 0 && <p className={styles.note}>Todavía no tienes cámaras. Agrega la primera aquí abajo.</p>}
       {list.length > 0 && <ul className={styles.grid}>
         {list.map(camera => <SavedCard key={camera.id} camera={camera} live={liveOf(camera.id)} previews={previews}
-          busy={busyId === camera.id} onConnect={(username, password) => void connect(camera, username, password)}
+          busy={busyId === camera.id} canConnect={Boolean(serviceBase)} onConnect={(username, password) => void connect(camera, username, password)}
           onDisconnect={() => void disconnect(camera)} onDelete={() => void forget(camera)} />)}
       </ul>}
     </section>
@@ -335,7 +376,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       </div>
 
       {way === 'scan' && <div className={styles.found}>
-        <p className={styles.note}>Busca cámaras y celulares encendidos en el wifi de este PC. Tarda unos segundos.</p>
+        <p className={styles.note}>Busca cámaras y celulares encendidos en el wifi del PC de la finca. Tarda unos segundos.</p>
         <Button variant="secondary" icon={Radar} loading={scanning} onClick={runScan} disabled={!serviceBase} className={styles.action}>Buscar cámaras</Button>
         {scanError && <p className={styles.error} role="alert">{scanError}</p>}
         <AnimatePresence initial={false}>
