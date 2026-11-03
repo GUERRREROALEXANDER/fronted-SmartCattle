@@ -2,6 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataMode } from '../../api/config'
 import { can as roleCan } from '../../lib/permissions'
 import { tokenStore } from '../../api/session'
+import { claimAccountData, forgetAccountData } from '../../lib/accountStorage'
+import { resetCameraSetup } from './cameraSetupSkip'
 import { authService } from '../../services/auth/authService'
 import { AuthError, type Session } from '../../types/auth'
 import { AuthContext, type AuthContextValue } from './useAuth'
@@ -62,6 +64,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const nextSession = await operation()
       if (current === revision.current) {
+        claimAccountData(String(nextSession.user.id))
+        resetCameraSetup()
         setSession(nextSession)
         setStatus('authenticated')
       }
@@ -89,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const current = ++revision.current
       try { await authService.logout() }
       finally {
+        forgetAccountData()
         if (current === revision.current) {
           setSession(null)
           setStatus('anonymous')
