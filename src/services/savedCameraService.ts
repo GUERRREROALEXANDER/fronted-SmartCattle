@@ -52,13 +52,33 @@ export async function savePairedCamera(code: string, name: string, source: strin
 
 /** What the AI service needs to open a saved camera. The login is typed each time: it is never stored. */
 export function connectionFor(source: string, login?: CameraLogin): CameraSource {
-  if (!login?.password || !source.startsWith('rtsp://')) return { kind: 'url', url: source }
+  if (!source.startsWith('rtsp://')) return { kind: 'url', url: source }
   const url = new URL(source.replace(/^rtsp:/, 'http:'))
+  const route = url.pathname !== '/' || url.search
+  // A full link can work as it is. A bare IP cannot: it needs a login, and the service adds the usual route.
+  if (!login?.password && route) return { kind: 'url', url: source }
   return {
-    kind: 'ip', host: url.hostname, username: login.username, password: login.password,
+    kind: 'ip', host: url.hostname, username: login?.username ?? '', password: login?.password ?? '',
     ...(url.port ? { port: Number(url.port) } : {}),
-    ...(url.pathname !== '/' || url.search ? { path: `${url.pathname}${url.search}` } : {}),
+    ...(route ? { path: `${url.pathname}${url.search}` } : {}),
   }
+}
+
+// The ports of SmartCattle itself, which people copy from the browser's address bar.
+const OWN_PORTS = /:(5173|4173|8000|8090)(\/|$)/
+
+/** What is wrong with an address before saving it, in the words of the person typing it; null if it may be a camera. */
+export function addressProblem(source: string): string | null {
+  return OWN_PORTS.test(source.trim())
+    ? 'Esa es la dirección de este panel, no la de una cámara. Escribe la IP que muestra la app de la cámara o del celular.'
+    : null
+}
+
+/** Browsers fill this field with the email of the app's own login; a camera's user is something like "admin". */
+export function loginProblem(username: string): string | null {
+  return username.includes('@')
+    ? 'En «Usuario» va el usuario de la cámara, no tu correo. Casi siempre es admin: déjalo vacío o escríbelo.'
+    : null
 }
 
 /** The address to save for an IP camera: its link, without the password. */
