@@ -171,7 +171,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState('')
   const [result, setResult] = useState<{ tone: 'safe' | 'critical'; text: string } | null>(null)
-  const reloadSaved = saved.reload
+  const reloadSaved = saved.refresh
   const refreshList = () => REFRESH_AFTER_MS.forEach(delay => setTimeout(() => { onChanged?.(); reloadSaved() }, delay))
   const list = saved.data ?? []
   const liveOf = (id: string) => cameras.find(camera => camera.id === id)
