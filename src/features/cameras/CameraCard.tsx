@@ -1,5 +1,6 @@
 import { ChevronRight, Film, TriangleAlert, VideoOff, WifiOff } from 'lucide-react'
 import { useReducedMotion } from 'motion/react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { formatRelative } from '../../lib/format'
 import type { Camera, FrameDetections, Severity, StreamSource } from '../../types/domain'
@@ -20,9 +21,19 @@ const statusLabel: Record<Camera['status'], string> = {
   online: 'En línea', connecting: 'Conectando', offline: 'Sin conexión', error: 'Con error',
 }
 
+const PICTURE_RETRY_MS = 10_000
+
 /** A camera is a real object, so it gets a card: picture, identity, state and one action. */
 export function CameraCard({ camera, stream, frame, alert, now }: CameraCardProps) {
-  const picture = stream && (stream.kind === 'image' || stream.kind === 'mjpeg') && camera.status === 'online' ? stream : null
+  const [failedUrl, setFailedUrl] = useState<string | null>(null)
+  const available = stream && (stream.kind === 'image' || stream.kind === 'mjpeg') && camera.status === 'online' ? stream : null
+  const picture = available?.url === failedUrl ? null : available
+  // The tunnel to a farm can drop for a moment: try again rather than staying blank until someone reloads.
+  useEffect(() => {
+    if (!failedUrl) return
+    const retry = setTimeout(() => setFailedUrl(null), PICTURE_RETRY_MS)
+    return () => clearTimeout(retry)
+  }, [failedUrl])
   const summary = frame ? summarizeDetections(frame.detections) : null
   const unreachable = camera.status === 'offline' || camera.status === 'error'
   const video = videoForCamera(useVideoLibraryContext().videos, camera.id)
@@ -35,7 +46,7 @@ export function CameraCard({ camera, stream, frame, alert, now }: CameraCardProp
         ? <video key={video.id} src={video.url} poster={video.thumbnail ?? undefined} muted loop playsInline
           autoPlay={!reduce} controls={!!reduce} preload={reduce ? 'metadata' : 'auto'} aria-label={`Video cargado: ${video.fileName}`} />
         : picture
-        ? <img src={picture.url} alt="" loading="lazy" decoding="async" />
+        ? <img src={picture.url} alt="" loading="lazy" decoding="async" onError={() => setFailedUrl(picture.url)} />
         : <div className={styles.placeholder}>
           {unreachable ? <WifiOff size={22} strokeWidth={1.5} aria-hidden="true" /> : <VideoOff size={22} strokeWidth={1.5} aria-hidden="true" />}
           <span>{unreachable ? 'Sin señal' : 'Sin transmisión'}</span>
