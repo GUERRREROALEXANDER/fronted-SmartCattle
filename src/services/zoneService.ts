@@ -58,7 +58,8 @@ export async function listSafeZones(
   const response = parseZonesResponse(await getJson<unknown>(`/api/zones${query}`, {
     ...options, headers: requestHeaders(options),
   }))
-  return { data: response.items.map(toSafeZone), source }
+  // The backend also lists switched-off zones; nothing on screen should act on those.
+  return { data: response.items.filter(zone => zone.active).map(toSafeZone), source }
 }
 
 /**

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataMode } from '../../api/config'
 import { can as roleCan } from '../../lib/permissions'
+import { tokenStore } from '../../api/session'
+import { claimAccountData, forgetAccountData } from '../../lib/accountStorage'
+import { resetCameraSetup } from './cameraSetupSkip'
 import { authService } from '../../services/auth/authService'
 import { AuthError, type Session } from '../../types/auth'
 import { AuthContext, type AuthContextValue } from './useAuth'
@@ -49,12 +52,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timer = setTimeout(endSession, Math.max(0, Math.min(remaining, 2_147_483_647)))
     return () => clearTimeout(timer)
   }, [expiresAt])
+  // A token the backend rejects (expired, revoked, account deactivated) signs the person out at once.
+  useEffect(() => tokenStore.onRejected(() => {
+    revision.current += 1
+    setSession(null)
+    setStatus('anonymous')
+  }), [])
 
   async function authenticate(operation: () => Promise<Session>) {
     const current = ++revision.current
     try {
       const nextSession = await operation()
       if (current === revision.current) {
+        claimAccountData(String(nextSession.user.id))
+        resetCameraSetup()
         setSession(nextSession)
         setStatus('authenticated')
       }
@@ -82,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const current = ++revision.current
       try { await authService.logout() }
       finally {
+        forgetAccountData()
         if (current === revision.current) {
           setSession(null)
           setStatus('anonymous')

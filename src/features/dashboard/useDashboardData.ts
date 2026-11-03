@@ -1,23 +1,18 @@
 import {
-  getCurrentFarm, getDetectedCattleCount, getFarmPlan, getRegisteredCattleCount, getSecurityHours,
-  getSystemStatus, listCameras, listEvents, loadCameraSnapshots,
+  getCurrentFarm, getRegisteredCattleCount, getSecurityHours, getSystemStatus, loadCameraSnapshots,
 } from '../../services'
 import { useResource } from '../../lib/useResource'
 
-const liveRefreshMs = 15_000
+// Cameras, alerts, events and metrics come from the live channel; these are the slower facts around them.
+const refreshMs = 15_000
 
-export function useDashboardData() {
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: liveRefreshMs })
-  const ids = (cameras.data ?? []).map(camera => camera.id)
+export function useDashboardData(cameraIds: readonly string[]) {
+  const ids = cameraIds.join(',')
   return {
-    cameras,
-    snapshots: useResource(signal => loadCameraSnapshots(ids, signal), { key: ids.join(','), refreshMs: liveRefreshMs }),
+    snapshots: useResource(signal => loadCameraSnapshots([...cameraIds], signal), { key: ids, refreshMs }),
     farm: useResource(signal => getCurrentFarm({ signal })),
-    status: useResource(signal => getSystemStatus({ signal }), { refreshMs: liveRefreshMs }),
-    events: useResource(signal => listEvents({ signal }), { refreshMs: liveRefreshMs }),
+    status: useResource(signal => getSystemStatus({ signal }), { refreshMs }),
     registered: useResource(signal => getRegisteredCattleCount({ signal })),
-    detected: useResource(signal => getDetectedCattleCount({ signal }), { refreshMs: liveRefreshMs }),
-    plan: useResource(signal => getFarmPlan({ signal })),
     securityHours: useResource(signal => getSecurityHours({ signal })),
   }
 }

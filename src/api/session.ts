@@ -12,6 +12,16 @@ import type { Session } from '../types/auth'
 
 export const SESSION_STORAGE_KEY = 'smartcattle.session'
 
+/**
+ * A picture from a public AI service needs the session, and an <img> cannot send headers.
+ * Only over https: on a farm's own network that service asks for nothing, and the token would travel in clear.
+ */
+export function withSessionToken(url: string): string {
+  const token = tokenStore.get()
+  if (!token || !url.startsWith('https://')) return url
+  return `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(token)}`
+}
+
 function isUsable(value: unknown): value is Session {
   if (!value || typeof value !== 'object') return false
   const { source, accessToken } = value as Partial<Session>
@@ -41,3 +51,43 @@ export function authHeaders(storage: SafeStorage = safeStorage): Record<string, 
   const token = readAccessToken(storage)
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
+
+export interface TokenStore {
+  /** The current token, or null when there is none or it has expired. */
+  get(): string | null
+  clear(): void
+  /** Called when the backend rejects the token (HTTP 401 or WebSocket 4401). */
+  onRejected(listener: () => void): () => void
+  reject(): void
+}
+
+/**
+ * The token as the request layer and the live socket need it: the same stored
+ * session, so there is no second copy to drift, plus the announcement that lets
+ * one rejected request sign the person out everywhere at once.
+ */
+export function createTokenStore(storage: SafeStorage = safeStorage, now: () => number = Date.now): TokenStore {
+  const listeners = new Set<() => void>()
+  return {
+    get() {
+      const stored = storage.getJson<unknown>(SESSION_STORAGE_KEY)
+      if (!isUsable(stored)) return null
+      if (stored.expiresAt && Date.parse(stored.expiresAt) <= now()) {
+        storage.remove(SESSION_STORAGE_KEY)
+        return null
+      }
+      return stored.accessToken!
+    },
+    clear() { storage.remove(SESSION_STORAGE_KEY) },
+    onRejected(listener) {
+      listeners.add(listener)
+      return () => { listeners.delete(listener) }
+    },
+    reject() {
+      storage.remove(SESSION_STORAGE_KEY)
+      for (const listener of [...listeners]) listener()
+    },
+  }
+}
+
+export const tokenStore = createTokenStore()

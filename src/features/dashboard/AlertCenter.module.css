@@ -1,0 +1,119 @@
+section.card {
+  display: grid;
+  min-width: 0;
+  align-content: start;
+  gap: var(--space-3);
+  padding: var(--space-5);
+}
+/* An open critical alert tints the whole card so it reads from across the room. */
+section.hot {
+  border-color: color-mix(in srgb, var(--color-alarm) 40%, var(--glass-border));
+  background:
+    radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--color-alarm-surface) 70%, transparent), transparent 65%),
+    var(--glass-fill);
+}
+
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.title { font-size: var(--text-md); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); }
+.summary { color: var(--color-ink-subtle); font-size: var(--text-xs); }
+.hot .summary { color: var(--color-alarm-ink); font-weight: var(--weight-semibold); }
+.all {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--color-brand-strong);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-decoration: none;
+}
+.all:focus-visible, .watch:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+.calm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-safe-surface);
+  color: var(--color-safe-ink);
+  font-size: var(--text-sm);
+}
+
+.list { display: grid; gap: var(--space-2); padding: 0; list-style: none; }
+
+.item {
+  --tone: var(--color-info);
+  --tone-ink: var(--color-info-ink);
+  --tone-surface: var(--color-info-surface);
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  background: var(--glass-fill-subtle);
+}
+.critical { --tone: var(--color-alarm); --tone-ink: var(--color-alarm-ink); --tone-surface: var(--color-alarm-surface); }
+.warning { --tone: var(--color-warning); --tone-ink: var(--color-warning-ink); --tone-surface: var(--color-warning-surface); }
+/* Open critical alerts: a solid edge plus a tinted surface; color is never the only cue (icon + label too). */
+.item.critical:not(.handled) {
+  border-color: color-mix(in srgb, var(--color-alarm) 45%, transparent);
+  background: linear-gradient(90deg, var(--color-alarm-surface), color-mix(in srgb, var(--color-alarm-surface) 30%, var(--glass-fill-subtle)));
+  box-shadow: inset 4px 0 0 var(--color-alarm);
+}
+.handled { opacity: 0.78; }
+
+.iconRing { border-radius: var(--radius-sm); }
+.icon {
+  display: grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--tone-surface);
+  color: var(--tone-ink);
+}
+.body { display: grid; min-width: 0; gap: 2px; }
+.what { color: var(--color-ink); font-size: var(--text-sm); font-weight: var(--weight-semibold); line-height: var(--leading-snug); }
+.level {
+  display: inline-block;
+  margin-right: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--tone-surface);
+  color: var(--tone-ink);
+  font-size: 0.6875rem;
+  font-weight: var(--weight-bold, 700);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+.meta { color: var(--color-ink-subtle); font-size: var(--text-xs); }
+.ack { color: var(--color-safe-ink); font-weight: var(--weight-semibold); }
+.error { color: var(--color-alarm-ink); font-size: var(--text-xs); }
+
+.actions { display: flex; grid-column: 1 / -1; align-items: center; justify-content: flex-end; gap: var(--space-2); }
+.watch {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-fill);
+  color: var(--color-ink-muted);
+  transition: color var(--duration-fast) var(--ease-out), background-color var(--duration-fast) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .watch:hover { background: var(--color-hover); color: var(--color-brand-strong); }
+}
+
+.more { color: var(--color-ink-subtle); font-size: var(--text-xs); }
+.more a { color: var(--color-brand-strong); font-weight: var(--weight-semibold); }
+
+@media (max-width: 599px) {
+  section.card { padding: var(--space-4); }
+}

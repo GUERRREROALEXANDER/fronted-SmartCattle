@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
+import { requestJson } from '../../api/httpClient'
+import { tokenStore } from '../../api/session'
 import { createApiAuthService } from './apiAuthService'
 import { NOW, apiUser, memoryStorage, scriptedFetch, tokenResponse } from './testDoubles'
 
@@ -193,5 +195,40 @@ describe('restoring a session', () => {
     const { auth } = restoring(fetchImpl, session)
     expect(await auth.getSession()).toBeNull()
     expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('keeps how long the backend asks to wait after too many attempts', async () => {
+    const limited = new Response(JSON.stringify({ detail: 'slow down' }), { status: 429, headers: { 'Retry-After': '30' } })
+    const { service: auth } = service(scriptedFetch(limited))
+    await expect(auth.login(credentials)).rejects.toMatchObject({ code: 'rate_limited', retryAfterMs: 30_000 })
+  })
+
+  it('does not read a wrong password as a rejected session', async () => {
+    const rejected = vi.fn()
+    const stop = tokenStore.onRejected(rejected)
+    try {
+      const { service: auth } = service(scriptedFetch(Response.json({ detail: 'wrong' }, { status: 401 })))
+      await expect(auth.login(credentials)).rejects.toMatchObject({ code: 'invalid_credentials' })
+      expect(rejected).not.toHaveBeenCalled()
+    } finally { stop() }
+  })
+})
+
+describe('authorized requests', () => {
+  it('signs everyone out when the backend rejects the shared token', async () => {
+    const rejected = vi.fn()
+    const stop = tokenStore.onRejected(rejected)
+    try {
+      const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ detail: 'expired' }, { status: 401 }))
+      await expect(requestJson('/api/alerts', { fetchImpl, token: 'old' })).rejects.toMatchObject({ status: 401 })
+      expect(rejected).toHaveBeenCalledOnce()
+    } finally { stop() }
+  })
+  it('sends query parameters and JSON bodies', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 }))
+    await requestJson('/api/x', { fetchImpl, token: null, method: 'PATCH', body: { a: 1 }, query: { b: 'c', skip: undefined } })
+    const [url, init] = fetchImpl.mock.calls[0]
+    expect(String(url)).toMatch(/\/api\/x\?b=c$/)
+    expect(init).toMatchObject({ method: 'PATCH', body: '{"a":1}', headers: { 'Content-Type': 'application/json' } })
   })
 })

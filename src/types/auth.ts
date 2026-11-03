@@ -37,6 +37,7 @@ export interface RegisterInput { username?: string; name?: string; email: string
 export type AuthErrorCode =
   | 'invalid_credentials'
   | 'email_taken'
+  | 'registration_closed'
   | 'username_taken'
   | 'rate_limited'
   | 'unavailable'
@@ -48,6 +49,7 @@ export type AuthErrorCode =
 const messages: Record<AuthErrorCode, string> = {
   invalid_credentials: 'El usuario o la contraseña no son correctos.',
   email_taken: 'Este correo ya está registrado.',
+  registration_closed: 'El registro está cerrado. Pídele una cuenta al dueño de la finca.',
   username_taken: 'Este usuario ya está registrado.',
   rate_limited: 'Demasiados intentos. Espera antes de volver a intentarlo.',
   unavailable: 'La autenticación no está disponible en el servidor.',

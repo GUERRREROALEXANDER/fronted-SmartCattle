@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { memoryStorage } from '../services/auth/testDoubles'
-import { SESSION_STORAGE_KEY, authHeaders, readAccessToken } from './session'
+import { SESSION_STORAGE_KEY, authHeaders, createTokenStore, readAccessToken } from './session'
 
 const apiSession = {
   user: { id: '7', name: 'Ana', email: 'ana@finca.example', role: 'owner' },
@@ -43,5 +43,34 @@ describe('authHeaders', () => {
   it('is empty for a demo session', () => {
     const storage = memoryStorage({ [SESSION_STORAGE_KEY]: { ...apiSession, source: 'mock' } })
     expect(authHeaders(storage)).toEqual({})
+  })
+})
+
+describe('tokenStore', () => {
+  const session = { source: 'api', accessToken: 'a-signed-token', expiresAt: '2026-10-29T13:00:00Z' }
+  const at = (iso: string) => () => Date.parse(iso)
+
+  it('reads the token out of the stored session', () => {
+    const storage = memoryStorage({ [SESSION_STORAGE_KEY]: session })
+    expect(createTokenStore(storage, at('2026-10-29T12:00:00Z')).get()).toBe('a-signed-token')
+  })
+
+  it('forgets an expired session without asking anyone', () => {
+    const storage = memoryStorage({ [SESSION_STORAGE_KEY]: session })
+    expect(createTokenStore(storage, at('2026-10-29T13:00:00Z')).get()).toBeNull()
+    expect(storage.getJson(SESSION_STORAGE_KEY)).toBeNull()
+  })
+
+  it('tells every listener when the token is rejected, and drops the session', () => {
+    const storage = memoryStorage({ [SESSION_STORAGE_KEY]: session })
+    const tokens = createTokenStore(storage, at('2026-10-29T12:00:00Z'))
+    const heard = vi.fn()
+    const stop = tokens.onRejected(heard)
+    tokens.reject()
+    expect(heard).toHaveBeenCalledOnce()
+    expect(tokens.get()).toBeNull()
+    stop()
+    tokens.reject()
+    expect(heard).toHaveBeenCalledOnce()
   })
 })

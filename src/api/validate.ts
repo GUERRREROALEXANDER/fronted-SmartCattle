@@ -1,10 +1,7 @@
 import { eventCatalog } from '../lib/eventCatalog'
 import type { ApiAnimal, ApiAnimalsResponse, ApiZone, ApiZonePoint, ApiZonesResponse, ApiCamera, ApiCamerasResponse, ApiEvent, ApiEventsResponse, ApiLiveDetection, ApiLiveStatus, ApiStatus } from '../types/api'
 import { ApiError } from './errors'
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
+import { isObject } from './parsers'
 
 function invalid(message: string): never { throw new ApiError('parse', message) }
 
@@ -101,7 +98,10 @@ export function parseCamerasResponse(body: unknown): ApiCamerasResponse {
       (item.stream_url != null && (typeof item.stream_url !== 'string' || !/^https?:\/\//.test(item.stream_url)))) return invalid('Invalid camera item')
     return { id: item.id, status: item.status as ApiCamera['status'], last_online_at: (item.last_online_at as string | null | undefined) ?? null,
       frame_width: (item.frame_width as number | null | undefined) ?? null, frame_height: (item.frame_height as number | null | undefined) ?? null,
-      stream_url: (item.stream_url as string | null | undefined) ?? null }
+      stream_url: (item.stream_url as string | null | undefined) ?? null,
+      last_error: typeof item.last_error === 'string' ? item.last_error : null,
+      fps: typeof item.fps === 'number' && Number.isFinite(item.fps) ? item.fps : null,
+      display_name: typeof item.display_name === 'string' ? item.display_name : null }
   })
   return { items, total: body.total }
 }

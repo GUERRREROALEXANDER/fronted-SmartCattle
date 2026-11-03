@@ -100,7 +100,8 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const strengthId = `${formId}-password-strength`
   const strength = getPasswordStrength(values.password)
   const errors: Record<Field, string | null> = {
-    identifier: serverErrors.identifier ?? validateIdentifier(values.identifier),
+    // Backend accounts sign in with their email; only the demo accounts also accept a username.
+    identifier: serverErrors.identifier ?? (isDemoMode ? validateIdentifier(values.identifier) : validateEmail(values.identifier)),
     username: serverErrors.username ?? validateUsername(values.username),
     email: serverErrors.email ?? validateEmail(values.email),
     password: serverErrors.password ?? (isRegistration ? validateNewPassword(values.password) : validatePassword(values.password)),
@@ -188,7 +189,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       await new Promise(resolve => window.setTimeout(resolve, reduce ? 150 : 450))
       if (mounted.current) void navigate(destination, { replace: true })
     } catch (error) {
-      if (!isRegistration && error instanceof AuthError && error.code === 'rate_limited') {
+      if (isRegistration && error instanceof AuthError && error.code === 'rate_limited') {
+        setNotice({ tone: 'warning', title: 'Demasiadas cuentas nuevas', text: 'Se crearon muchas cuentas desde esta conexión en la última hora. Espera un rato o entra con una que ya tengas.' })
+      } else if (!isRegistration && error instanceof AuthError && error.code === 'rate_limited') {
         const retryAfterMs = Math.max(0, error.retryAfterMs ?? 30_000)
         setCooldownSeconds(Math.ceil(retryAfterMs / 1000))
         setCooldownEnd(deadlineIn(retryAfterMs))
@@ -264,8 +267,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             <TextField label="Correo electrónico" type="email" autoComplete="email" inputMode="email"
               autoCapitalize="none" spellCheck={false} leadingIcon={Mail} {...fieldProps('email')} />
           </motion.div> : <motion.div key="login-identifier" className={styles.animatedField} {...entrance}>
-            <TextField label="Usuario o correo" autoComplete="username" autoCapitalize="none" spellCheck={false}
-              leadingIcon={UserRound} {...fieldProps('identifier')} />
+            {isDemoMode
+              ? <TextField label="Usuario o correo" autoComplete="username" autoCapitalize="none" spellCheck={false}
+                leadingIcon={UserRound} {...fieldProps('identifier')} />
+              : <TextField label="Correo electrónico" type="email" autoComplete="username" inputMode="email"
+                autoCapitalize="none" spellCheck={false} leadingIcon={Mail} {...fieldProps('identifier')} />}
           </motion.div>}
         </AnimatePresence>
       </motion.div>

@@ -26,6 +26,9 @@ describe('mapping backend failures', () => {
   })
 
   it('reports a 429 as too many attempts', async () => {
+    const closed = failing(Response.json({ detail: 'Registration is closed' }, { status: 403 }))
+    await expect(closed.register({ email: 'ana@finca.example', password: 'una-clave-larga' }))
+      .rejects.toMatchObject({ code: 'registration_closed' })
     const auth = failing(Response.json({ detail: 'Too many failed attempts' }, { status: 429 }))
     await expect(auth.login(credentials)).rejects.toMatchObject({ code: 'rate_limited' })
   })

@@ -9,7 +9,8 @@ import { eventCatalog } from '../../lib/eventCatalog'
 import { useMediaQuery } from '../../lib/useMediaQuery'
 import { useResource } from '../../lib/useResource'
 import { duration, ease, FadeUp, staggerDelay } from '../../motion'
-import { getSecurityHours, listCameras, listEvents } from '../../services'
+import { getSecurityHours, listEvents } from '../../services'
+import { useLiveCameras } from '../../live/useLiveCameras'
 import type { FarmEvent } from '../../types/domain'
 import { cameraName } from '../dashboard/dashboardModel'
 import { EventDetail } from './EventDetail'
@@ -47,7 +48,7 @@ export function EventsPage() {
   }, [])
 
   const events = useResource(signal => listEvents({ signal }), { refreshMs: 15_000 })
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 60_000 })
+  const cameras = useLiveCameras()
   const hours = useResource(signal => getSecurityHours({ signal }))
 
   const all = events.data ?? []

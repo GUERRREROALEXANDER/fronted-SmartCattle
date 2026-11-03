@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import type { SimulationLot } from '../simulation/herdSimulation'
+import type { SceneLot } from './sceneLots'
 import { buildCameraPresets, OVERVIEW_PRESET_ID } from './cameraPresets'
 
-const square = (id: string, name: string, cx: number, cz: number, half: number): SimulationLot => ({
+const square = (id: string, name: string, cx: number, cz: number, half: number): SceneLot => ({
   id,
   name,
   boundary: [
@@ -11,7 +11,7 @@ const square = (id: string, name: string, cx: number, cz: number, half: number):
     { x: cx + half, z: cz + half },
     { x: cx - half, z: cz + half },
   ],
-} as SimulationLot)
+} as SceneLot)
 
 describe('buildCameraPresets', () => {
   it('always offers the overview first', () => {
@@ -69,7 +69,7 @@ describe('buildCameraPresets', () => {
     const degenerate = {
       id: 'flat', name: 'Flat',
       boundary: [{ x: 3, z: 3 }, { x: 3, z: 3 }, { x: 3, z: 3 }],
-    } as SimulationLot
+    } as SceneLot
     const [, lot] = buildCameraPresets([degenerate])
     expect(lot.position.every(Number.isFinite)).toBe(true)
     expect(lot.target.every(Number.isFinite)).toBe(true)

@@ -1,7 +1,45 @@
-import type { Camera, FarmEvent, Severity } from '../../types/domain'
+import type { Alert, AlertDay, Camera, FarmEvent, OccupancySample, Severity } from '../../types/domain'
 
 const hour = 3_600_000
 const severityRank: Record<Severity, number> = { info: 0, warning: 1, critical: 2 }
+
+/** Open alerts first (critical on top), then the ones already acknowledged, newest first inside each group. */
+export function sortAlerts(alerts: readonly Alert[]): Alert[] {
+  return [...alerts].sort((a, b) =>
+    Number(a.status !== 'open') - Number(b.status !== 'open')
+    || severityRank[b.severity] - severityRank[a.severity]
+    || b.createdAt.getTime() - a.createdAt.getTime())
+}
+
+export interface TrendPoint { at: number; label: string; inside: number; outside: number }
+
+export const clock = (date: Date, seconds: boolean) =>
+  date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', ...(seconds ? { second: '2-digit' } : {}) })
+
+/** The seven local days ending today, with zeros for days the report left out (a quiet day is still a day). */
+export function weekDays(days: readonly AlertDay[], today: Date): AlertDay[] {
+  const byDay = new Map(days.map(day => [day.day, day]))
+  const result: AlertDay[] = []
+  for (let offset = 6; offset >= 0; offset--) {
+    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() - offset)
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    result.push(byDay.get(key) ?? { day: key, total: 0, info: 0, warning: 0, critical: 0, open: 0, acknowledged: 0, resolved: 0 })
+  }
+  return result
+}
+
+/** Per-camera minutes summed into one farm-wide line, oldest first. */
+export function farmMinutes(samples: readonly OccupancySample[]): TrendPoint[] {
+  const byMinute = new Map<number, TrendPoint>()
+  for (const sample of samples) {
+    const at = sample.minute.getTime()
+    const point = byMinute.get(at) ?? { at, label: clock(sample.minute, false), inside: 0, outside: 0 }
+    point.inside += sample.inside
+    point.outside += sample.outside
+    byMinute.set(at, point)
+  }
+  return [...byMinute.values()].sort((a, b) => a.at - b.at)
+}
 
 /** Warning or critical events in the last hour. The backend has no review state, so "recent" stands in for "active". */
 export function recentAlerts(events: readonly FarmEvent[], now: Date, windowMs = hour): FarmEvent[] {
@@ -14,7 +52,7 @@ export function recentAlerts(events: readonly FarmEvent[], now: Date, windowMs =
 export type FarmCondition = 'calm' | 'warning' | 'critical' | 'unknown'
 
 /** Without event data the farm state is unknown: never report "all clear" by default. */
-export function farmCondition(alerts: readonly FarmEvent[], hasEventData = true): FarmCondition {
+export function farmCondition(alerts: readonly { severity: Severity }[], hasEventData = true): FarmCondition {
   if (alerts.some(alert => alert.severity === 'critical')) return 'critical'
   if (alerts.length > 0) return 'warning'
   return hasEventData ? 'calm' : 'unknown'
@@ -23,7 +61,7 @@ export function farmCondition(alerts: readonly FarmEvent[], hasEventData = true)
 export function statusHeadline(condition: FarmCondition, alertCount: number): string {
   if (condition === 'unknown') return 'Estado desconocido'
   if (condition === 'calm') return 'Todo en orden'
-  return alertCount === 1 ? '1 alerta en la última hora' : `${alertCount} alertas en la última hora`
+  return alertCount === 1 ? '1 alerta abierta' : `${alertCount} alertas abiertas`
 }
 
 export function onlineCameraCount(cameras: readonly Camera[]): number {

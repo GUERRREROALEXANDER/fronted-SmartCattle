@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { LogIn, LogOut } from 'lucide-react'
 import { duration, ease } from '../../../motion'
-import { eventSentence, type HerdLogEntry } from '../simulation/useHerdSimulation'
+import { eventSentence, type HerdLogEntry } from '../../../live/herdSummary'
 import styles from './ExitLog.module.css'
 
 const timeFormat = new Intl.DateTimeFormat('es-CO', {
@@ -32,8 +32,8 @@ export function ExitLog({ entries }: ExitLogProps) {
                   key={entry.id}
                   layout={!reduce}
                   className={`${styles.entry} ${entry.type === 'exit' ? styles.exit : styles.return}`}
-                  initial={{ opacity: 0, x: reduce ? 0 : 16 }}
-                  animate={{ opacity: 1, x: 0 }}
+                  initial={{ opacity: 0, transform: reduce ? 'none' : 'translateX(16px)' }}
+                  animate={{ opacity: 1, transform: 'translateX(0px)' }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: reduce ? duration.micro : duration.state, ease: ease.out }}
                 >

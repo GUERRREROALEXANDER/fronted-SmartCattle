@@ -9,7 +9,7 @@ import {
 import type { AnimationClip, Material, Object3D, SkinnedMesh } from 'three'
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
-import type { CowCoat } from '../../simulation/herdSimulation'
+import type { CowCoat } from '../../../../live/herdMotion'
 import { ALERT_COLOR } from '../materials'
 
 // Quaternius "Cow" (CC0), see public/models/CREDITS.md.
