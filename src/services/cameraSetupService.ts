@@ -56,7 +56,7 @@ export function activeService(cameras: readonly Camera[], fallback = aiServiceUr
 export interface AddedCamera { cameraId: string; streamUrl: string }
 
 /** Adds a camera next to the ones already running (POST /cameras). It answers at once and connects in the background. */
-export async function addCamera(baseUrl: string, source: CameraSource, options: ServiceOptions = {}): Promise<AddedCamera> {
+export async function addCamera(baseUrl: string, source: CameraSource & { cameraId?: string }, options: ServiceOptions = {}): Promise<AddedCamera> {
   const body = source.kind === 'url'
     ? { url: source.url.trim() }
     // Only what the person typed: for a camera set up on that PC, the AI service uses the credentials saved there.
@@ -67,7 +67,9 @@ export async function addCamera(baseUrl: string, source: CameraSource, options: 
       ...(source.port ? { port: source.port } : {}),
       ...(source.path?.trim() ? { path: source.path.trim() } : {}),
     }
-  const added = await requestJson<{ camera_id?: unknown; stream_url?: unknown }>('/cameras', { ...options, baseUrl, method: 'POST', body, timeoutMs: 10_000 })
+  // The id it was saved under, so what the AI reports about it reaches this account.
+  const sent = source.cameraId ? { ...body, camera_id: source.cameraId } : body
+  const added = await requestJson<{ camera_id?: unknown; stream_url?: unknown }>('/cameras', { ...options, baseUrl, method: 'POST', body: sent, timeoutMs: 10_000 })
   if (typeof added.camera_id !== 'string' || typeof added.stream_url !== 'string') throw new Error('Respuesta del servicio de IA no válida')
   return { cameraId: added.camera_id, streamUrl: added.stream_url }
 }
