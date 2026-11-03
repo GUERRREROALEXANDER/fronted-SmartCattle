@@ -1,19 +1,20 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Cctv, Keyboard, Laptop, Plug, QrCode as QrIcon, Radar, Smartphone, Trash2, Unplug, Usb, Wifi } from 'lucide-react'
 import { aiServiceUrl } from '../../api/config'
-import { describeApiError } from '../../api/errors'
+import { ApiError, describeApiError } from '../../api/errors'
 import { skipCameraSetup } from '../../app/auth/cameraSetupSkip'
 import { withSessionToken } from '../../api/session'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
 import {
-  activeService, addCamera, addressProblem, cameraProblem, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, ipCameraSource, listSavedCameras,
+  DEVICE_SOURCE, activeService, addCamera, addressProblem, cameraProblem, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, ipCameraSource, isDeviceCamera, listSavedCameras, onlyInsideItsNetwork,
   loginProblem, phoneLink, removeCamera, saveCamera, scanCameras, serviceRoot, startFarmPcPairing, startPairing, waitForCamera,
   type CameraScan, type FoundCamera, type SavedCamera,
 } from '../../services'
 import type { Camera, CameraStatus } from '../../types/domain'
 import { QrCode } from './QrCode'
+import { useDeviceCamera } from './useDeviceCamera'
 import styles from './CameraConnect.module.css'
 
 const statusPill: Record<CameraStatus, { tone: 'safe' | 'warning' | 'critical' | 'inactive' | 'info'; label: string }> = {
@@ -48,24 +49,23 @@ function LivePreview({ baseUrl, name }: { baseUrl: string; name: string }) {
 function Instructions() {
   return <div className={styles.help}>
     <ol className={styles.steps}>
-      <li><strong>Enciende la cámara</strong> y déjala en el mismo wifi que el PC de la finca.</li>
-      <li><strong>Agrégala</strong>: búscala en la red, escanea el QR con el celular o escribe su dirección.</li>
-      <li><strong>Pulsa Conectar</strong>. Hasta entonces no se abre el video ni trabaja la IA.</li>
+      <li><strong>Lo más fácil es un celular o la webcam de tu PC</strong>: abre esta página en él, entra con tu cuenta y pulsa Transmitir. No necesita IP ni contraseña, y funciona con datos o con cualquier wifi.</li>
+      <li><strong>Míralo desde donde quieras</strong>: entra con la misma cuenta desde otro celular o computador, aunque esté en otro lugar.</li>
     </ol>
     <details className={styles.advanced}>
       <summary>¿Qué tipo de cámara tienes?</summary>
       <dl className={styles.kinds}>
         <div>
           <dt><Wifi size={16} aria-hidden="true" />Cámara IP (Imou, Hikvision, Dahua…)</dt>
-          <dd>Pulsa «Buscar cámaras». Si no aparece, escribe su IP: está en la app de la cámara o en tu router. Al conectar puedes escribir su contraseña; en Imou es el código de seguridad de la etiqueta.</dd>
+          <dd>Con dirección pública, escríbela. Con una 192.168.x.x solo se puede abrir desde su wifi, así que hace falta enlazar un PC allí. Al conectar puedes escribir su contraseña; en Imou es el código de seguridad de la etiqueta.</dd>
         </div>
         <div>
           <dt><Smartphone size={16} aria-hidden="true" />Celular como cámara</dt>
-          <dd>Instala IP Webcam (Android), ábrela y pulsa «Iniciar servidor». Luego escanea el QR de esta página con ese celular y escribe la dirección que muestra la app. Déjalo enchufado y con la app abierta.</dd>
+          <dd>Abre esta página en el celular y pulsa «Transmitir». Déjalo enchufado, con la página abierta y la pantalla encendida.</dd>
         </div>
         <div>
-          <dt><Usb size={16} aria-hidden="true" />Webcam o iVCam en este PC</dt>
-          <dd>Elige «Escribir dirección» y pon su número: 0 es la primera webcam, 1 la siguiente. Con iVCam, abre primero la app en el celular y en el PC.</dd>
+          <dt><Usb size={16} aria-hidden="true" />Webcam de este PC</dt>
+          <dd>Elige «Este celular o PC» y pulsa «Transmitir».</dd>
         </div>
       </dl>
     </details>
@@ -93,9 +93,9 @@ function FarmPcPanel() {
   }
 
   return <GlassCard as="section" padding="lg" aria-labelledby="farm-pc-title" className={styles.connect}>
-    <h2 id="farm-pc-title" className={styles.title}>Enciende el PC de la finca</h2>
+    <h2 id="farm-pc-title" className={styles.title}>Enlaza un PC en la finca</h2>
     <p className={styles.note}>
-      Las cámaras solo se pueden abrir desde dentro de la red de la finca, así que allí debe haber un PC encendido con internet. Después podrás ver todo desde cualquier sitio. Si ya lo enlazaste, solo enciéndelo: esta página lo detectará sola.
+      Una cámara IP con dirección 192.168.x.x solo se puede abrir desde su mismo wifi. Si no quieres usar un celular, deja allí un PC encendido con internet y enlázalo una vez; después verás esa cámara desde cualquier sitio. Si ya lo enlazaste, solo enciéndelo: esta página lo detectará sola.
     </p>
     <ol className={styles.steps}>
       <li>En ese PC, <a href={DOWNLOAD}>descarga el programa</a> y descomprímelo.</li>
@@ -128,7 +128,7 @@ function SavedCard({ camera, live, previews, busy, canConnect, onConnect, onDisc
   return <GlassCard as="li" padding="none" className={styles.card}>
     {previews && connected && live?.streamUrl && <LivePreview baseUrl={live.streamUrl} name={name} />}
     <div className={styles.cardBody}>
-      <span className={styles.cardName}><strong>{name}</strong><span className="tabular">{camera.source}</span></span>
+      <span className={styles.cardName}><strong>{name}</strong><span className="tabular">{isDeviceCamera(camera.source) ? 'Cámara de un celular' : camera.source}</span></span>
       <StatusPill {...statusPill[status]} />
     </div>
     {live?.lastError && !connected && <p className={styles.error}>{live.lastError}</p>}
@@ -184,7 +184,17 @@ function QrPanel({ serviceBase, onWaiting }: { serviceBase: string; onWaiting: (
   </div>
 }
 
-type Way = 'scan' | 'qr' | 'type'
+/** Takes a person at a computer to this same page on their phone, where the camera is. */
+function OpenOnPhone() {
+  const { hostname, origin, pathname } = globalThis.location
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return null
+  return <div className={styles.qr}>
+    <div className={styles.qrCode}><QrCode value={`${origin}${pathname}`} label="Código QR para abrir esta página en el celular" /></div>
+    <p className={styles.note}>¿Estás en un computador? Escanea esto con el celular que hará de cámara y entra con tu cuenta.</p>
+  </div>
+}
+
+type Way = 'device' | 'scan' | 'qr' | 'type'
 type Kind = 'ip' | 'url'
 
 /**
@@ -198,7 +208,9 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   const serviceBase = activeService(cameras, farmPc.data || aiServiceUrl)
   const [waitingForPhone, setWaitingForPhone] = useState(false)
   const saved = useResource(signal => listSavedCameras({ signal }))
-  const [way, setWay] = useState<Way>('scan')
+  const [way, setWay] = useState<Way>('device')
+  const [deviceName, setDeviceName] = useState('')
+  const [needsFarmPc, setNeedsFarmPc] = useState(false)
   const [scan, setScan] = useState<CameraScan | null>(null)
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState('')
@@ -210,7 +222,11 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState('')
   const [result, setResult] = useState<{ tone: 'safe' | 'critical'; text: string } | null>(null)
+  const broadcastEnded = useCallback((text: string) => setResult({ tone: 'critical', text }), [])
+  const { videoRef: deviceVideo, activeId: broadcastingId, weakSignal, open: openDevice, send: sendFromDevice, stop: stopDevice } = useDeviceCamera(broadcastEnded)
   const reloadSaved = saved.refresh
+  // Something on a local network can reach its cameras: a linked PC, or a service running on this network. In the cloud, no.
+  const reachesLocalCameras = Boolean(farmPc.data) || Boolean(serviceBase && !serviceBase.startsWith('https://'))
   const refreshList = () => REFRESH_AFTER_MS.forEach(delay => setTimeout(() => { onChanged?.(); reloadSaved() }, delay))
   const list = saved.data ?? []
   const liveOf = (id: string) => cameras.find(camera => camera.id === id)
@@ -263,6 +279,11 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       setResult({ tone: 'critical', text: wrong })
       return
     }
+    if (!reachesLocalCameras && onlyInsideItsNetwork(kind === 'ip' ? host : url)) {
+      setNeedsFarmPc(true)
+      setResult({ tone: 'critical', text: 'Esa dirección solo existe dentro del wifi de la cámara y no se puede abrir desde internet. Usa «Este celular o PC» para transmitir sin dirección, escribe una dirección pública o enlaza un PC en la finca.' })
+      return
+    }
     setSaving(true)
     setResult(null)
     try {
@@ -282,7 +303,52 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
     }
   }
 
+  const broadcast = async (camera: SavedCamera) => {
+    setBusyId(camera.id)
+    setResult(null)
+    try {
+      const media = await openDevice()
+      const added = await addCamera(serviceBase, { kind: 'browser', cameraId: camera.id }).catch((error: unknown) => {
+        media.getTracks().forEach(track => track.stop())
+        throw error
+      })
+      sendFromDevice(media, serviceBase, added.cameraId)
+      const state = await waitForCamera(added.streamUrl)
+      if (state.status === 'online') {
+        setResult({ tone: 'safe', text: `${camera.name} ya transmite. Deja esta página abierta; se puede ver desde cualquier lugar entrando con tu cuenta.` })
+        refreshList()
+        return
+      }
+      stopDevice()
+      setResult({ tone: 'critical', text: `${camera.name} no llegó al servicio. Revisa la señal de este celular y vuelve a intentarlo.` })
+    } catch (error) {
+      setResult({ tone: 'critical', text: error instanceof Error && !(error instanceof ApiError) && error.cause !== undefined ? error.message : problemText(error) })
+    } finally {
+      setBusyId('')
+    }
+  }
+
+  const addDevice = async (event: FormEvent) => {
+    event.preventDefault()
+    setSaving(true)
+    setResult(null)
+    try {
+      const camera = await saveCamera(deviceName, DEVICE_SOURCE)
+      setDeviceName('')
+      reloadSaved()
+      await broadcast(camera)
+    } catch (error) {
+      setResult({ tone: 'critical', text: problemText(error) })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const connect = async (camera: SavedCamera, username: string, password: string) => {
+    if (isDeviceCamera(camera.source)) {
+      await broadcast(camera)
+      return
+    }
     const wrong = loginProblem(username)
     if (wrong) {
       setResult({ tone: 'critical', text: wrong })
@@ -312,6 +378,10 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   }
 
   const stop = async (camera: SavedCamera) => {
+    if (broadcastingId === camera.id) {
+      stopDevice()
+      return
+    }
     const live = liveOf(camera.id)
     await removeCamera(live?.streamUrl ? serviceRoot(live.streamUrl) : serviceBase, camera.id)
   }
@@ -345,16 +415,29 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   }
 
   const ways: { id: Way; icon: typeof Radar; label: string }[] = [
-    { id: 'scan', icon: Radar, label: 'Buscar en la red' },
-    { id: 'qr', icon: QrIcon, label: 'Con QR y el celular' },
+    { id: 'device', icon: Smartphone, label: 'Este celular o PC' },
+    // Both are about a local network: from the cloud there is none to search, and a phone app's address would not open.
+    ...(reachesLocalCameras ? [
+      { id: 'scan' as const, icon: Radar, label: 'Buscar en la red' },
+      { id: 'qr' as const, icon: QrIcon, label: 'App IP Webcam (QR)' },
+    ] : []),
     { id: 'type', icon: Keyboard, label: 'Escribir dirección' },
   ]
 
   return <div className={styles.wrap}>
     <Instructions />
 
-    {!serviceBase && farmPc.status !== 'loading' && <FarmPcPanel />}
+    {(needsFarmPc || !serviceBase) && !farmPc.data && farmPc.status !== 'loading' && <FarmPcPanel />}
     {result && <p className={result.tone === 'safe' ? styles.ok : styles.error} role="status">{result.text}</p>}
+
+    <div className={styles.broadcast} hidden={!broadcastingId}>
+      <video ref={deviceVideo} className={styles.broadcastVideo} muted playsInline aria-label="Lo que ve la cámara de este dispositivo" />
+      <p className={weakSignal ? styles.error : styles.ok} role="status">
+        {weakSignal
+          ? 'Sin señal por el momento. Sigue intentando; no cierres esta página.'
+          : 'Transmitiendo desde este dispositivo. Déjalo enchufado, con esta página abierta y la pantalla encendida.'}
+      </p>
+    </div>
 
     <section aria-labelledby="camera-list-title">
       <h2 id="camera-list-title" className={styles.title}>Mis cámaras</h2>
@@ -375,7 +458,17 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
         </button>)}
       </div>
 
-      {way === 'scan' && <div className={styles.found}>
+      {way === 'device' && <form className={styles.form} onSubmit={addDevice}>
+        <p className={styles.note}>Usa la cámara de este celular o la webcam de este PC. Sin IP, sin contraseña y sin instalar nada: te pedirá permiso para usar la cámara y ya.</p>
+        <div className={styles.fields}>
+          <TextField label="Nombre" value={deviceName} onChange={event => setDeviceName(event.target.value)} required maxLength={80}
+            placeholder="Corral del ternero" autoComplete="off" />
+        </div>
+        <Button type="submit" icon={Smartphone} loading={saving} disabled={!serviceBase || Boolean(broadcastingId)} className={styles.action}>Transmitir</Button>
+        <OpenOnPhone />
+      </form>}
+
+      {way === 'scan' && reachesLocalCameras && <div className={styles.found}>
         <p className={styles.note}>Busca cámaras y celulares encendidos en el wifi del PC de la finca. Tarda unos segundos.</p>
         <Button variant="secondary" icon={Radar} loading={scanning} onClick={runScan} disabled={!serviceBase} className={styles.action}>Buscar cámaras</Button>
         {scanError && <p className={styles.error} role="alert">{scanError}</p>}
@@ -403,7 +496,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
         </AnimatePresence>
       </div>}
 
-      {way === 'qr' && <QrPanel serviceBase={serviceBase} onWaiting={setWaitingForPhone} />}
+      {way === 'qr' && reachesLocalCameras && <QrPanel serviceBase={serviceBase} onWaiting={setWaitingForPhone} />}
 
       {way === 'type' && <form className={styles.form} onSubmit={submit}>
         <div className={styles.modes} role="group" aria-label="Tipo de cámara">

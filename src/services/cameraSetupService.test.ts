@@ -53,7 +53,7 @@ describe('camera setup service', () => {
   })
   it.each([
     [422, 'This camera needs its password: none is saved on this PC yet', /contraseña/],
-    [422, 'This server runs in the cloud and cannot reach that address.', /nube/],
+    [422, 'This server runs in the cloud and cannot reach that address.', /desde internet/],
     [422, 'The camera address must be rtsp://, http://, an IP address or a webcam number', /Revisa la dirección/],
     [409, 'This PC already runs 8 added cameras; remove one first', /máximo/],
     [403, 'Origin not allowed', /SMARTCATTLE_LIVE_ORIGINS/],

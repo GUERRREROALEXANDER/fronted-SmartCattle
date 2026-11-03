@@ -16,6 +16,7 @@ export interface CameraScan { network: string | null; cameras: FoundCamera[] }
 export type CameraSource =
   | { kind: 'ip'; host: string; username: string; password: string; port?: number; path?: string }
   | { kind: 'url'; url: string }
+  | { kind: 'browser' }
 
 const isKind = (value: unknown): value is FoundCameraKind => value === 'rtsp' || value === 'ip-webcam' || value === 'droidcam'
 
@@ -57,7 +58,7 @@ export interface AddedCamera { cameraId: string; streamUrl: string }
 
 /** Adds a camera next to the ones already running (POST /cameras). It answers at once and connects in the background. */
 export async function addCamera(baseUrl: string, source: CameraSource & { cameraId?: string }, options: ServiceOptions = {}): Promise<AddedCamera> {
-  const body = source.kind === 'url'
+  const body = source.kind === 'browser' ? { browser: true } : source.kind === 'url'
     ? { url: source.url.trim() }
     // Only what the person typed: for a camera set up on that PC, the AI service uses the credentials saved there.
     : {
@@ -88,7 +89,7 @@ export function cameraProblem(error: unknown): string | null {
         : `${host} no está en la red de la finca, que es ${network(own)}.x. Busca la IP real en la app de la cámara o del celular, o en el router.`
     }
     if (/password/i.test(detail)) return 'Esta cámara necesita su contraseña: escríbela en su tarjeta y pulsa Conectar. En Imou es el código de seguridad de la etiqueta.'
-    if (/cloud/i.test(detail)) return 'El servicio de IA está en la nube y no llega a esa dirección. Usa la dirección pública de la cámara, o corre el servicio de IA en un PC de la misma red.'
+    if (/cloud/i.test(detail)) return 'Esa dirección solo existe dentro del wifi de la cámara y no se puede abrir desde internet. Usa «Este celular o PC», escribe una dirección pública o enlaza un PC en la finca.'
     return 'Revisa la dirección: debe ser una IP, un enlace rtsp:// o http://, o un número de webcam.'
   }
   if (error.status === 429) return 'Demasiados intentos seguidos. Espera un minuto y vuelve a intentarlo.'
