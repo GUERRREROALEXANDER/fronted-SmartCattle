@@ -4,7 +4,7 @@ import { describeApiError } from '../../api/errors'
 import { ApiError } from '../../api/errors'
 import { Button, TextField } from '../../components/ui'
 import { AuthLayout } from '../auth/AuthLayout'
-import { savePairedCamera } from '../../services'
+import { addressProblem, savePairedCamera } from '../../services'
 import styles from './CameraConnect.module.css'
 
 /**
@@ -22,6 +22,11 @@ export function PhonePairPage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
+    const wrong = addressProblem(address)
+    if (wrong) {
+      setProblem(wrong)
+      return
+    }
     setSaving(true)
     setProblem('')
     try {
