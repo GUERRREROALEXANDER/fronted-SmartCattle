@@ -9,7 +9,7 @@ import { eventCatalog } from '../lib/eventCatalog'
 export function toCamera(camera: ApiCamera): Camera {
   const number = /^camera-(\d+)$/.exec(camera.id)?.[1]
   return {
-    id: camera.id, name: number ? `Cámara ${number}` : camera.id, location: 'Cámara IP',
+    id: camera.id, name: camera.display_name || (number ? `Cámara ${number}` : camera.id), location: 'Cámara IP',
     status: camera.status, lastSeenAt: camera.last_online_at ? new Date(camera.last_online_at) : null,
     lastError: camera.last_error, streamUrl: camera.stream_url,
   }
@@ -91,7 +91,7 @@ export function toStreamFrame(cameraId: string, observedAt: string, detections: 
       const [x1, y1, x2, y2] = item.bbox
       return {
         id: item.track_id === null ? `${cameraId}-${index}` : `${cameraId}#${item.track_id}`,
-        trackId: item.track_id, label: item.label, confidence: item.confidence, insideSafeZone: item.inside_zone,
+        trackId: item.track_id, label: item.label, confidence: item.confidence, insideSafeZone: item.inside_zone, ...(item.posture ? { posture: item.posture } : {}),
         box: { x: Math.min(x1, x2), y: Math.min(y1, y2), width: Math.abs(x2 - x1), height: Math.abs(y2 - y1) },
       }
     }),
