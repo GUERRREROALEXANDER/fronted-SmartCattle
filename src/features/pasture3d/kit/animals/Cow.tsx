@@ -12,14 +12,37 @@ import {
 } from 'three'
 import type { AnimationAction, AnimationClip, Group, Object3D, SkinnedMesh } from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
-import type { SimulationCow } from '../../simulation/herdSimulation'
+import type { CowCoat } from '../../../../live/herdMotion'
 import { ALERT_COLOR } from '../materials'
 import { hashString } from '../noise'
 import { heightAt } from '../terrain/heightfield'
 import { alertPulse, COW_MODEL_URL, cowMaterial, prepareCowTemplate } from './cowModel'
 
+/** What the model reads every frame; the live herd agents provide it. */
+export interface CowPose {
+  id: string
+  coat: CowCoat
+  position: { x: number; z: number }
+  heading: number
+  state: 'grazing' | 'walking' | 'returning'
+  speed: number
+  escapeRequested: boolean
+  /** 0 → 1 while the animal appears, 1 → 0 while it leaves the picture. Defaults to 1. */
+  presence?: number
+  /** What the AI estimates it is doing, when live data says. */
+  posture?: 'standing' | 'walking' | 'lying' | null
+}
+
+/** How far the body sinks to rest on the ground: the model has no lying animation, so its legs fold out of sight. */
+const LYING_DROP = 0.62
+
+/** Appear and leave from 90 % size, never from nothing. */
+function presenceScale(presence = 1): number {
+  return 0.9 + 0.1 * Math.min(1, Math.max(0, presence))
+}
+
 export interface CowProps {
-  cow: SimulationCow
+  cow: CowPose
   /** Outside its lot: red rim light and a pulsing ring on the ground. */
   alert?: boolean
   paused?: boolean
@@ -44,7 +67,7 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
   const rootRef = useRef<Group>(null)
   const ringRef = useRef<Group>(null)
   const shouldReduceMotion = useReducedMotion()
-  const blend = useRef({ weights: { walk: 0, eat: 1, idle: 0, look: 0 } as Record<Mode, number>, clock: seed * 20 })
+  const blend = useRef({ weights: { walk: 0, eat: 1, idle: 0, look: 0 } as Record<Mode, number>, clock: seed * 20, lying: 0 })
 
   const rig = useMemo(() => {
     const mixer = new AnimationMixer(model)
@@ -86,8 +109,13 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
   useFrame((state, delta) => {
     const root = rootRef.current
     if (root) {
-      root.position.set(cow.position.x, heightAt(cow.position.x, cow.position.z), cow.position.z)
+      const rest = shouldReduceMotion ? (cow.posture === 'lying' ? 1 : 0)
+        : MathUtils.lerp(blend.current.lying, cow.posture === 'lying' ? 1 : 0, 1 - Math.exp(-delta * 2.5))
+      blend.current.lying = rest
+      root.position.set(cow.position.x, heightAt(cow.position.x, cow.position.z) - rest * LYING_DROP, cow.position.z)
       root.rotation.y = -cow.heading
+      root.scale.setScalar(presenceScale(cow.presence))
+      root.visible = (cow.presence ?? 1) > 0.02
     }
     if (alert) {
       alertPulse.value = shouldReduceMotion ? 1 : 0.5 + 0.5 * Math.sin(state.clock.elapsedTime * 4)
@@ -95,13 +123,15 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
     }
     if (paused) return
 
-    const walking = cow.state !== 'grazing'
+    const walking = cow.state !== 'grazing' && cow.posture !== 'lying'
     const motion = blend.current
     motion.clock += delta
     // Grazing cows mostly eat, lifting the head now and then.
     const cycle = motion.clock % 22
     const resting: Mode = cycle < 14 ? 'eat' : cycle < 18 ? 'look' : 'idle'
-    const mode: Mode = walking ? 'walk' : resting
+    // Only without word from the AI does it graze for show: a cow reported lying or standing rests, as it does there.
+    const known = cow.posture === 'lying' || cow.posture === 'standing'
+    const mode: Mode = walking ? 'walk' : known ? (cow.posture === 'lying' || cycle < 16 ? 'idle' : 'look') : resting
     const fade = shouldReduceMotion ? 1 : 1 - Math.exp(-delta * 4)
     for (const key of MODES) {
       motion.weights[key] = MathUtils.lerp(motion.weights[key], key === mode ? 1 : 0, fade)
