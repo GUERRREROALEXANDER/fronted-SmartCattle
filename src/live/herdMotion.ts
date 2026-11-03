@@ -34,6 +34,8 @@ export interface HerdAgent {
   leaving: boolean
   /** Seconds since the agent appeared; the arrival ring uses it. */
   age: number
+  /** What the AI estimates it is doing; null when it cannot tell. */
+  posture: TrackedEntity['posture']
 }
 
 export interface MotionConfig {
@@ -54,6 +56,7 @@ export interface HerdMotion {
 
 const PRESENCE_RATE = 7
 const TURN_RATE = 5
+const LYING_STAYS_WITHIN = 6
 
 export function createHerdMotion(config: MotionConfig): HerdMotion {
   return { agents: new Map(), config, seeded: false }
@@ -74,7 +77,7 @@ export function syncHerd(motion: HerdMotion, entities: readonly TrackedEntity[],
     const agent = motion.agents.get(entity.id)
     if (agent) {
       Object.assign(agent, {
-        target, outside: entity.outside, confidence: entity.confidence, lotId: entity.lotId, leaving: false, source: entity.source,
+        target, outside: entity.outside, confidence: entity.confidence, lotId: entity.lotId, leaving: false, source: entity.source, posture: entity.posture,
       })
       if (instant) agent.position = { ...target }
       continue
@@ -85,7 +88,7 @@ export function syncHerd(motion: HerdMotion, entities: readonly TrackedEntity[],
       role: unitHash(entity.id, 4) < 0.5 ? 'visitor' : 'worker',
       position: { ...target }, target, heading: unitHash(entity.id, 5) * Math.PI * 2 - Math.PI, speed: 0,
       state: 'grazing', escapeRequested: false, outside: entity.outside, confidence: entity.confidence,
-      source: entity.source, presence: !motion.seeded || instant ? 1 : 0, leaving: false, age: motion.seeded ? 0 : 10,
+      source: entity.source, presence: !motion.seeded || instant ? 1 : 0, leaving: false, age: motion.seeded ? 0 : 10, posture: entity.posture,
     })
   }
   for (const agent of motion.agents.values()) {
@@ -123,7 +126,8 @@ export function stepHerd(motion: HerdMotion, dt: number, { reduceMotion = false 
       agent.state = 'grazing'
       continue
     }
-    if (distance <= arriveRadius) {
+    // A lying animal is not going anywhere: its box shifting a little must not make it walk on the spot.
+    if (distance <= arriveRadius || (agent.posture === 'lying' && distance <= arriveRadius * LYING_STAYS_WITHIN)) {
       agent.speed += (0 - agent.speed) * (1 - Math.exp(-dt * 6))
       agent.state = 'grazing'
       continue
