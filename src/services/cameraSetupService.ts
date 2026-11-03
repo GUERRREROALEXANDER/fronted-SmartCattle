@@ -84,8 +84,8 @@ export function cameraProblem(error: unknown): string | null {
       const [, host, own] = silent
       const network = (address: string) => address.split('.').slice(0, 3).join('.')
       return network(host) === network(own)
-        ? `${host} no responde. Comprueba que la cámara esté encendida y en este wifi, y que su IP no haya cambiado: mírala en la app de la cámara o en el router.`
-        : `${host} no está en tu red: este PC está en ${network(own)}.x. Busca la IP real de la cámara en su app o en el router.`
+        ? `${host} no responde. Comprueba que esté encendida y en el wifi del PC de la finca. Si es un celular, abre IP Webcam y pulsa «Iniciar servidor». Si es una cámara, mira su IP en su app o en el router.`
+        : `${host} no está en la red de la finca, que es ${network(own)}.x. Busca la IP real en la app de la cámara o del celular, o en el router.`
     }
     if (/password/i.test(detail)) return 'Esta cámara necesita su contraseña: escríbela en su tarjeta y pulsa Conectar. En Imou es el código de seguridad de la etiqueta.'
     if (/cloud/i.test(detail)) return 'El servicio de IA está en la nube y no llega a esa dirección. Usa la dirección pública de la cámara, o corre el servicio de IA en un PC de la misma red.'
