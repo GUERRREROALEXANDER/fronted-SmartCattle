@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Cctv } from 'lucide-react'
 import { useAuth } from '../../app/auth/useAuth'
 import { EmptyState, ErrorState, PageHeader, Skeleton } from '../../components/ui'
+import { Link } from 'react-router'
 import { can } from '../../lib/permissions'
 import { useResource } from '../../lib/useResource'
 import { FadeUp, StaggerItem, staggerDelay } from '../../motion'
@@ -10,6 +11,7 @@ import { useLiveCameras } from '../../live/useLiveCameras'
 import type { Severity } from '../../types/domain'
 import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
 import { CameraCard } from './CameraCard'
+import { skipCameraSetup } from '../../app/auth/cameraSetupSkip'
 import { CameraConnect } from './CameraConnect'
 import styles from './CamerasPage.module.css'
 
@@ -44,8 +46,13 @@ export function CamerasPage() {
   return <div className={styles.page}>
     <FadeUp className={styles.head}>
       <PageHeader title="Cámaras" actions={summary && <p className={styles.summary}>{summary}</p>} />
-      <p className={styles.lead}>Estado, imagen y detecciones de cada cámara de la finca. Las que tienen alertas aparecen primero.</p>
+      <p className={styles.lead}>Conecta aquí las cámaras de tu finca. Abajo verás el estado y la imagen de las que estén conectadas.</p>
     </FadeUp>
+
+    {session && can(session.user.role, 'cameras:configure') && <FadeUp delay={staggerDelay(1)}>
+      <CameraConnect cameras={list} onChanged={cameras.reload} previews={false} />
+      <p className={styles.next}><Link to="/" onClick={skipCameraSetup}>Continuar al panel</Link></p>
+    </FadeUp>}
 
     {cameras.status === 'loading' && <div className={styles.grid}>
       {[0, 1, 2, 3].map(index => <Skeleton key={index} height="20rem" radius="var(--radius-lg)" />)}
@@ -62,7 +69,7 @@ export function CamerasPage() {
 
     {cameras.data && list.length === 0 && <FadeUp delay={staggerDelay(1)} className={styles.stateCard}>
       <EmptyState icon={Cctv} title="No hay cámaras conectadas"
-        description="Enciende la cámara y el servicio de visión en la PC de la finca. Aparecerá aquí sola, con su video." />
+        description="Cuando conectes una aparecerá aquí, con su video y lo que detecta la IA." />
     </FadeUp>}
 
     {list.length > 0 && <div className={styles.grid}>
@@ -73,9 +80,5 @@ export function CamerasPage() {
           alert={alertByCamera.get(camera.id)} now={now} />
       </StaggerItem>)}
     </div>}
-
-    {session && can(session.user.role, 'cameras:configure') && <FadeUp delay={staggerDelay(2)}>
-      <CameraConnect cameras={list} onChanged={cameras.reload} previews={false} />
-    </FadeUp>}
   </div>
 }
