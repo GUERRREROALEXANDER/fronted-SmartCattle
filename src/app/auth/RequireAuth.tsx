@@ -19,7 +19,10 @@ export function RequireAuth({ role }: { role?: UserRole } = {}) {
     <Loader2 className={styles.spinner} aria-hidden="true" />
     <span className="visually-hidden">Cargando sesión</span>
   </div>
-  if (status === 'anonymous') return <Navigate to="/login" replace state={{ from: location }} />
+  // Someone arriving at the front door meets the farm first; a deep link goes straight to signing in.
+  if (status === 'anonymous') return location.pathname === '/'
+    ? <Navigate to="/bienvenida" replace />
+    : <Navigate to="/login" replace state={{ from: location }} />
   // Redirected rather than shown an error: the user is signed in and simply
   // cannot be here, and the dashboard is somewhere they can be.
   if (role && session?.user.role !== role) return <Navigate to="/" replace />
