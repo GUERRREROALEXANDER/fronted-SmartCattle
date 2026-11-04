@@ -1,5 +1,5 @@
 import type {
-  ApiAlert, ApiAlertDay, ApiAlertReport, ApiAlertsResponse, ApiEventDay, ApiEventLevel, ApiEventReport, ApiFarm,
+  ApiActivity, ApiAlert, ApiAlertDay, ApiAlertReport, ApiAlertsResponse, ApiDailyReport, ApiNotificationSettings, ApiNotificationTest, ApiEventDay, ApiEventLevel, ApiEventReport, ApiFarm,
   ApiFarmsResponse, ApiLiveMetrics, ApiLot, ApiLotsResponse, ApiOccupancy, ApiOccupancyHistory, ApiStreamDetection,
   ApiUser,
 } from '../types/api'
@@ -135,4 +135,54 @@ export function parseEventReport(body: unknown): ApiEventReport {
       medium: value.medium as number, high: value.high as number }
   })
   return { days, total: body.total }
+}
+
+function parseActivity(value: unknown): ApiActivity {
+  const counts = ['observed_minutes', 'lying_minutes', 'standing_minutes', 'walking_minutes', 'peak_cattle', 'peak_people', 'minutes_with_people'] as const
+  if (!isObject(value) || counts.some(key => !isCount(value[key]))) return invalid('activity')
+  return {
+    observed_minutes: value.observed_minutes as number, lying_minutes: value.lying_minutes as number,
+    standing_minutes: value.standing_minutes as number, walking_minutes: value.walking_minutes as number,
+    peak_cattle: value.peak_cattle as number, peak_people: value.peak_people as number,
+    minutes_with_people: value.minutes_with_people as number, lying_share: optional(value.lying_share, isUnit),
+  }
+}
+
+export function parseDailyReport(body: unknown): ApiDailyReport {
+  if (!isObject(body) || !isDay(body.day) || typeof body.complete !== 'boolean' || !Array.isArray(body.health) ||
+    !isObject(body.alerts) || !isCount(body.events_total)) return invalid('daily report')
+  const alerts = body.alerts
+  const keys = ['total', 'low', 'medium', 'high', 'open', 'acknowledged', 'resolved'] as const
+  if (keys.some(key => !isCount(alerts[key]))) return invalid('daily report alerts')
+  const isNoticeKind = oneOf(['prolonged_lying', 'little_lying'] as const)
+  return {
+    day: body.day, complete: body.complete, herd: parseActivity(body.herd), events_total: body.events_total,
+    // A kind this version does not know about is left out: the rest of the report is still good.
+    health: body.health.flatMap(value => {
+      if (!isObject(value) || !isString(value.camera_id) || !isUnit(value.lying_share)) return invalid('health notice')
+      return isNoticeKind(value.kind) ? [{ camera_id: value.camera_id, kind: value.kind, lying_share: value.lying_share }] : []
+    }),
+    alerts: { total: alerts.total as number, low: alerts.low as number, medium: alerts.medium as number, high: alerts.high as number,
+      open: alerts.open as number, acknowledged: alerts.acknowledged as number, resolved: alerts.resolved as number },
+  }
+}
+
+const isChannel = oneOf(['whatsapp', 'telegram'] as const)
+
+export function parseNotificationSettings(body: unknown): ApiNotificationSettings {
+  if (!isObject(body) || typeof body.enabled !== 'boolean' || !isLevel(body.min_severity) || !Array.isArray(body.channels_available)) return invalid('notification settings')
+  return {
+    enabled: body.enabled, whatsapp_phone: optional(body.whatsapp_phone, isString), telegram_chat_id: optional(body.telegram_chat_id, isString),
+    min_severity: body.min_severity, channels_available: body.channels_available.filter(isChannel),
+  }
+}
+
+export function parseNotificationTest(body: unknown): ApiNotificationTest {
+  if (!isObject(body) || !Array.isArray(body.results)) return invalid('notification test')
+  return {
+    results: body.results.map(value => {
+      if (!isObject(value) || !isChannel(value.channel) || !oneOf(['pending', 'sent', 'failed'] as const)(value.status)) return invalid('notification result')
+      return { channel: value.channel, status: value.status, detail: optional(value.detail, isString) }
+    }),
+  }
 }
