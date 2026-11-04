@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Cctv, Keyboard, Laptop, Plug, QrCode as QrIcon, Radar, Smartphone, Trash2, Unplug, Usb, Wifi } from 'lucide-react'
+import { Cctv, Laptop, Plug, QrCode as QrIcon, Radar, Smartphone, Trash2, Unplug, Usb, Wifi } from 'lucide-react'
 import { aiServiceUrl } from '../../api/config'
 import { ApiError, describeApiError } from '../../api/errors'
 import { skipCameraSetup } from '../../app/auth/cameraSetupSkip'
@@ -8,7 +8,7 @@ import { withSessionToken } from '../../api/session'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
 import {
-  DEVICE_SOURCE, activeService, addCamera, addressProblem, cameraProblem, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, ipCameraSource, isDeviceCamera, listSavedCameras, onlyInsideItsNetwork,
+  DEVICE_SOURCE, activeService, addCamera, addressProblem, cameraProblem, cameraSourceFrom, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, isDeviceCamera, listSavedCameras, onlyInsideItsNetwork,
   loginProblem, phoneLink, removeCamera, saveCamera, scanCameras, serviceRoot, startFarmPcPairing, startPairing, waitForCamera,
   type CameraScan, type FoundCamera, type SavedCamera,
 } from '../../services'
@@ -48,10 +48,6 @@ function LivePreview({ baseUrl, name }: { baseUrl: string; name: string }) {
 
 function Instructions() {
   return <div className={styles.help}>
-    <ol className={styles.steps}>
-      <li><strong>Lo más fácil es un celular o la webcam de tu PC</strong>: abre esta página en él, entra con tu cuenta y pulsa Transmitir. No necesita IP ni contraseña, y funciona con datos o con cualquier wifi.</li>
-      <li><strong>Míralo desde donde quieras</strong>: entra con la misma cuenta desde otro celular o computador, aunque esté en otro lugar.</li>
-    </ol>
     <details className={styles.advanced}>
       <summary>¿Qué tipo de cámara tienes?</summary>
       <dl className={styles.kinds}>
@@ -110,8 +106,10 @@ function FarmPcPanel() {
 }
 
 /** One saved camera: its state, and the buttons that open and close it. */
-function SavedCard({ camera, live, previews, busy, canConnect, onConnect, onDisconnect, onDelete }: {
+function SavedCard({ camera, live, previews, busy, canConnect, asksLogin, onConnect, onDisconnect, onDelete }: {
   canConnect: boolean
+  /** The camera refused without a login: only now is it worth asking for one. */
+  asksLogin: boolean
   camera: SavedCamera
   live: Camera | undefined
   previews: boolean
@@ -132,12 +130,15 @@ function SavedCard({ camera, live, previews, busy, canConnect, onConnect, onDisc
       <StatusPill {...statusPill[status]} />
     </div>
     {live?.lastError && !connected && <p className={styles.error}>{live.lastError}</p>}
-    {!connected && camera.source.startsWith('rtsp://') && <div className={`${styles.fields} ${styles.login}`}>
-      <TextField label="Usuario de la cámara" name="camera-rtsp-user" value={username} onChange={event => setUsername(event.target.value)} autoComplete="off"
-        placeholder="admin" hint="No es tu correo. Vacío: admin." />
-      <TextField label="Contraseña de la cámara" name="camera-rtsp-secret" type="password" value={password} onChange={event => setPassword(event.target.value)}
-        autoComplete="new-password" hint="En Imou, el código de la etiqueta. No se guarda." />
-    </div>}
+    {!connected && camera.source.startsWith('rtsp://') && <details className={styles.advanced} open={asksLogin || undefined}>
+      <summary>Esta cámara pide usuario y contraseña</summary>
+      <div className={`${styles.fields} ${styles.login}`}>
+        <TextField label="Usuario de la cámara" name="camera-rtsp-user" value={username} onChange={event => setUsername(event.target.value)} autoComplete="off"
+          placeholder="admin" hint="No es tu correo. Vacío: admin." />
+        <TextField label="Contraseña de la cámara" name="camera-rtsp-secret" type="password" value={password} onChange={event => setPassword(event.target.value)}
+          autoComplete="new-password" hint="En Imou, el código de la etiqueta. No se guarda." />
+      </div>
+    </details>}
     <div className={styles.cardActions}>
       {connected
         ? <Button variant="secondary" size="sm" icon={Unplug} loading={busy} onClick={onDisconnect}>Desconectar</Button>
@@ -194,12 +195,11 @@ function OpenOnPhone() {
   </div>
 }
 
-type Way = 'device' | 'scan' | 'qr' | 'type'
-type Kind = 'ip' | 'url'
+type Way = 'device' | 'scan' | 'qr'
 
 /**
- * The place to connect cameras: what to do, the account's saved cameras with the button that opens each one, and three
- * ways to add another. Saving opens nothing; the camera and the AI only start on pressing Connect.
+ * The place to connect cameras: a name and a link are enough, and the camera opens at once. A login is asked for only
+ * if the camera refuses without one; the other ways of adding a camera wait behind "Otras formas".
  */
 export function CameraConnect({ cameras, onChanged, previews = true }: { cameras: readonly Camera[]; onChanged?: () => void; previews?: boolean }) {
   const reduce = useReducedMotion()
@@ -214,13 +214,12 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   const [scan, setScan] = useState<CameraScan | null>(null)
   const [scanning, setScanning] = useState(false)
   const [scanError, setScanError] = useState('')
-  const [kind, setKind] = useState<Kind>('ip')
   const [name, setName] = useState('')
-  const [host, setHost] = useState('')
-  const [path, setPath] = useState('')
-  const [url, setUrl] = useState('')
+  const [link, setLink] = useState('')
   const [saving, setSaving] = useState(false)
   const [busyId, setBusyId] = useState('')
+  const [loginFor, setLoginFor] = useState('')
+  const [othersOpen, setOthersOpen] = useState(() => new URLSearchParams(globalThis.location.search).get('con') === 'celular')
   const [result, setResult] = useState<{ tone: 'safe' | 'critical'; text: string } | null>(null)
   const broadcastEnded = useCallback((text: string) => setResult({ tone: 'critical', text }), [])
   const { videoRef: deviceVideo, activeId: broadcastingId, weakSignal, open: openDevice, send: sendFromDevice, stop: stopDevice } = useDeviceCamera(broadcastEnded)
@@ -260,26 +259,20 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   }
 
   const pickFound = (found: FoundCamera) => {
-    if (found.kinds.includes('rtsp')) {
-      setKind('ip')
-      setHost(found.host)
-    } else {
-      setKind('url')
-      setUrl(found.kinds.includes('droidcam') ? `${found.host}:4747/video` : `${found.host}:8080`)
-    }
-    setWay('type')
+    setLink(found.kinds.includes('rtsp') ? found.host : found.kinds.includes('droidcam') ? `${found.host}:4747/video` : `${found.host}:8080`)
     setResult(null)
+    document.getElementById('camera-connect-title')?.scrollIntoView({ block: 'center' })
   }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    const address = kind === 'ip' ? ipCameraSource(host, path) : url
+    const address = cameraSourceFrom(link)
     const wrong = addressProblem(address)
     if (wrong) {
       setResult({ tone: 'critical', text: wrong })
       return
     }
-    if (!reachesLocalCameras && onlyInsideItsNetwork(kind === 'ip' ? host : url)) {
+    if (!reachesLocalCameras && onlyInsideItsNetwork(link)) {
       setNeedsFarmPc(true)
       setResult({ tone: 'critical', text: 'Esa dirección solo existe dentro del wifi de la cámara y no se puede abrir desde internet. Usa «Este celular o PC» para transmitir sin dirección, escribe una dirección pública o enlaza un PC en la finca.' })
       return
@@ -287,13 +280,13 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
     setSaving(true)
     setResult(null)
     try {
-      await saveCamera(name, address)
+      const camera = await saveCamera(name, address)
       setName('')
-      setHost('')
-      setPath('')
-      setUrl('')
-      setResult({ tone: 'safe', text: 'Cámara guardada. Pulsa Conectar para ver el video y que la IA empiece a analizarla.' })
+      setLink('')
       reloadSaved()
+      // Saved is not the goal, seeing it is: open it right away. Without a service to open it, the card waits.
+      if (serviceBase) await connect(camera, '', '')
+      else setResult({ tone: 'safe', text: 'Cámara guardada. Se conectará cuando el PC de la finca esté encendido.' })
     } catch (error) {
       setResult({ tone: 'critical', text: /credentials/i.test(describeApiError(error).description)
         ? 'Quita el usuario y la contraseña de la dirección: se escriben al conectar.'
@@ -356,6 +349,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
     }
     setBusyId(camera.id)
     setResult(null)
+    setLoginFor('')
     try {
       const added = await addCamera(serviceBase, { ...connectionFor(camera.source, { username, password }), cameraId: camera.id })
       // The service answers at once and opens the camera in the background: wait until it says how it went.
@@ -367,10 +361,12 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       }
       // A camera that never opened must not stay retrying in the background; connecting again starts it over.
       await removeCamera(serviceBase, added.cameraId).catch(() => {})
+      if (state.error && camera.source.startsWith('rtsp://')) setLoginFor(camera.id)
       setResult({ tone: 'critical', text: state.error
-        ? `No se pudo abrir ${camera.name}: revisa la dirección, el usuario y la contraseña. (${state.error})`
+        ? `No se pudo abrir ${camera.name}: revisa la dirección y, si la pide, escribe su contraseña en la tarjeta. (${state.error})`
         : `${camera.name} no respondió a tiempo. Comprueba que esté encendida y en el mismo wifi que este PC.` })
     } catch (error) {
+      if (error instanceof ApiError && /password/i.test(error.detail ?? '')) setLoginFor(camera.id)
       setResult({ tone: 'critical', text: problemText(error) })
     } finally {
       setBusyId('')
@@ -421,11 +417,19 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       { id: 'scan' as const, icon: Radar, label: 'Buscar en la red' },
       { id: 'qr' as const, icon: QrIcon, label: 'App IP Webcam (QR)' },
     ] : []),
-    { id: 'type', icon: Keyboard, label: 'Escribir dirección' },
   ]
 
   return <div className={styles.wrap}>
-    <Instructions />
+    <section aria-labelledby="camera-connect-title" className={styles.quick}>
+      <h2 id="camera-connect-title" className={styles.quickTitle}>Agrega una cámara</h2>
+      <form className={styles.quickForm} onSubmit={submit}>
+        <TextField label="Nombre" value={name} onChange={event => setName(event.target.value)} required maxLength={80}
+          placeholder="Potrero norte" autoComplete="off" />
+        <TextField label="Enlace o IP de la cámara" value={link} onChange={event => setLink(event.target.value)} required
+          placeholder="192.168.1.20 o rtsp://…" autoComplete="off" inputMode="url" />
+        <Button type="submit" icon={Plug} loading={saving || Boolean(busyId)} className={styles.quickSubmit}>Conectar</Button>
+      </form>
+    </section>
 
     {(needsFarmPc || !serviceBase) && !farmPc.data && farmPc.status !== 'loading' && <FarmPcPanel />}
     {result && <p className={result.tone === 'safe' ? styles.ok : styles.error} role="status">{result.text}</p>}
@@ -442,16 +446,17 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
     <section aria-labelledby="camera-list-title">
       <h2 id="camera-list-title" className={styles.title}>Mis cámaras</h2>
       {saved.status === 'error' && !saved.data && <p className={styles.error}>No se pudo cargar la lista de cámaras.</p>}
-      {saved.data && list.length === 0 && <p className={styles.note}>Todavía no tienes cámaras. Agrega la primera aquí abajo.</p>}
+      {saved.data && list.length === 0 && <p className={styles.note}>Todavía no tienes cámaras. Agrega la primera aquí arriba.</p>}
       {list.length > 0 && <ul className={styles.grid}>
         {list.map(camera => <SavedCard key={camera.id} camera={camera} live={liveOf(camera.id)} previews={previews}
-          busy={busyId === camera.id} canConnect={Boolean(serviceBase)} onConnect={(username, password) => void connect(camera, username, password)}
+          asksLogin={loginFor === camera.id} busy={busyId === camera.id} canConnect={Boolean(serviceBase)} onConnect={(username, password) => void connect(camera, username, password)}
           onDisconnect={() => void disconnect(camera)} onDelete={() => void forget(camera)} />)}
       </ul>}
     </section>
 
-    <GlassCard as="section" padding="lg" aria-labelledby="camera-connect-title" className={styles.connect}>
-      <h2 id="camera-connect-title" className={styles.title}>Agregar una cámara</h2>
+    <details className={styles.others} open={othersOpen} onToggle={event => setOthersOpen(event.currentTarget.open)}>
+      <summary className={styles.othersTitle}>Otras formas: un celular, buscar en la red o QR</summary>
+      <Instructions />
       <div className={styles.modes} role="group" aria-label="Cómo agregarla">
         {ways.map(item => <button key={item.id} type="button" className={styles.mode} aria-pressed={way === item.id} onClick={() => setWay(item.id)}>
           <item.icon size={16} aria-hidden="true" />{item.label}
@@ -497,37 +502,6 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       </div>}
 
       {way === 'qr' && reachesLocalCameras && <QrPanel serviceBase={serviceBase} onWaiting={setWaitingForPhone} />}
-
-      {way === 'type' && <form className={styles.form} onSubmit={submit}>
-        <div className={styles.modes} role="group" aria-label="Tipo de cámara">
-          <button type="button" className={styles.mode} aria-pressed={kind === 'ip'} onClick={() => setKind('ip')}>
-            <Wifi size={16} aria-hidden="true" />Cámara IP
-          </button>
-          <button type="button" className={styles.mode} aria-pressed={kind === 'url'} onClick={() => setKind('url')}>
-            <Smartphone size={16} aria-hidden="true" />Celular, webcam o enlace
-          </button>
-        </div>
-        <div className={styles.fields}>
-          <TextField label="Nombre" value={name} onChange={event => setName(event.target.value)} required maxLength={80}
-            placeholder="Potrero norte" autoComplete="off" />
-          {kind === 'ip'
-            ? <TextField label="Dirección IP" value={host} onChange={event => setHost(event.target.value)} required
-              placeholder="La que muestra la app de la cámara" inputMode="decimal" autoComplete="off"
-              hint="Si no la ves en la app, búscala en la lista de equipos del router." />
-            : <TextField label="Dirección o número de webcam" value={url} onChange={event => setUrl(event.target.value)} required
-              placeholder="La que muestra la app, o 0 o 1" autoComplete="off"
-              hint="IP Webcam: la dirección que muestra la app. Webcam o iVCam: su número (0 o 1)." />}
-          {kind === 'ip' && <details className={styles.advanced}>
-            <summary>Ruta de la cámara (solo si no es Imou ni Dahua)</summary>
-            <div className={styles.fields}>
-              <TextField label="Ruta RTSP" value={path} onChange={event => setPath(event.target.value)} autoComplete="off"
-                placeholder="/cam/realmonitor?channel=1&subtype=1"
-                hint="Vacía: la de Imou y Dahua. Hikvision: /Streaming/Channels/102. Otra marca: revisa su manual." />
-            </div>
-          </details>}
-        </div>
-        <Button type="submit" icon={Plug} loading={saving}>Guardar cámara</Button>
-      </form>}
-    </GlassCard>
+    </details>
   </div>
 }

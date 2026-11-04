@@ -1,12 +1,9 @@
-import { ChevronRight, Film, TriangleAlert, VideoOff, WifiOff } from 'lucide-react'
-import { useReducedMotion } from 'motion/react'
+import { ChevronRight, TriangleAlert, VideoOff, WifiOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { formatRelative } from '../../lib/format'
 import type { Camera, FrameDetections, Severity, StreamSource } from '../../types/domain'
 import { detectionSummaryText, summarizeDetections } from '../monitoring/monitoringModel'
-import { videoForCamera } from '../videos/videosModel'
-import { useVideoLibraryContext } from '../videos/useVideoLibraryContext'
 import styles from './CameraCard.module.css'
 
 interface CameraCardProps {
@@ -36,16 +33,10 @@ export function CameraCard({ camera, stream, frame, alert, now }: CameraCardProp
   }, [failedUrl])
   const summary = frame ? summarizeDetections(frame.detections) : null
   const unreachable = camera.status === 'offline' || camera.status === 'error'
-  const video = videoForCamera(useVideoLibraryContext().videos, camera.id)
-  const reduce = useReducedMotion()
 
   return <article className={`${styles.card} ${alert ? styles[alert] : ''}`} aria-labelledby={`camera-${camera.id}`}>
     <div className={styles.thumb}>
-      {/* A recording loaded on the Videos page takes the picture's place; it is never presented as live. */}
-      {video
-        ? <video key={video.id} src={video.url} poster={video.thumbnail ?? undefined} muted loop playsInline
-          autoPlay={!reduce} controls={!!reduce} preload={reduce ? 'metadata' : 'auto'} aria-label={`Video cargado: ${video.fileName}`} />
-        : picture
+      {picture
         ? <img src={picture.url} alt="" loading="lazy" decoding="async" onError={() => setFailedUrl(picture.url)} />
         : <div className={styles.placeholder}>
           {unreachable ? <WifiOff size={22} strokeWidth={1.5} aria-hidden="true" /> : <VideoOff size={22} strokeWidth={1.5} aria-hidden="true" />}
@@ -54,23 +45,20 @@ export function CameraCard({ camera, stream, frame, alert, now }: CameraCardProp
       {alert && <span className={styles.alertBadge}>
         <TriangleAlert size={14} strokeWidth={2} aria-hidden="true" />Alerta reciente
       </span>}
-      {video && <span className={styles.recordingTag}>
-        <Film size={14} strokeWidth={2} aria-hidden="true" />Video cargado · no es en vivo
-      </span>}
     </div>
 
     <div className={styles.body}>
       <div className={styles.titleRow}>
         <h2 id={`camera-${camera.id}`} className={styles.name}>{camera.name}</h2>
         <span className={`${styles.status} ${styles[camera.status]}`}>
-          <span className={styles.dot} aria-hidden="true" />{statusLabel[camera.status]}{camera.status === 'online' && !picture && !video ? ' · sin video' : ''}
+          <span className={styles.dot} aria-hidden="true" />{statusLabel[camera.status]}{camera.status === 'online' && !picture ? ' · sin video' : ''}
         </span>
       </div>
       <dl className={styles.facts}>
         <div><dt>Zona</dt><dd>{camera.location}</dd></div>
         <div><dt>Última conexión</dt><dd>{camera.lastSeenAt ? formatRelative(camera.lastSeenAt, now) : 'Sin datos'}</dd></div>
         <div><dt>Detecciones</dt><dd className="tabular">
-          {video ? 'Sin detecciones para videos cargados' : picture && summary ? detectionSummaryText(summary) : 'Sin imagen para analizar'}
+          {picture && summary ? detectionSummaryText(summary) : 'Sin imagen para analizar'}
         </dd></div>
       </dl>
       <Link className={styles.action} to={`/live?camera=${encodeURIComponent(camera.id)}`}>
