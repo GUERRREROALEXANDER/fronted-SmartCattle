@@ -24,7 +24,7 @@ export interface ApiAnimalsResponse { items: ApiAnimal[]; total: number }
 export type ApiEventLevel = 'low' | 'medium' | 'high'
 export interface ApiEvent {
   id: string
-  event_type: 'cattle_out_of_zone'
+  event_type: 'cattle_down' | 'cattle_out_of_zone'
   camera_id: string
   detected_object: string
   confidence: number // 0..1
@@ -101,6 +101,21 @@ export interface ApiLotsResponse { items: ApiLot[]; total: number }
 export interface ApiOccupancySample { camera_id: string; minute: string; cattle_inside: number; cattle_outside: number }
 export interface ApiOccupancyHistory { items: ApiOccupancySample[]; total: number }
 export interface ApiAlertDay { day: string; total: number; low: number; medium: number; high: number; open: number; acknowledged: number; resolved: number }
+export interface ApiActivity {
+  observed_minutes: number; lying_minutes: number; standing_minutes: number; walking_minutes: number
+  peak_cattle: number; peak_people: number; minutes_with_people: number; lying_share: number | null
+}
+export interface ApiDailyReport {
+  day: string; complete: boolean; herd: ApiActivity
+  health: { camera_id: string; kind: 'prolonged_lying' | 'little_lying'; lying_share: number }[]
+  alerts: { total: number; low: number; medium: number; high: number; open: number; acknowledged: number; resolved: number }
+  events_total: number
+}
+export interface ApiNotificationSettings {
+  enabled: boolean; whatsapp_phone: string | null; telegram_chat_id: string | null; min_severity: ApiEventLevel
+  channels_available: ('whatsapp' | 'telegram')[]
+}
+export interface ApiNotificationTest { results: { channel: 'whatsapp' | 'telegram'; status: 'pending' | 'sent' | 'failed'; detail: string | null }[] }
 export interface ApiAlertReport { days: ApiAlertDay[]; total: number; avg_minutes_to_acknowledge: number | null; avg_minutes_to_resolve: number | null }
 export interface ApiEventDay { day: string; camera_id: string; total: number; low: number; medium: number; high: number }
 export interface ApiEventReport { days: ApiEventDay[]; total: number }

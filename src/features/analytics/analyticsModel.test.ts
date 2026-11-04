@@ -118,7 +118,7 @@ describe('event shares', () => {
 
   it('returns stable zero shares when there are no events', () => {
     expect(shareByCategory([]).map(row => row.percentage)).toEqual([0, 0, 0])
-    expect(shareByKind([])).toHaveLength(7)
+    expect(shareByKind([])).toHaveLength(8)
     expect(shareBySeverity([]).map(row => row.count)).toEqual([0, 0, 0])
   })
 })
