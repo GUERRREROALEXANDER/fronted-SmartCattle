@@ -3,6 +3,7 @@ import type { EventCategory, EventKind, Severity } from '../types/domain'
 // Severity is a presentation default until the backend sends severity. Labels must not accuse people of crimes.
 export const eventCatalog: Record<EventKind, { label: string; category: EventCategory; defaultSeverity: Severity }> = {
   cattle_out_of_zone: { label: 'Animal fuera de la zona segura', category: 'cattle', defaultSeverity: 'warning' },
+  cattle_down: { label: 'Animal caído sin moverse', category: 'cattle', defaultSeverity: 'critical' },
   person_detected: { label: 'Persona detectada', category: 'security', defaultSeverity: 'info' },
   possible_intrusion: { label: 'Posible intrusión', category: 'security', defaultSeverity: 'critical' },
   external_animal_detected: { label: 'Animal externo detectado', category: 'cattle', defaultSeverity: 'warning' },

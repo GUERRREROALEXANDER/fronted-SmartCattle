@@ -1,7 +1,7 @@
 // Demo data for VITE_DATA_SOURCE=mock only. The api and hybrid modes never read this file; the mock
 // services and the mock live feed (mockLiveFeed.ts) stand in for the backend and the AI service.
 import type {
-  Alert, AlertReport, Camera, EventKind, Farm, FarmEvent, FrameDetections, LiveMetrics, Lot, OccupancySample, SafeZone, SystemStatus,
+  Alert, AlertReport, Camera, DailyReport, EventKind, Farm, FarmEvent, FrameDetections, LiveMetrics, Lot, OccupancySample, SafeZone, SystemStatus,
 } from '../types/domain'
 import { eventCatalog } from '../lib/eventCatalog'
 import { isInsideZone, isWithinBounds } from '../services/mappers'
@@ -97,6 +97,7 @@ export function buildMockFarmEvents(now = new Date()): FarmEvent[] {
     { kind: 'cattle_out_of_zone', cameraId: 'south-pasture', detectedObject: 'cow', hoursAgo: 0.25 },
     { kind: 'person_detected', cameraId: 'main-entrance', detectedObject: 'person', at: daytime },
     { kind: 'possible_intrusion', cameraId: 'north-pasture', detectedObject: 'person', at: night },
+    { kind: 'cattle_down', cameraId: 'south-pasture', detectedObject: 'cow', hoursAgo: 2 },
     { kind: 'external_animal_detected', cameraId: 'north-pasture', detectedObject: 'cow', hoursAgo: 3 },
     { kind: 'possible_unauthorized_movement', cameraId: 'main-entrance', detectedObject: 'vehicle', hoursAgo: 5 },
     { kind: 'camera_disconnected', cameraId: 'corral', detectedObject: null, hoursAgo: 8 },
@@ -177,6 +178,23 @@ export function buildMockOccupancyHistory(start: Date, end: Date): OccupancySamp
     }
   })
   return samples
+}
+
+/** A plausible day for the demo mode; the same day always reads the same. */
+export function buildMockDailyReport(day?: string, now: Date = new Date()): DailyReport {
+  const key = day ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const seed = [...key].reduce((sum, char) => sum + char.charCodeAt(0), 0)
+  const lying = 2400 + seed % 600
+  const standing = 1500 + seed % 400
+  const walking = 300 + seed % 100
+  return {
+    day: key, complete: day !== undefined, eventsTotal: seed % 7, notices: [],
+    herd: {
+      observedMinutes: 600 + seed % 300, lyingMinutes: lying, standingMinutes: standing, walkingMinutes: walking, peakCattle: 12,
+      peakPeople: 1, minutesWithPeople: seed % 40, lyingShare: Math.round(lying / (lying + standing + walking) * 1000) / 1000,
+    },
+    alerts: { total: seed % 4, info: 0, warning: seed % 4, critical: 0, open: 0, acknowledged: 0, resolved: seed % 4 },
+  }
 }
 
 export function buildMockAlertReport(start: Date, end: Date): AlertReport {
