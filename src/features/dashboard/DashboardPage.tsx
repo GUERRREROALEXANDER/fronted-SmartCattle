@@ -13,6 +13,7 @@ import { DailyReportCard } from './DailyReportCard'
 import { farmCondition, statusHeadline } from './dashboardModel'
 import { FarmStatusHeader } from './FarmStatusHeader'
 import { FieldLog } from './FieldLog'
+import { FocusStrip } from './FocusStrip'
 import { HerdSummary } from './HerdSummary'
 import { LiveMonitor } from './LiveMonitor'
 import { useDashboardData } from './useDashboardData'
@@ -54,6 +55,8 @@ export function DashboardPage() {
         withVideo={videoIds ? videoIds.size : null}
         updatedAt={live.updatedAt} />
     </FadeUp>
+
+    <FocusStrip />
 
     {offline && <FadeUp delay={staggerDelay(1)} className={styles.alerts}>
       <Notice tone="critical" title="Sin conexión con el servidor">
