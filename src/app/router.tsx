@@ -16,9 +16,13 @@ import { RedirectIfAuthenticated } from './auth/RedirectIfAuthenticated'
 import { LoginPage } from '../features/auth/LoginPage'
 import { PhonePairPage } from '../features/cameras/PhonePairPage'
 import { RegisterPage } from '../features/auth/RegisterPage'
+import { ReportPage } from '../features/report/ReportPage'
+import { RequireOnboarding } from './auth/RequireOnboarding'
+import { OnboardingPage } from '../features/onboarding/OnboardingPage'
 
 const pages = {
   dashboard: DashboardPage,
+  report: ReportPage,
   monitoring: MonitoringPage,
   events: EventsPage,
   cattle: CattlePage,
@@ -29,21 +33,30 @@ const pages = {
 // Heavy pages (3D scene, charts, video tooling) load on first visit so the shell stays light.
 const lazyPages: Record<string, LazyRouteFunction<RouteObject>> = {
   pasture: async () => ({ Component: (await import('../features/pasture3d/PasturePage')).PasturePage }),
-  videos: async () => ({ Component: (await import('../features/videos/VideosPage')).VideosPage }),
   analytics: async () => ({ Component: (await import('../features/analytics/AnalyticsPage')).AnalyticsPage }),
 }
 
-export const router = createBrowserRouter([{
+export const router = createBrowserRouter([...(import.meta.env.DEV ? [{
+  path: '/dev/sprite-rig',
+  lazy: async () => ({ Component: (await import('../features/dev/SpriteRigPage')).SpriteRigPage }),
+}] : []), {
   // Opened on a phone from the QR: no session there, the link's code stands in for one.
   path: '/conectar-celular', Component: PhonePairPage, handle: { title: 'Agregar cámara' },
 }, {
   Component: RedirectIfAuthenticated,
   children: [
+    {
+      path: '/bienvenida',
+      handle: { title: 'Tu ganado a la vista' },
+      lazy: async () => ({ Component: (await import('../features/landing/LandingPage')).LandingPage }),
+    },
     { path: '/login', Component: LoginPage, handle: { title: 'Ingresar' } },
     { path: '/register', Component: RegisterPage, handle: { title: 'Crear cuenta' } },
   ],
 }, {
   Component: RequireAuth,
+  children: [{ path: '/primeros-pasos', Component: OnboardingPage, handle: { title: 'Primeros pasos' } }, {
+  Component: RequireOnboarding,
   children: [{ path: '/setup', Component: SetupFarmPage, handle: { title: 'Configurar finca' } }, {
   Component: RequireFarm,
   children: [{
@@ -63,6 +76,7 @@ export const router = createBrowserRouter([{
     }] : []),
     { path: '*', Component: NotFoundPage, handle: { title: 'Página no encontrada' } },
   ],
+  }],
   }],
   }],
 }])
