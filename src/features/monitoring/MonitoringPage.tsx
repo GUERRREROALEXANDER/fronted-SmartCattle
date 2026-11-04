@@ -4,11 +4,10 @@ import { EventRow } from '../../components/events/EventRow'
 import { EmptyState, ErrorState, Notice, PageHeader, StatusPill } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
 import { FadeUp, staggerDelay } from '../../motion'
-import { getCameraStream, getFrameDetections, getSystemStatus, hasPicture, listCameras, listEvents, listSafeZones, loadCameraSnapshots } from '../../services'
+import { getCameraStream, getFrameDetections, getSystemStatus, hasPicture, listEvents, listSafeZones, loadCameraSnapshots } from '../../services'
+import { useLiveCameras } from '../../live/useLiveCameras'
 import type { Severity } from '../../types/domain'
 import { recentAlerts } from '../dashboard/dashboardModel'
-import { useVideoLibraryContext } from '../videos/useVideoLibraryContext'
-import { videoForCamera } from '../videos/videosModel'
 import { CameraStage } from './CameraStage'
 import { CameraSwitcher } from './CameraSwitcher'
 import type { OverlayLayers } from './DetectionOverlay'
@@ -29,7 +28,6 @@ function Header({ actions }: { actions?: ReactNode }) {
 
 export function MonitoringPage() {
   const [searchParams] = useSearchParams()
-  const { videos } = useVideoLibraryContext()
   const [layers, setLayers] = useState<OverlayLayers>({ boxes: true, zones: true, labels: true })
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
@@ -38,7 +36,7 @@ export function MonitoringPage() {
   }, [])
 
   // Polled faster than the rest so a camera that connects or disconnects shows up within seconds.
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: cameraRefreshMs })
+  const cameras = useLiveCameras({ onlineOnly: true })
   const events = useResource(signal => listEvents({ signal }), { refreshMs: liveRefreshMs })
   const status = useResource(signal => getSystemStatus({ signal }), { refreshMs: liveRefreshMs })
 
@@ -59,7 +57,6 @@ export function MonitoringPage() {
   const live = stream.data?.kind === 'image' || stream.data?.kind === 'mjpeg'
   const synthetic = stream.data?.kind === 'image' && stream.data.synthetic
   const burnedIn = stream.data?.kind === 'mjpeg' && stream.data.annotated === true
-  const video = camera ? videoForCamera(videos, camera.id) : null
 
   if (cameras.status === 'success' && !cameras.data) {
     return <div className={styles.page}>
@@ -80,7 +77,7 @@ export function MonitoringPage() {
   }
 
   return <div className={styles.page}>
-    <Header actions={live && !video && <span className={styles.livePill}>
+    <Header actions={live && <span className={styles.livePill}>
       <span className={styles.liveDot} aria-hidden="true" />{synthetic ? 'Demostración en vivo' : 'Transmisión en vivo'}
     </span>} />
     {status.data?.backend === 'offline' && <Notice className={styles.notice} tone="critical" title="Sin conexión con el servidor">
@@ -98,8 +95,8 @@ export function MonitoringPage() {
         <div className={styles.stageFrame}>
           <CameraStage camera={camera} stream={stream.data} streamLoading={stream.status === 'loading' || cameras.status === 'loading'}
             frame={frame.data} zones={zones.data ?? []} layers={layers}
-            aiConfigured={status.data?.aiConfigured ?? null} now={now} video={video} />
-          {live && !burnedIn && !video && <div className={styles.toolbar}>
+            aiConfigured={status.data?.aiConfigured ?? null} now={now} />
+          {live && !burnedIn && <div className={styles.toolbar}>
             <LayerToggles layers={layers} onChange={setLayers} disabled={false} />
             {synthetic && <p className={styles.synthetic}>Imagen ilustrativa con detecciones simuladas</p>}
           </div>}
