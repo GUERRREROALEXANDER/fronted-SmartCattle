@@ -4,6 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useDocumentTitle } from '../../app/useDocumentTitle'
 import { useAuth } from '../../app/auth/useAuth'
 import { duration, ease } from '../../motion'
+import { AssistantWidget } from '../../features/assistant/AssistantWidget'
 import { VideoLibraryProvider } from '../../features/videos/VideoLibraryProvider'
 import { LiveProvider } from '../../live/LiveProvider'
 import { SideRail } from './SideRail'
@@ -51,5 +52,6 @@ export function AppShell() {
       </AnimatePresence>
     </main>
     <MobileTabBar />
+    <AssistantWidget />
   </div></VideoLibraryProvider></LiveProvider>
 }
