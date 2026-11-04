@@ -2,17 +2,19 @@
 
 .alerts { display: grid; gap: var(--space-3); }
 
-/* Phones: one column, the live status first. */
+/* Phones: one column; what needs action (alerts) comes right after the numbers. */
 .grid {
   display: grid;
   min-width: 0;
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     "metrics"
+    "alerts"
     "plan"
     "trend"
-    "zones"
+    "chart"
     "herd"
+    "report"
     "log";
   align-items: start;
   gap: var(--space-4);
@@ -20,11 +22,13 @@
 
 .metrics { grid-area: metrics; }
 .plan { grid-area: plan; }
+.alertCenter { grid-area: alerts; }
 .trend { grid-area: trend; }
-.zones { grid-area: zones; }
+.chart { grid-area: chart; }
 .herd { grid-area: herd; }
 .log { grid-area: log; }
-.metrics, .plan, .trend, .zones, .herd, .log { min-width: 0; }
+.report { grid-area: report; }
+.metrics, .plan, .alertCenter, .trend, .chart, .herd, .log, .report { min-width: 0; }
 
 @media (min-width: 760px) {
   .grid {
@@ -32,25 +36,27 @@
     grid-template-areas:
       "metrics metrics"
       "plan plan"
+      "alerts herd"
       "trend trend"
-      "zones herd"
-      "log log";
+      "chart log"
+      "report report";
     align-items: stretch;
     gap: var(--space-5);
   }
   .metrics { align-self: start; }
 }
 
-/* Wide: the live plan leads, the herd and the log run beside it. */
+/* Wide: the live plan leads with the alert center beside it (same height, so the plan is never stretched);
+   the charts read as one row below, then the herd and the field log. */
 @media (min-width: 1200px) {
   .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    grid-template-rows: auto auto 1fr auto;
     grid-template-areas:
       "metrics metrics metrics"
-      "plan plan herd"
-      "plan plan log"
-      "trend trend zones";
+      "plan plan alerts"
+      "trend trend chart"
+      "herd log log"
+      "report report report";
     gap: var(--space-6);
   }
 }
