@@ -1,7 +1,8 @@
 .page { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); }
 
 .head { margin-bottom: var(--space-6); }
-.head > header { margin-bottom: var(--space-1); }
+.head > header { margin-bottom: var(--space-5); }
+.metrics { margin-bottom: var(--space-6); }
 
 .demo {
   display: inline-flex;
@@ -10,7 +11,7 @@
   padding: var(--space-1) var(--pill-padding-inline);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-full);
-  background: linear-gradient(var(--glass-fill-brand), var(--glass-fill-brand)), var(--glass-fill);
+  background: var(--ink-papel);
   box-shadow: var(--glass-highlight), var(--glass-shadow);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
@@ -155,4 +156,10 @@
 
 @media (prefers-reduced-motion: reduce) {
   .liveDot::after { animation: none; opacity: 0; }
+}
+
+/* People on the farm without any animal outside: a security notice, not an alarm. */
+.bannerWarning {
+  background: var(--color-warning-ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-warning) 30%, transparent), var(--shadow-overlay);
 }

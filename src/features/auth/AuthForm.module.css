@@ -41,7 +41,7 @@
   display: flex; align-items: flex-start; gap: var(--space-3);
   padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
   border: 1px solid color-mix(in srgb, var(--color-info) 28%, var(--glass-border)); border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-info-surface) 90%, transparent), var(--glass-fill-strong));
+  background: var(--color-info-surface);
   box-shadow: var(--glass-highlight);
   color: var(--color-ink-muted); font-size: var(--text-sm);
 }
@@ -63,8 +63,8 @@
   background: linear-gradient(90deg, transparent, var(--color-on-brand-surface), transparent);
   animation: glass-sheen 2.4s var(--ease-in-out) infinite;
 }
-.strengthWeak { background: linear-gradient(90deg, var(--color-critical-ink), var(--color-critical)); }
-.strengthMedium { background: linear-gradient(90deg, var(--color-warning), var(--color-overlay-person)); }
+.strengthWeak { background: var(--color-critical); }
+.strengthMedium { background: var(--color-warning); }
 .strengthStrong { background: var(--gradient-brand); }
 .strengthHints { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-1) var(--space-3); list-style: none; }
 .hintPending, .hintMet { display: flex; align-items: center; gap: var(--space-1); min-width: 0; font-size: var(--text-xs); transition: color var(--duration-base); }
@@ -84,7 +84,7 @@
 .demo {
   margin-top: var(--space-5); overflow: hidden;
   border: 1px solid var(--glass-border); border-radius: var(--radius-lg);
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-mint) 45%, transparent), var(--glass-fill-subtle));
+  background: var(--ink-maiz);
   box-shadow: var(--glass-highlight);
 }
 .demo summary {

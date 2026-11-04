@@ -30,7 +30,7 @@ html {
   -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
   -webkit-tap-highlight-color: transparent;
-  scrollbar-color: var(--color-brand) var(--color-ground);
+  scrollbar-color: var(--ink-tinta) var(--color-ground);
 }
 
 body {
@@ -44,15 +44,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* The glass backdrop is pinned to the viewport so panels blur the same mesh on long pages. */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  background: var(--glass-backdrop);
-  pointer-events: none;
-}
+/* Each page prints in its own ink. */
+:root, [data-ink='tinta'] { --route-ink: var(--ink-tinta); --route-on-ink: var(--ink-papel); --route-accent: var(--ink-maiz); }
+[data-ink='verde'] { --route-ink: var(--ink-verde); --route-on-ink: var(--ink-tinta); --route-accent: var(--ink-maiz); }
+[data-ink='cobalto'] { --route-ink: var(--ink-cobalto); --route-on-ink: #FFFFFF; --route-accent: var(--ink-maiz); }
+[data-ink='naranja'] { --route-ink: var(--ink-naranja); --route-on-ink: var(--ink-tinta); --route-accent: var(--ink-papel); }
+[data-ink='maiz'] { --route-ink: var(--ink-maiz); --route-on-ink: var(--ink-tinta); --route-accent: var(--ink-fucsia); }
+[data-ink='fucsia'] { --route-ink: var(--ink-fucsia); --route-on-ink: #FFFFFF; --route-accent: var(--ink-maiz); }
 
 h1,
 h2,
@@ -101,8 +99,8 @@ a {
 }
 
 ::selection {
-  background: var(--color-mint);
-  color: var(--color-mint-ink);
+  background: var(--ink-maiz);
+  color: var(--ink-tinta);
 }
 
 :focus-visible {
@@ -121,10 +119,7 @@ a {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-brand);
-  border: 3px solid var(--color-ground);
-  background-clip: padding-box;
-  border-radius: var(--radius-full);
+  background: var(--ink-tinta);
 }
 
 ::-webkit-scrollbar-track {

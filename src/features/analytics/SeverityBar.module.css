@@ -3,7 +3,6 @@
 
 @media (prefers-reduced-motion: no-preference) {
   .track { animation: sweep var(--duration-slow) var(--ease-out) both; }
-  .segment { transition: width var(--duration-slow) var(--ease-out); }
 }
 @keyframes sweep { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
 
@@ -16,7 +15,6 @@
   font-weight: var(--weight-semibold);
   white-space: nowrap;
   border-radius: var(--radius-sm);
-  background-image: linear-gradient(180deg, color-mix(in srgb, var(--color-surface-raised) 28%, transparent), transparent);
 }
 
 .info, .warning { color: var(--color-ink); }

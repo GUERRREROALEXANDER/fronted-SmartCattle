@@ -3,7 +3,7 @@
   display: flex; flex-wrap: wrap; align-items: flex-start; gap: var(--space-3);
   padding: var(--space-3) var(--space-4); border-radius: var(--radius-lg);
   border: 1px solid color-mix(in srgb, var(--notice-tone) 26%, var(--glass-border));
-  background: linear-gradient(135deg, color-mix(in srgb, var(--notice-surface) 88%, transparent), var(--glass-fill-strong));
+  background: var(--notice-surface);
   box-shadow: var(--glass-highlight), 0 10px 24px -16px var(--notice-tone);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));

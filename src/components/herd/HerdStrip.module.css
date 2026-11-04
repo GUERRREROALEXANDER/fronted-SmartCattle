@@ -1,0 +1,33 @@
+.strip {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  height: 4rem;
+  overflow: hidden;
+  container-type: inline-size;
+  pointer-events: none;
+}
+
+.place { flex: none; }
+/* A figure is 1.6 times as wide as it is tall: the herd shrinks to fit its width, like cattle seen from farther away. */
+.place > * { --cow-height: clamp(1.25rem, calc(100cqw / var(--herd-size) / 1.7), 4rem); }
+
+/* On a phone a whole herd would print as one dark mass: fewer figures, each one readable. The label still counts them all. */
+@container (max-width: 640px) {
+  .place > * { --cow-height: clamp(1.75rem, calc(100cqw / var(--herd-size) / 1.7), 4rem); }
+  .place:nth-child(n + 8) { display: none; }
+}
+
+/* A walking animal crosses a short stretch and comes back facing the way it goes. */
+.place[data-walking] { animation: cow-stroll 26s linear infinite alternate; }
+
+@keyframes cow-stroll {
+  0%, 49.9% { transform: translateX(0) scaleX(1); }
+  49.91% { transform: translateX(1.5vw) scaleX(1); }
+  50% { transform: translateX(1.5vw) scaleX(-1); }
+  100% { transform: translateX(0) scaleX(-1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place[data-walking] { animation: none; }
+}

@@ -1,23 +1,32 @@
 :root {
   color-scheme: light;
 
+  /* Poster inks: the whole palette. Each one sets the text that stays legible on it. */
+  --ink-verde: #00A650;
+  --ink-maiz: #FFC800;
+  --ink-fucsia: #DB0A73;
+  --ink-cobalto: #1B2FD8;
+  --ink-naranja: #FF5A1F;
+  --ink-tinta: #15120E;
+  --ink-papel: #FAFAF5;
+
   /* Color - surfaces */
-  --color-ground: #F7FCF8;
+  --color-ground: #FAFAF5;
   --color-surface: #FFFFFF;
   --color-surface-raised: #FFFFFF;
-  --color-well: #ECF8EF;
-  --color-rule: #C7E4D0;
-  --color-rule-strong: #6B8574;
+  --color-well: #F0F0E6;
+  --color-rule: #D9D8CC;
+  --color-rule-strong: #15120E;
 
   /* Color - ink */
-  --color-ink: #0F2418;
-  --color-ink-muted: #3D5446;
-  --color-ink-subtle: #5C7365;
+  --color-ink: #15120E;
+  --color-ink-muted: #3F3B33;
+  --color-ink-subtle: #5C574C;
 
   /* Color - brand */
-  --color-brand: #16A34A;
-  --color-brand-strong: #15803D;
-  --color-brand-hover: #22C55E;
+  --color-brand: #008A43;
+  --color-brand-strong: #006E35;
+  --color-brand-hover: #00A650;
   --color-on-brand: #FFFFFF;
   --color-on-brand-muted: #DCFCE7;
 
@@ -80,6 +89,8 @@
 
   /* Type - family and stretch */
   --font-sans: 'Archivo Variable', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Anton', 'Archivo Variable', Impact, sans-serif;
+  --font-stamp: 'Alfa Slab One', 'Archivo Variable', serif;
   --stretch-wide: 115%;
   --stretch-normal: 100%;
   --stretch-condensed: 80%;
@@ -123,19 +134,19 @@
   --space-16: 4rem;
 
   /* Radius */
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
-  --radius-full: 999px;
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+  --radius-full: 4px;
 
   /* Elevation */
-  --shadow-raised: 0 2px 4px rgb(15 36 24 / 0.04), 0 12px 28px rgb(22 163 74 / 0.08);
-  --shadow-overlay: 0 20px 50px rgb(15 36 24 / 0.16), 0 8px 24px rgb(22 163 74 / 0.08);
-  --shadow-glow-brand: 0 0 0 4px rgb(34 197 94 / 0.16), 0 8px 24px rgb(34 197 94 / 0.18);
+  --shadow-raised: 0 2px 4px rgb(21 18 14 / 0.08), 0 12px 24px -12px rgb(21 18 14 / 0.3);
+  --shadow-overlay: 0 24px 48px -16px rgb(21 18 14 / 0.45);
+  --shadow-glow-brand: 0 8px 18px -8px rgb(21 18 14 / 0.5);
 
   /* Motion */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
   --duration-fast: 140ms;
   --duration-base: 220ms;
@@ -187,31 +198,21 @@
 }
 
 :root {
-  /* Glass (Dashboard V15) - page backdrop */
-  --glass-backdrop:
-    radial-gradient(60rem 40rem at 8% -10%, rgb(187 247 208 / 0.75), transparent 60%),
-    radial-gradient(50rem 36rem at 100% 0%, rgb(205 235 255 / 0.7), transparent 60%),
-    radial-gradient(44rem 34rem at 70% 110%, rgb(255 241 184 / 0.55), transparent 60%),
-    linear-gradient(180deg, #F3FBF5 0%, #EEF8F2 100%);
-
-  /* Glass - panels */
-  --glass-fill: rgb(255 255 255 / 0.62);
-  --glass-fill-strong: rgb(255 255 255 / 0.78);
-  --glass-fill-subtle: rgb(255 255 255 / 0.42);
-  --glass-fill-brand: rgb(22 163 74 / 0.10);
-  --glass-border: rgb(255 255 255 / 0.72);
-  --glass-border-subtle: rgb(15 36 24 / 0.08);
-  --glass-highlight: inset 0 1px 0 rgb(255 255 255 / 0.85);
-  --glass-blur: 18px;
-  --glass-saturate: 160%;
-  --glass-shadow: 0 1px 2px rgb(15 36 24 / 0.04), 0 18px 40px -12px rgb(22 101 52 / 0.18);
-  --glass-shadow-hover: 0 2px 4px rgb(15 36 24 / 0.05), 0 26px 56px -14px rgb(22 101 52 / 0.26);
-
-  /* Glass - dark (over photos and the camera stage) */
-  --glass-dark-fill: rgb(14 26 19 / 0.46);
-  --glass-dark-border: rgb(255 255 255 / 0.18);
-
-  /* Glass - accents */
-  --gradient-brand: linear-gradient(135deg, #22C55E 0%, #16A34A 55%, #15803D 100%);
-  --gradient-brand-soft: linear-gradient(135deg, rgb(187 247 208 / 0.9), rgb(205 235 255 / 0.8));
+  /* Flat print: the old panel tokens now mean paper, one thick rule and no blur. */
+  --glass-backdrop: none;
+  --glass-fill: var(--color-surface);
+  --glass-fill-strong: var(--color-surface);
+  --glass-fill-subtle: var(--color-well);
+  --glass-fill-brand: rgb(255 200 0 / 0.22);
+  --glass-border: var(--ink-tinta);
+  --glass-border-subtle: rgb(21 18 14 / 0.16);
+  --glass-highlight: 0 0 #0000;
+  --glass-blur: 0px;
+  --glass-saturate: 100%;
+  --glass-shadow: 0 0 #0000;
+  --glass-shadow-hover: 0 12px 22px -14px rgb(21 18 14 / 0.5);
+  --glass-dark-fill: rgb(21 18 14 / 0.82);
+  --glass-dark-border: rgb(250 250 245 / 0.3);
+  --gradient-brand: linear-gradient(var(--ink-tinta), var(--ink-tinta));
+  --gradient-brand-soft: linear-gradient(var(--ink-maiz), var(--ink-maiz));
 }

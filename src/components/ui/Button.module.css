@@ -1,75 +1,35 @@
 .button {
   position: relative;
-  isolation: isolate;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-height: var(--touch-min);
-  padding: var(--space-2) var(--space-4);
-  overflow: hidden;
-  border: 1px solid transparent;
+  padding: var(--space-2) var(--space-5);
+  border: 2px solid var(--ink-tinta);
   border-radius: var(--radius-md);
   font-size: var(--text-sm);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   cursor: pointer;
-  transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast),
-    background-position var(--duration-base) var(--ease-out), border-color var(--duration-fast),
-    color var(--duration-fast), box-shadow var(--duration-base) var(--ease-out);
+  transition: transform var(--duration-fast) var(--ease-out), background-color var(--duration-fast), color var(--duration-fast);
 }
 .content { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); }
 .content svg { flex-shrink: 0; }
 .loading .content { opacity: 0; }
 .sm { min-height: var(--control-sm); padding-inline: var(--space-3); }
 
-/* The darker half of the brand gradient keeps white text above 4.5:1. */
-.primary {
-  background: var(--gradient-brand);
-  background-size: 200% 100%;
-  background-position: 100% 0;
-  color: var(--color-on-brand);
-  border-color: color-mix(in srgb, var(--color-brand-strong) 60%, transparent);
-  box-shadow: inset 0 1px 0 var(--color-on-brand-surface), 0 8px 20px -10px var(--color-brand-strong);
-}
-.secondary {
-  background: var(--glass-fill-strong);
-  color: var(--color-brand-strong);
-  border-color: color-mix(in srgb, var(--color-brand-strong) 45%, var(--glass-border));
-  box-shadow: var(--glass-highlight);
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  backdrop-filter: blur(var(--glass-blur));
-}
-.ghost { background: transparent; color: var(--color-brand-strong); }
-.danger {
-  background: var(--color-alarm-ink);
-  color: var(--color-on-brand);
-  box-shadow: inset 0 1px 0 var(--color-on-brand-surface), 0 8px 20px -10px var(--color-alarm);
-}
+.primary { background: var(--ink-tinta); color: var(--ink-papel); }
+.secondary { background: var(--color-surface); color: var(--ink-tinta); }
+.ghost { background: transparent; color: var(--ink-tinta); border-color: transparent; }
+.danger { background: var(--color-alarm-ink); border-color: var(--color-alarm-ink); color: var(--color-on-brand); }
 
-/* Sheen that sweeps across filled buttons on hover. */
-.primary::after, .danger::after {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  z-index: -1;
-  width: 45%;
-  background: linear-gradient(90deg, transparent, var(--color-on-brand-surface), transparent);
-  transform: translateX(-120%) skewX(-18deg);
-  pointer-events: none;
-}
-
-@media (hover: hover) {
-  .button:hover:not(:disabled) { transform: translateY(-1px); }
-  .primary:hover:not(:disabled) { background-position: 70% 0; box-shadow: inset 0 1px 0 var(--color-on-brand-surface), var(--shadow-glow-brand); }
-  .primary:hover:not(:disabled)::after, .danger:hover:not(:disabled)::after { animation: glass-sheen 0.9s var(--ease-out); }
-  .secondary:hover:not(:disabled) { background: var(--color-mint); color: var(--color-mint-ink); border-color: var(--color-brand); box-shadow: var(--glass-highlight), var(--glass-shadow); }
-  .ghost:hover:not(:disabled) { background: var(--color-hover); color: var(--color-safe-ink); }
+@media (hover: hover) and (pointer: fine) {
+  .primary:hover:not(:disabled) { background: var(--ink-maiz); color: var(--ink-tinta); }
+  .secondary:hover:not(:disabled) { background: var(--ink-maiz); }
+  .ghost:hover:not(:disabled) { background: var(--color-well); }
   .danger:hover:not(:disabled) { background: var(--color-alarm-hover); }
 }
-.primary:focus-visible { box-shadow: var(--focus-ring), var(--shadow-glow-brand); }
-.primary:active:not(:disabled) { background-position: 100% 0; }
-.danger:active:not(:disabled) { background: var(--color-alarm-ink); }
 .button:active:not(:disabled) { transform: scale(0.97); }
-.button:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+.button:disabled { opacity: 0.55; cursor: not-allowed; }
 .loading:disabled { opacity: 1; cursor: wait; }
 .spinner {
   position: absolute;
@@ -80,8 +40,7 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) {
   .button { transition: none; }
-  .button:hover:not(:disabled), .button:active:not(:disabled) { transform: none; }
-  .primary::after, .danger::after { display: none; }
+  .button:active:not(:disabled) { transform: none; }
   .spinner { animation: none; }
 }
 

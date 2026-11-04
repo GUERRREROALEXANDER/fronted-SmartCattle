@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { Ellipsis } from 'lucide-react'
 import { NavLink, useLocation } from 'react-router'
 import { motion, useReducedMotion } from 'motion/react'
-import { navItems, profileItem } from '../../app/navigation'
+import { navItems, profileItem, type NavigationItem } from '../../app/navigation'
 import { MoreSheet } from './MoreSheet'
 import styles from './MobileTabBar.module.css'
 
@@ -22,13 +22,13 @@ export function MobileTabBar() {
 
   return <>
     <nav aria-label="Principal" className={styles.bar}>
-      {navItems.filter(item => item.primaryOnMobile).map(({ id, path, label, icon: Icon }) =>
-        <NavLink key={id} to={path} end={path === '/'} className={styles.cell}>
+      {navItems.filter(item => item.primaryOnMobile).map((item: NavigationItem) => { const { id, path, label, shortLabel, icon: Icon } = item; return (
+        <NavLink key={id} to={path} end={path === '/'} className={styles.cell} aria-label={label}>
           {({ isActive }) => <>
             {isActive && <ActiveMarker />}
-            <Icon size={20} strokeWidth={1.75} aria-hidden="true" /><span>{label}</span>
+            <Icon size={20} strokeWidth={1.75} aria-hidden="true" /><span>{shortLabel ?? label}</span>
           </>}
-        </NavLink>)}
+        </NavLink>) })}
       <button ref={triggerRef} type="button" className={`${styles.cell} ${moreActive ? styles.active : ''}`}
         aria-haspopup="dialog" aria-expanded={open} aria-controls="more-sheet" onClick={() => setOpen(true)}>
         {moreActive && <ActiveMarker />}
