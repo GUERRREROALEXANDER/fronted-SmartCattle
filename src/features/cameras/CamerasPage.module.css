@@ -36,3 +36,7 @@
 .note { margin-top: var(--space-6); color: var(--color-ink-muted); font-size: var(--text-sm); }
 
 .next { margin-block: var(--space-3) var(--space-5); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
+
+/* The PC, phone and webcam options, folded: most people only need the address above. */
+.otherWays { margin-bottom: var(--space-3); font-size: var(--text-sm); }
+.otherWays > summary { cursor: pointer; color: var(--color-ink-muted); font-weight: var(--weight-semibold); margin-bottom: var(--space-3); }

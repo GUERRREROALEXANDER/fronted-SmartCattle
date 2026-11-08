@@ -13,6 +13,7 @@ import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
 import { CameraCard } from './CameraCard'
 import { skipCameraSetup } from '../../app/auth/cameraSetupSkip'
 import { CameraConnect } from './CameraConnect'
+import { CloudConnect } from './CloudConnect'
 import styles from './CamerasPage.module.css'
 
 export function CamerasPage() {
@@ -50,7 +51,11 @@ export function CamerasPage() {
     </FadeUp>
 
     {session && can(session.user.role, 'cameras:configure') && <FadeUp delay={staggerDelay(1)}>
-      <CameraConnect cameras={list} onChanged={cameras.reload} previews={false} />
+      <CloudConnect onChanged={cameras.reload} />
+      <details className={styles.otherWays}>
+        <summary>Otras formas de conectar: PC de la finca, celular o webcam</summary>
+        <CameraConnect cameras={list} onChanged={cameras.reload} previews={false} />
+      </details>
       <p className={styles.next}><Link to="/" onClick={skipCameraSetup}>Continuar al panel</Link></p>
     </FadeUp>}
 
