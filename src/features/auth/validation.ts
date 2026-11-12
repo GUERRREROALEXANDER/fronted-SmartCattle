@@ -13,6 +13,19 @@ export function validateEmail(value: string): string | null {
   return emailPattern.test(value.trim()) ? null : 'Escribe un correo válido, por ejemplo nombre@finca.com.'
 }
 
+/** The number as WhatsApp addresses it: what people type with spaces or hyphens, without them. */
+export function normalizePhone(value: string): string {
+  return value.replace(/[\s\-()]/g, '')
+}
+
+/** Alerts go to Colombian numbers: +57 and the 10 digits of the line. */
+export function validatePhone(value: string): string | null {
+  const phone = normalizePhone(value)
+  if (!phone) return 'Escribe tu número de WhatsApp.'
+  if (!phone.startsWith('+57')) return 'El número debe empezar por +57.'
+  return /^\+57\d{10}$/.test(phone) ? null : 'Después de +57 van los 10 dígitos del número, por ejemplo +573001234567.'
+}
+
 export function validateUsername(value: string): string | null {
   const username = value.trim()
   if (!username) return 'Escribe tu nombre de usuario.'

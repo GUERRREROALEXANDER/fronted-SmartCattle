@@ -2,7 +2,7 @@ import { safeStorage } from './safeStorage'
 
 // What this browser keeps for the person signed in. A shared PC must not show one account's videos to the next.
 const OWNER_KEY = 'smartcattle.account.owner'
-const ACCOUNT_KEYS = ['smartcattle.videos.analyses', 'smartcattle.videos.safeZone']
+const ACCOUNT_KEYS = ['smartcattle.videos.analyses', 'smartcattle.videos.safeZone', 'smartcattle.whatsapp.pending']
 
 export function forgetAccountData(): void {
   ACCOUNT_KEYS.forEach(key => safeStorage.remove(key))

@@ -127,4 +127,26 @@ describe('a cow reported lying', () => {
     expect(agent.state).toBe('grazing')
     expect(agent.position).toEqual(before)
   })
+
+  it('never crosses the lot on foot: when its place really changes, it is there, still lying', () => {
+    const motion = createHerdMotion(config)
+    syncHerd(motion, [lying(1)])
+    const agent = motion.agents.get('c#2')!
+    syncHerd(motion, [lying(40)])
+    stepHerd(motion, 0.016)
+    expect(agent.position.x).toBe(40)
+    expect(agent.speed).toBe(0)
+    expect(agent.state).toBe('grazing')
+  })
+
+  it('walks only once the AI says it is up and the place changed', () => {
+    const motion = createHerdMotion(config)
+    syncHerd(motion, [lying(1)])
+    const agent = motion.agents.get('c#2')!
+    syncHerd(motion, [{ ...lying(40), posture: 'walking' as const }])
+    stepHerd(motion, 0.1)
+    expect(agent.state).toBe('walking')
+    expect(agent.position.x).toBeGreaterThan(1)
+    expect(agent.position.x).toBeLessThan(40)
+  })
 })

@@ -43,6 +43,8 @@
 
 .main:focus { outline: none; box-shadow: none; }
 
+.reminder { max-width: var(--content-max); margin: 0 auto var(--space-4); }
+
 .content {
   max-width: var(--content-max);
   margin-inline: auto;

@@ -13,6 +13,7 @@ import { onlineCameraCount, recentAlerts } from '../dashboard/dashboardModel'
 import { CameraCard } from './CameraCard'
 import { skipCameraSetup } from '../../app/auth/cameraSetupSkip'
 import { CameraConnect } from './CameraConnect'
+import { ManagedCameras } from './ManagedCameras'
 import styles from './CamerasPage.module.css'
 
 export function CamerasPage() {
@@ -51,6 +52,7 @@ export function CamerasPage() {
 
     {session && can(session.user.role, 'cameras:configure') && <FadeUp delay={staggerDelay(1)}>
       <CameraConnect cameras={list} onChanged={cameras.reload} previews={false} />
+      <ManagedCameras />
       <p className={styles.next}><Link to="/" onClick={skipCameraSetup}>Continuar al panel</Link></p>
     </FadeUp>}
 

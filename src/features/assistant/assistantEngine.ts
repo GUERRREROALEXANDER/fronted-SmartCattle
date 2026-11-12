@@ -5,7 +5,7 @@ import type { AlertReport, DailyReport } from '../../types/domain'
  * data and says it in a sentence, so it needs no key and cannot make up a number. What it has no data
  * for, it says so. It never turns posture counts into a diagnosis (PRODUCT.md: not veterinary software).
  */
-export const ASSISTANT_NAME = 'Lucero'
+export const ASSISTANT_NAME = 'Lucía'
 
 export interface LiveFacts {
   /** Null while nothing has been counted. */

@@ -1,22 +1,23 @@
 import { useEffect, useId, useRef, useState, type ChangeEvent, type FormEvent, type KeyboardEvent } from 'react'
-import { Check, ChevronDown, Circle, Clock3, Info, Loader2, Lock, LockKeyhole, Mail, TriangleAlert, UserRound, UsersRound, X } from 'lucide-react'
+import { Check, ChevronDown, Circle, Clock3, Info, Loader2, Lock, LockKeyhole, Mail, Phone, TriangleAlert, UserRound, UsersRound, X } from 'lucide-react'
 import { AnimatePresence, motion, useAnimationControls, useReducedMotion } from 'motion/react'
 import { useLocation, useNavigate } from 'react-router'
 import { useAuth } from '../../app/auth/useAuth'
 import { Button, Notice, TextField } from '../../components/ui'
 import { demoAccounts, demoPassword } from '../../mocks/mockAuth'
 import { duration, ease, staggerDelay } from '../../motion'
+import { rememberPendingWhatsapp, startWhatsappVerification } from '../../services'
 import { AuthError } from '../../types/auth'
 import {
-  getPasswordStrength, validateEmail, validateIdentifier, validateNewPassword, validatePassword,
-  validatePasswordConfirmation, validateUsername, type PasswordStrength,
+  getPasswordStrength, normalizePhone, validateEmail, validateIdentifier, validateNewPassword, validatePassword,
+  validatePasswordConfirmation, validatePhone, validateUsername, type PasswordStrength,
 } from './validation'
 import styles from './AuthForm.module.css'
 
-type Field = 'identifier' | 'username' | 'email' | 'password' | 'confirmPassword'
+type Field = 'identifier' | 'username' | 'email' | 'phone' | 'password' | 'confirmPassword'
 type SubmitStatus = 'idle' | 'pending' | 'success'
 interface FormNotice { tone: 'critical' | 'warning'; title: string; text: string }
-const emptyValues = { identifier: '', username: '', email: '', password: '', confirmPassword: '' }
+const emptyValues = { identifier: '', username: '', email: '', phone: '', password: '', confirmPassword: '' }
 const deadlineIn = (ms: number) => Date.now() + ms
 // Fields reveal right after the card springs in.
 const REVEAL_START = 0.28
@@ -104,6 +105,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     identifier: serverErrors.identifier ?? (isDemoMode ? validateIdentifier(values.identifier) : validateEmail(values.identifier)),
     username: serverErrors.username ?? validateUsername(values.username),
     email: serverErrors.email ?? validateEmail(values.email),
+    phone: serverErrors.phone ?? validatePhone(values.phone),
     password: serverErrors.password ?? (isRegistration ? validateNewPassword(values.password) : validatePassword(values.password)),
     confirmPassword: serverErrors.confirmPassword ?? validatePasswordConfirmation(values.password, values.confirmPassword),
   }
@@ -160,7 +162,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     setSubmitted(true)
     setNotice(null)
     const fieldOrder: readonly Field[] = isRegistration
-      ? ['username', 'email', 'password', 'confirmPassword']
+      ? ['username', 'email', 'phone', 'password', 'confirmPassword']
       : ['identifier', 'password']
     const firstInvalid = fieldOrder.find(field => errors[field])
     if (firstInvalid) {
@@ -177,6 +179,11 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         await register({
           username: values.username.trim().toLowerCase(), email: values.email.trim(), password: values.password,
         })
+        // The account exists from here on. The number is linked apart, with a code sent to it, so a WhatsApp service
+        // that is off delays the alerts without costing anyone their sign-up: the code can be asked for again in Ajustes.
+        const phone = normalizePhone(values.phone)
+        rememberPendingWhatsapp(phone)
+        void startWhatsappVerification(phone).catch(() => {})
       } else {
         await login({ identifier: values.identifier.trim(), password: values.password })
       }
@@ -219,7 +226,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   function fillDemo(role: 'owner' | 'worker') {
     const account = demoAccounts.find(account => account.role === role)
     if (!account) return
-    setValues({ identifier: account.username, username: '', email: '', password: demoPassword, confirmPassword: '' })
+    setValues({ ...emptyValues, identifier: account.username, password: demoPassword })
     setServerErrors({})
     setSubmitted(false)
     setTouched({})
@@ -266,6 +273,9 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
               maxLength={20} leadingIcon={UserRound} {...fieldProps('username')} />
             <TextField label="Correo electrónico" type="email" autoComplete="email" inputMode="email"
               autoCapitalize="none" spellCheck={false} leadingIcon={Mail} {...fieldProps('email')} />
+            <TextField label="WhatsApp" type="tel" autoComplete="tel" inputMode="tel" placeholder="+573001234567"
+              hint="Aquí te avisaremos de las alertas del ganado. Te enviaremos un código para confirmarlo."
+              leadingIcon={Phone} {...fieldProps('phone')} />
           </motion.div> : <motion.div key="login-identifier" className={styles.animatedField} {...entrance}>
             {isDemoMode
               ? <TextField label="Usuario o correo" autoComplete="username" autoCapitalize="none" spellCheck={false}

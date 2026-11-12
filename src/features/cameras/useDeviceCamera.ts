@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { DEVICE_FRAME_MS, DEVICE_FRAME_QUALITY, deviceCameraProblem, frameSize, removeCamera, sendCameraFrame } from '../../services'
+import { DEVICE_FRAME_MS, DEVICE_FRAME_QUALITY, canShareScreen, deviceCameraProblem, frameSize, removeCamera, screenShareProblem, sendCameraFrame } from '../../services'
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -31,6 +31,18 @@ export function useDeviceCamera(onEnded: (message: string) => void) {
     }
   }, [])
 
+  /** Asks which window shows the camera. Must run right after the click: browsers refuse it later. */
+  const openScreen = useCallback(async (): Promise<MediaStream> => {
+    if (!canShareScreen()) throw new Error(screenShareProblem(new TypeError()), { cause: 'unsupported' })
+    try {
+      return await navigator.mediaDevices.getDisplayMedia({
+        audio: false, video: { displaySurface: 'window', width: { ideal: 1280 }, frameRate: { ideal: 5 } },
+      })
+    } catch (error) {
+      throw new Error(screenShareProblem(error), { cause: error })
+    }
+  }, [])
+
   const send = useCallback((media: MediaStream, baseUrl: string, cameraId: string) => {
     const video = videoRef.current
     if (!video) {
@@ -54,6 +66,12 @@ export function useDeviceCamera(onEnded: (message: string) => void) {
       void wakeLock?.release().catch(() => {})
       void removeCamera(baseUrl, cameraId).catch(() => {})
     }
+    // The browser's own "stop sharing" button, or a camera unplugged: nothing more will come.
+    media.getVideoTracks()[0]?.addEventListener('ended', () => {
+      if (!running) return
+      stop()
+      onEnded('La imagen de esta cámara se cortó. Pulsa Conectar en su tarjeta para volver a enviarla.')
+    })
     setActiveId(cameraId)
     video.srcObject = media
     void video.play().catch(() => {})
@@ -91,5 +109,5 @@ export function useDeviceCamera(onEnded: (message: string) => void) {
     })()
   }, [onEnded, stop])
 
-  return { videoRef, activeId, weakSignal, open, send, stop }
+  return { videoRef, activeId, weakSignal, open, openScreen, send, stop }
 }

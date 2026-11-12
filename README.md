@@ -4,7 +4,7 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–9 are complete, plus a realistic 3D pasture, a video analyzer with simulated detection, an analytics page and the **Dashboard V15** redesign (glass panels and motion across the app). The final quality pass remains. See [Roadmap](#roadmap).
+> **Status:** Phases 1–9 are complete, plus a realistic 3D pasture, an analytics page and the **Dashboard V15** redesign (glass panels and motion across the app). The final quality pass remains. See [Roadmap](#roadmap).
 
 ![Home dashboard with live metrics, the live herd monitor and the cattle summary](docs/screenshots/dashboard-desktop.png)
 
@@ -31,7 +31,6 @@ This repository contains only the frontend. The REST API lives in the separate `
 - [Dashboard](#dashboard)
 - [Live monitoring](#live-monitoring)
 - [3D pasture](#3d-pasture)
-- [Videos](#videos)
 - [Analytics](#analytics)
 - [Motion](#motion)
 - [Design system](#design-system)
@@ -60,7 +59,7 @@ This repository contains only the frontend. The REST API lives in the separate `
 | Tests | Vitest | Same config as Vite, fast |
 | Lint | ESLint 10 + typescript-eslint | Flat config |
 
-No UI kit, CSS framework or state library is used. The 3D pasture, videos and analytics pages are lazy-loaded, so three.js and Recharts are only downloaded when those pages open.
+No UI kit, CSS framework or state library is used. The 3D pasture and analytics pages are lazy-loaded, so three.js and Recharts are only downloaded when those pages open.
 
 ## Getting started
 
@@ -93,6 +92,10 @@ Copy `.env.example` to `.env`. Never commit `.env`.
 
 The frontend holds no secrets. Do not put API keys in `VITE_*` variables: they are embedded in the client bundle. `AI_API_KEY` belongs only to the backend and the AI service.
 
+**RTSP cameras.** The Cameras page uses the backend's `/api/camera-streams` with the person's session, and plays each `hls_url` with hls.js, loaded only when a player opens. The camera service's key (`CAMERA_API_KEY`) lives in the backend's `.env` and never reaches the browser. The video itself comes from MediaMTX, not through the backend, so the page's origin must be in `hlsAllowOrigins` in `mediamtx.local.yml`, and `hls_url` points at `127.0.0.1` unless that changes: it plays on the PC running the service.
+
+**WhatsApp number.** Sign-up requires a number starting with `+57` and asks the backend to send it a code; the number only receives alerts once that code is written in Ajustes > Cuenta (`/api/auth/me/whatsapp*`). A failed send never costs the account.
+
 For production, change only `VITE_API_BASE_URL` (for example `https://your-backend-domain.example`) and add the frontend origin to the backend's `ALLOWED_ORIGINS`. Vite reads these values at build time, so rebuild after changing them.
 
 ---
@@ -115,7 +118,7 @@ flowchart LR
     cam --> ai
 ```
 
-The frontend reads from the backend and only writes video analysis summaries. It never calls the AI service directly and never posts AI events.
+The frontend reads from the backend. It never calls the AI service directly and never posts AI events.
 
 ### Frontend layers
 
@@ -208,15 +211,8 @@ The backend (`SmartCattle-Backend`) is a FastAPI service backed by PostgreSQL (S
 | GET | `/api/cameras`, `/api/cameras/{id}` | `{ items, total }` / one camera | Camera list and status |
 | GET | `/api/zones` | `{ items, total }` | Safe zones (**signed in**) |
 | POST, PATCH, DELETE | `/api/zones/...` | One zone | Editing a safe zone (**owner**) |
-| POST | `/api/videos/analyses` | Saved analysis | Stores a finished analysis (**signed in**) |
-| GET | `/api/videos/analyses`, `/api/videos/analyses/{id}` | Analyses list / one analysis | Analysis history |
 | GET | `/api/metrics/summary` | Aggregated counts | Metrics summary |
 | POST | `/api/ai/events`, PUT `/api/ai/cameras/{id}/status`, PUT `/api/animals/{tag}/detection` | — | AI service only (API key). **The frontend never calls them.** |
-
-`POST /api/videos/analyses` needs a signed-in user rather than the AI key,
-because it is called by the browser and `AI_API_KEY` cannot live in a `VITE_`
-variable -- those are public in the bundle. That is also why it was the one
-unauthenticated path into the shared events table until users existed.
 
 Event shape (mirrored in `src/types/api.ts`):
 
@@ -465,7 +461,6 @@ flowchart TB
     shell --> e["/events Eventos"]
     shell --> c["/cattle Ganado"]
     shell --> pa["/pasture Potrero 3D (lazy)"]
-    shell --> v["/videos Videos (lazy)"]
     shell --> an["/analytics Análisis (lazy)"]
     shell --> cam["/cameras Cámaras"]
     shell --> s["/settings Ajustes"]
@@ -476,8 +471,8 @@ flowchart TB
 - Anonymous visitors to a private route are redirected to `/login` and come back to the requested page after signing in.
 - The navigation is defined once in `src/app/navigation.ts`.
 - **Desktop (≥ 1024 px):** floating glass side rail with the nine sections, a green indicator that slides to the active page, the demo badge and the signed-in user.
-- **Mobile:** glass top bar, a floating five-cell tab bar (Inicio, En vivo, Eventos, Ganado, Más) and a native `<dialog>` glass sheet for Potrero 3D, Videos, Análisis, Cámaras, Ajustes and Perfil.
-- **Alarm banner:** when any part of the app raises a zone alarm (live map, 3D pasture, video analyzer), a red banner slides down with a "Silenciar" action.
+- **Mobile:** glass top bar, a floating five-cell tab bar (Inicio, En vivo, Eventos, Ganado, Más) and a native `<dialog>` glass sheet for Potrero 3D, Análisis, Cámaras, Ajustes and Perfil.
+- **Alarm banner:** when any part of the app raises a zone alarm (live map, 3D pasture), a red banner slides down with a "Silenciar" action.
 - "Security" is a tab inside Events rather than a separate page: security alerts are events, and a separate page would duplicate the list and filters.
 
 ---
@@ -592,34 +587,6 @@ flowchart LR
 - **Controls.** Pause/resume, "Provocar salida" (forces one cow out to demo the alert), name labels on/off and camera presets (overview and one per lot). The zone panel lists cows inside each lot; the exit log keeps the session's exits and returns.
 - **Performance.** Positions update in refs inside the render loop; React state changes only when a zone's status changes. Device pixel ratio is capped at 2.
 - **Fallbacks.** Without WebGL the page explains it instead of showing an empty canvas. With `prefers-reduced-motion` the simulation starts paused and camera presets jump instead of flying.
-
----
-
-## Videos
-
-`/videos` lets the user load farm recordings (drag and drop or "Elegir videos") and review them in the browser.
-
-![Videos page with the glass library and drop zone](docs/screenshots/videos-desktop.png)
-
-- Files are validated (video type, not empty, up to 1 GB). Rejected files get a reason.
-- Each video gets a thumbnail, duration and resolution read in the browser, and can be assigned to a camera.
-- **Assigned videos show on the camera.** A video assigned to a camera plays on that camera's card in Cámaras and on the En vivo stage, tagged "Video cargado · no es en vivo". No demo detections are drawn over it, because they would be fake.
-| Assigned video on the camera card | Assigned video on the live stage |
-|---|---|
-| ![Camera card playing a loaded video](docs/screenshots/cameras-video-desktop.png) | ![Live stage playing a loaded video](docs/screenshots/live-video-desktop.png) |
-
-- **Nothing is uploaded.** The backend has no upload endpoint, so videos stay in the browser as object URLs (released when removed) and the page says so.
-- **Sample clip.** Evaluators without footage can generate a sample pasture clip from the notice at the top of the page.
-
-### Video analyzer
-
-"Analizar con IA (simulación YOLO)" opens the analyzer: the video plays with detection boxes for cows and people, a draggable safe-zone polygon and a HUD with model, FPS, inference time, counts and the latest alerts. The detection is a labeled in-browser simulation, not a real model.
-
-![Video analyzer: a cow outside the safe zone triggers the alarm](docs/screenshots/video-analyzer-desktop.png)
-
-- A cow or person outside the zone is drawn red, marked on the timeline and raises the global alarm.
-- The zone corners can be dragged with the mouse or moved with the keyboard (Tab to a corner, arrow keys, Shift for long steps).
-- "Terminar y ver resumen" shows totals per class, alerts and a timeline; the summary is saved with `POST /api/videos/analyses`. In `mock` mode, or when the backend cannot be reached, it is kept in the browser so the result is never lost.
 
 ---
 

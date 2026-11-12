@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { addressProblem, connectionFor, ipCameraSource, loginProblem, phoneLink } from './savedCameraService'
+import { addressProblem, cameraSourceFrom, connectionFor, ipCameraSource, loginProblem, phoneLink } from './savedCameraService'
+
+describe('cameraSourceFrom', () => {
+  it('turns a bare IP into its link', () => {
+    expect(cameraSourceFrom(' 192.168.1.20 ')).toBe(ipCameraSource('192.168.1.20'))
+    expect(cameraSourceFrom('192.168.1.20:554')).toBe(ipCameraSource('192.168.1.20:554'))
+  })
+
+  it('leaves anything else as it was pasted', () => {
+    expect(cameraSourceFrom('rtsp://cam.example.com/live')).toBe('rtsp://cam.example.com/live')
+    expect(cameraSourceFrom('http://192.168.1.30:8080/video')).toBe('http://192.168.1.30:8080/video')
+  })
+})
 
 describe('connectionFor', () => {
   it('opens a phone or a full link as it is when there is no password', () => {

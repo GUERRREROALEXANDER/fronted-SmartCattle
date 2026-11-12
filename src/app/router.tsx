@@ -16,20 +16,21 @@ import { RedirectIfAuthenticated } from './auth/RedirectIfAuthenticated'
 import { LoginPage } from '../features/auth/LoginPage'
 import { PhonePairPage } from '../features/cameras/PhonePairPage'
 import { RegisterPage } from '../features/auth/RegisterPage'
+import { ModelPage } from '../features/assistant/ModelPage'
 
 const pages = {
   dashboard: DashboardPage,
   monitoring: MonitoringPage,
   events: EventsPage,
+  model: ModelPage,
   cattle: CattlePage,
   cameras: CamerasPage,
   settings: SettingsPage,
 }
 
-// Heavy pages (3D scene, charts, video tooling) load on first visit so the shell stays light.
+// Heavy pages (3D scene, charts) load on first visit so the shell stays light.
 const lazyPages: Record<string, LazyRouteFunction<RouteObject>> = {
   pasture: async () => ({ Component: (await import('../features/pasture3d/PasturePage')).PasturePage }),
-  videos: async () => ({ Component: (await import('../features/videos/VideosPage')).VideosPage }),
   analytics: async () => ({ Component: (await import('../features/analytics/AnalyticsPage')).AnalyticsPage }),
 }
 

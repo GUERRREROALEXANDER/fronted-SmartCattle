@@ -16,3 +16,6 @@ logs/*.log
 skills-lock.json
 .impeccable/
 .opencode/
+.vercel
+.env*
+!.env.example

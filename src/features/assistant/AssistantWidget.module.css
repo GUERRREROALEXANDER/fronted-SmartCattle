@@ -7,17 +7,39 @@
 }
 
 .launcher {
-  display: grid;
-  width: 3.25rem;
-  height: 3.25rem;
-  place-items: center;
-  border: 1px solid var(--glass-border);
-  border-radius: 50%;
-  background: var(--gradient-brand-soft);
-  box-shadow: var(--glass-highlight);
+  display: block;
+  width: 4.5rem;
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--color-safe-ink);
   cursor: pointer;
 }
+.launcherRobot { width: 100%; height: auto; filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.18)); }
+.headRobot { width: 2.75rem; height: 3.25rem; flex-shrink: 0; }
+
+/* Says who she is once, then gets out of the way. */
+.hello {
+  position: absolute;
+  right: calc(100% + var(--space-2));
+  top: 30%;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: var(--color-surface, Canvas);
+  box-shadow: var(--glass-highlight);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: helloOnce 4.5s ease forwards;
+}
+@keyframes helloOnce {
+  0% { opacity: 0; transform: translateX(6px); }
+  10%, 80% { opacity: 1; transform: none; }
+  100% { opacity: 0; visibility: hidden; }
+}
+@media (prefers-reduced-motion: reduce) { .hello { display: none; } }
 .launcher:focus-visible, .close:focus-visible, .send:focus-visible, .suggestion:focus-visible, .input:focus-visible {
   outline: 2px solid var(--color-safe-ink);
   outline-offset: 2px;
@@ -36,16 +58,6 @@
 }
 
 .head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--color-rule); }
-.badge {
-  display: grid;
-  width: 2rem;
-  height: 2rem;
-  flex-shrink: 0;
-  place-items: center;
-  border-radius: var(--radius-md);
-  background: var(--gradient-brand-soft);
-  color: var(--color-safe-ink);
-}
 .title { display: grid; flex: 1; min-width: 0; }
 .title small { color: var(--color-ink-subtle); font-size: var(--text-xs); }
 .close, .send { display: grid; min-width: 2.75rem; min-height: 2.75rem; place-items: center; border: 0; border-radius: var(--radius-md); background: none; color: inherit; cursor: pointer; }

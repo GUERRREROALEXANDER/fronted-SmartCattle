@@ -126,9 +126,18 @@ export function stepHerd(motion: HerdMotion, dt: number, { reduceMotion = false 
       agent.state = 'grazing'
       continue
     }
-    // A lying animal is not going anywhere: its box shifting a little must not make it walk on the spot.
-    if (distance <= arriveRadius || (agent.posture === 'lying' && distance <= arriveRadius * LYING_STAYS_WITHIN)) {
+    // An animal the AI calls lying or standing is not going anywhere: its box shifting a little must not
+    // make it walk on the spot. Only a real change of place moves it.
+    const still = agent.posture === 'lying' || agent.posture === 'standing'
+    if (distance <= arriveRadius || (still && distance <= arriveRadius * LYING_STAYS_WITHIN)) {
       agent.speed += (0 - agent.speed) * (1 - Math.exp(-dt * 6))
+      agent.state = agent.posture === 'walking' ? 'walking' : 'grazing'
+      continue
+    }
+    // A cow lying down cannot cross a paddock: if its place really changed, it is simply there, lying.
+    if (agent.posture === 'lying') {
+      agent.position = { ...agent.target }
+      agent.speed = 0
       agent.state = 'grazing'
       continue
     }
