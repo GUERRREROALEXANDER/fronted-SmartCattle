@@ -3,7 +3,7 @@ export type DataSource = 'api' | 'mock' | 'unavailable'
 export interface Sourced<T> { data: T; source: DataSource }
 export type Severity = 'info' | 'warning' | 'critical'
 // Only cattle_out_of_zone is supported by the backend today.
-export type EventKind = 'cattle_out_of_zone' | 'person_detected' | 'possible_intrusion' | 'external_animal_detected' | 'possible_unauthorized_movement' | 'camera_disconnected' | 'ai_unavailable'
+export type EventKind = 'cattle_out_of_zone' | 'cattle_down' | 'person_detected' | 'possible_intrusion' | 'external_animal_detected' | 'possible_unauthorized_movement' | 'camera_disconnected' | 'ai_unavailable'
 export type EventCategory = 'cattle' | 'security' | 'system'
 export interface FarmEvent {
   id: string
@@ -133,4 +133,22 @@ export interface Occupancy { cameraId: string; inside: number; outside: number; 
 export interface OccupancySample { cameraId: string; minute: Date; inside: number; outside: number }
 
 export interface AlertDay { day: string; total: number; info: number; warning: number; critical: number; open: number; acknowledged: number; resolved: number }
+export interface DailyActivity {
+  observedMinutes: number; lyingMinutes: number; standingMinutes: number; walkingMinutes: number
+  peakCattle: number; peakPeople: number; minutesWithPeople: number; lyingShare: number | null
+}
+export type HealthNoticeKind = 'prolonged_lying' | 'little_lying'
+export interface DailyReport {
+  day: string; complete: boolean; herd: DailyActivity
+  notices: { cameraId: string; kind: HealthNoticeKind; lyingShare: number }[]
+  alerts: { total: number; info: number; warning: number; critical: number; open: number; acknowledged: number; resolved: number }
+  eventsTotal: number
+}
+export type NotificationChannel = 'whatsapp' | 'telegram'
+export interface NotificationSettings {
+  enabled: boolean; whatsappPhone: string | null; telegramChatId: string | null; minSeverity: Severity
+  /** Channels the server has credentials for. */
+  channelsAvailable: NotificationChannel[]
+}
+export interface NotificationTestResult { channel: NotificationChannel; sent: boolean; detail: string | null }
 export interface AlertReport { days: AlertDay[]; total: number; avgMinutesToAcknowledge: number | null; avgMinutesToResolve: number | null }

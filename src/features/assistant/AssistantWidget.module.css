@@ -1,0 +1,76 @@
+/* Above the phone's tab bar, and clear of the page's own controls. */
+.launcher, .panel {
+  position: fixed;
+  right: var(--space-3);
+  bottom: calc(var(--tabbar-height) + var(--space-3) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-tabbar);
+}
+
+.launcher {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-4) 0 var(--space-1);
+  border: 0;
+  background: var(--ink-tinta);
+  color: var(--ink-papel);
+  font-family: var(--font-stamp);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.launcher:active { transform: scale(0.96); }
+.launcher svg { width: 3rem; height: 3rem; }
+/* On a phone it stays out of the way of what is under it: the star alone is enough to know it. */
+.launcherName { display: none; font-size: var(--text-md); }
+@media (max-width: 1023px) {
+  .launcher { padding: var(--space-1); }
+}
+
+.launcher:focus-visible, .close:focus-visible, .send:focus-visible, .suggestion:focus-visible, .input:focus-visible {
+  outline: 3px solid var(--ink-fucsia);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+
+.panel {
+  display: grid;
+  width: min(26rem, calc(100vw - 2 * var(--space-3)));
+  max-height: min(36rem, calc(100dvh - 9rem));
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  overflow: hidden;
+  border: 3px solid var(--ink-tinta);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-overlay);
+  transform-origin: right bottom;
+}
+
+.head { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-3); background: var(--ink-tinta); color: var(--ink-papel); }
+.title { display: grid; flex: 1; min-width: 0; }
+.title strong { font-family: var(--font-stamp); font-size: var(--text-lg); font-weight: 400; line-height: 1.1; }
+.title small { font-size: var(--text-xs); }
+.close, .send { display: grid; min-width: 2.75rem; min-height: 2.75rem; place-items: center; border: 0; background: none; color: inherit; cursor: pointer; }
+.send { background: var(--ink-tinta); color: var(--ink-papel); }
+.send:disabled { background: var(--color-well); color: var(--color-ink-subtle); cursor: default; }
+
+.log { display: flex; min-height: 10rem; flex-direction: column; gap: var(--space-2); overflow-y: auto; padding: var(--space-3); }
+.assistant, .user { max-width: 90%; padding: var(--space-2) var(--space-3); font-size: var(--text-sm); line-height: var(--leading-normal); }
+.assistant { align-self: flex-start; background: var(--color-well); }
+.user { align-self: flex-end; background: var(--ink-maiz); color: var(--ink-tinta); font-weight: var(--weight-semibold); }
+
+.suggestions { display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0 var(--space-3) var(--space-3); }
+.suggestion { min-height: 2.75rem; padding: var(--space-1) var(--space-3); border: 2px solid var(--ink-tinta); background: none; color: inherit; font-size: var(--text-sm); font-weight: var(--weight-semibold); cursor: pointer; }
+@media (hover: hover) and (pointer: fine) {
+  .suggestion:hover { background: var(--ink-maiz); }
+}
+
+.form { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-top: 2px solid var(--ink-tinta); }
+.input { flex: 1; min-width: 0; min-height: 2.75rem; padding: 0 var(--space-3); border: 2px solid var(--ink-tinta); background: none; color: inherit; font: inherit; font-size: max(16px, var(--text-md)); }
+
+@media (min-width: 1024px) {
+  .launcher, .panel { bottom: var(--space-5); right: var(--space-5); }
+  .launcherName { display: inline; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .launcher { transition: none; }
+  .launcher:active { transform: none; }
+}

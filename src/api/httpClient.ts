@@ -53,10 +53,8 @@ function errorDetail(body: unknown): string | undefined {
 /**
  * One request, with the cancellation and timeout handling every caller needs.
  *
- * Previously this only did GET, with `method` hardcoded, so the first POST in
- * the app reimplemented the abort wiring, the timeout and the error mapping in
- * `videoAnalysisService`. Two copies of this logic is two places for a
- * cancellation bug to live.
+ * Every method goes through here, because two copies of this logic would be
+ * two places for a cancellation bug to live.
  */
 export async function request<T>(
   method: HttpMethod,

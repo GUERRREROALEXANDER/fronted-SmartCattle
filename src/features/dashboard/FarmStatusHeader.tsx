@@ -1,5 +1,6 @@
 import { CircleCheck, CircleDashed, Clock3, OctagonAlert, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
+import { HerdStrip } from '../../components/herd/HerdStrip'
 import { Skeleton } from '../../components/ui'
 import { formatTime } from '../../lib/format'
 import { duration, ease, staggerDelay } from '../../motion'
@@ -31,35 +32,37 @@ export function FarmStatusHeader({ farmName, condition, headline, status, camera
   const reduce = useReducedMotion()
   const offline = status?.backend === 'offline'
   const pills = [backendPill(status), aiPill(status), camerasPill(cameras, offline, withVideo)]
-  return <header className={styles.header}>
-    <div className={styles.titleBlock}>
-      <p className={styles.eyebrow}>Panel de la finca</p>
-      <h1 className={styles.headline}>
-        <span className={styles.farm}>{farmName ?? 'Tu finca'}</span>
-        <span className={styles.separator} aria-hidden="true"> · </span>
-        {headline
-          ? <span className={styles[condition]}>{headline}</span>
-          : <Skeleton width="14ch" height="0.9em" className={styles.skeleton} />}
-      </h1>
+  return <header className={styles.band} data-condition={condition}>
+    <h1>
+      <span className={styles.farm} style={{ display: 'block' }}>{farmName ?? 'Tu finca'}</span>
+      {headline
+        ? <motion.span key={headline} className={styles.headline} style={{ display: 'block' }}
+          initial={{ opacity: 0, transform: reduce ? 'none' : 'scale(1.04)' }}
+          animate={{ opacity: 1, transform: 'scale(1)' }}
+          transition={{ duration: reduce ? duration.micro : 0.22, ease: ease.out }}>{headline}</motion.span>
+        : <Skeleton width="14ch" height="4rem" className={styles.skeleton} />}
+    </h1>
+    <div className={styles.meta}>
       <ul className={styles.system} aria-label="Estado del sistema">
         {pills.map((pill, index) => {
           const Icon = pillIcon[pill.tone]
-          return <motion.li key={index} className={`${styles.pill} ${styles[`pill-${pill.tone}`]}`}
-            initial={{ opacity: 0, y: reduce ? 0 : 6 }}
-            animate={{ opacity: 1, y: 0 }}
+          return <motion.li key={index} className={styles.pill}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ duration: reduce ? duration.micro : duration.state, ease: ease.out, delay: reduce ? 0 : staggerDelay(index + 1) }}>
-            <Icon size={14} strokeWidth={2.25} aria-hidden="true" />
+            <Icon size={16} strokeWidth={2.25} aria-hidden="true" />
             {pill.label}
           </motion.li>
         })}
       </ul>
+      <p className={styles.updated} aria-live="off">
+        <Clock3 size={16} strokeWidth={2} aria-hidden="true" />
+        {updatedAt
+          ? <>Actualizado <time className="tabular" dateTime={updatedAt.toISOString()}>{formatTime(updatedAt)}</time></>
+          : 'Cargando datos…'}
+      </p>
     </div>
-    <p className={styles.updated} aria-live="off">
-      <Clock3 size={14} strokeWidth={2} aria-hidden="true" />
-      {updatedAt
-        ? <>Actualizado <time className="tabular" dateTime={updatedAt.toISOString()}>{formatTime(updatedAt)}</time></>
-        : 'Cargando datos…'}
-    </p>
+    <HerdStrip className={styles.herd} />
   </header>
 }
 

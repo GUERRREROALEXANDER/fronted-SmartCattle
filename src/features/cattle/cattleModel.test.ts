@@ -21,6 +21,6 @@ describe('cattleModel', () => {
 
   it('keeps only cattle events', () => {
     const kinds = new Set(cattleEvents(buildMockFarmEvents()).map(event => event.kind))
-    expect(kinds).toEqual(new Set(['cattle_out_of_zone', 'external_animal_detected']))
+    expect(kinds).toEqual(new Set(['cattle_out_of_zone', 'cattle_down', 'external_animal_detected']))
   })
 })

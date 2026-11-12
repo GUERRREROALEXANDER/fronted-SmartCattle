@@ -313,7 +313,7 @@ describe('central mock data', () => {
     expect(fetchImpl).not.toHaveBeenCalled()
   })
   it('covers all event kinds in the last 48 hours, newest first', () => {
-    expect(events).toHaveLength(12)
+    expect(events).toHaveLength(13)
     expect(new Set(events.map(event => event.kind))).toEqual(new Set(Object.keys(eventCatalog)))
     const times = events.map(event => event.occurredAt.getTime())
     expect(times).toEqual([...times].sort((a, b) => b - a))

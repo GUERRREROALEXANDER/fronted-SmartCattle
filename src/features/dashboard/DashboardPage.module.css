@@ -14,6 +14,7 @@
     "trend"
     "chart"
     "herd"
+    "report"
     "log";
   align-items: start;
   gap: var(--space-4);
@@ -26,7 +27,8 @@
 .chart { grid-area: chart; }
 .herd { grid-area: herd; }
 .log { grid-area: log; }
-.metrics, .plan, .alertCenter, .trend, .chart, .herd, .log { min-width: 0; }
+.report { grid-area: report; }
+.metrics, .plan, .alertCenter, .trend, .chart, .herd, .log, .report { min-width: 0; }
 
 @media (min-width: 760px) {
   .grid {
@@ -36,7 +38,8 @@
       "plan plan"
       "alerts herd"
       "trend trend"
-      "chart log";
+      "chart log"
+      "report report";
     align-items: stretch;
     gap: var(--space-5);
   }
@@ -52,7 +55,8 @@
       "metrics metrics metrics"
       "plan plan alerts"
       "trend trend chart"
-      "herd log log";
+      "herd log log"
+      "report report report";
     gap: var(--space-6);
   }
 }

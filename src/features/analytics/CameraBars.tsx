@@ -11,7 +11,7 @@ export function CameraBars({ data }: { data: readonly CameraShare[] }) {
         <strong className={styles.value}>{row.count} · {formatPercentage(row.percentage)}</strong>
       </div>
       <div className={styles.track}>
-        <span className={styles.fill} style={{ width: `${row.count * 100 / maximum}%` }} />
+        <span className={styles.fill} style={{ transform: `scaleX(${row.count / maximum})` }} />
       </div>
     </li>)}
   </ul>

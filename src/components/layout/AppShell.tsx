@@ -3,8 +3,9 @@ import { useLocation, useMatches, useOutlet } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useDocumentTitle } from '../../app/useDocumentTitle'
 import { useAuth } from '../../app/auth/useAuth'
+import { inkFor } from '../../app/navigation'
 import { duration, ease } from '../../motion'
-import { VideoLibraryProvider } from '../../features/videos/VideoLibraryProvider'
+import { AssistantWidget } from '../../features/assistant/AssistantWidget'
 import { LiveProvider } from '../../live/LiveProvider'
 import { SideRail } from './SideRail'
 import { TopBar } from './TopBar'
@@ -34,8 +35,7 @@ export function AppShell() {
   const title = usePageTitle()
   const { session } = useAuth()
   useDocumentTitle()
-  // The video library lives here so loaded videos survive navigation while signed in.
-  return <LiveProvider><VideoLibraryProvider><div className={styles.shell}>
+  return <LiveProvider><div className={styles.shell} data-ink={inkFor(pathname)}>
     <a className={styles.skipLink} href="#main-content">Saltar al contenido</a>
     <SideRail />
     <TopBar title={title} user={session?.user} />
@@ -51,5 +51,6 @@ export function AppShell() {
       </AnimatePresence>
     </main>
     <MobileTabBar />
-  </div></VideoLibraryProvider></LiveProvider>
+    <AssistantWidget />
+  </div></LiveProvider>
 }

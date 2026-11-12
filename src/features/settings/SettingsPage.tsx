@@ -9,6 +9,7 @@ import { useResource } from '../../lib/useResource'
 import { duration, ease, FadeUp, staggerDelay } from '../../motion'
 import { getCurrentFarm, getFarmPlan, getSecurityHours, listFarmMembers, listSafeZones } from '../../services'
 import { useLiveCameras } from '../../live/useLiveCameras'
+import { NotificationSettingsForm } from './NotificationSettingsForm'
 import type { EventKind, SafeZone, Sourced, UserRole } from '../../types/domain'
 import styles from './SettingsPage.module.css'
 
@@ -22,8 +23,8 @@ async function loadZones(ids: string[], signal: AbortSignal): Promise<Sourced<Sa
 }
 
 /**
- * Settings are read-only: the backend has no endpoints to change any of them yet. Each section
- * says so instead of rendering controls that would not work.
+ * Settings are read-only except where alerts are sent: the backend has no endpoints to change the
+ * rest yet. Each section says so instead of rendering controls that would not work.
  */
 export function SettingsPage() {
   const { session } = useAuth()
@@ -41,9 +42,9 @@ export function SettingsPage() {
   return <div className={styles.page}>
     <FadeUp className={styles.head}>
       <PageHeader title="Ajustes" actions={<p className={styles.intro}>
-        <Lock size={16} strokeWidth={1.75} aria-hidden="true" />Solo lectura
+        <Lock size={16} strokeWidth={1.75} aria-hidden="true" />Casi todo de solo lectura
       </p>} />
-      <p className={styles.lead}>Por ahora los ajustes son de solo lectura: el servidor todavía no permite modificarlos.</p>
+      <p className={styles.lead}>Por ahora solo se pueden cambiar los avisos de alertas; el servidor todavía no permite modificar el resto.</p>
     </FadeUp>
 
     <div className={styles.sections}>
@@ -114,7 +115,7 @@ export function SettingsPage() {
             <StatusPill tone={tone[eventCatalog[kind].defaultSeverity]} label={severityLabel[eventCatalog[kind].defaultSeverity]} />
           </li>)}
         </ul>
-        <p className={styles.note}>Las notificaciones fuera de la aplicación (correo, mensajes) aún no existen en el servidor.</p>
+        <NotificationSettingsForm />
       </Section>}
 
       {role === 'worker' && <p className={styles.note}>La finca, los usuarios, las cámaras y las alertas los gestiona el dueño de la finca.</p>}

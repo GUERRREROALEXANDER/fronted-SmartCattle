@@ -101,6 +101,14 @@ export function ipCameraSource(host: string, path = ''): string {
   return `rtsp://${host.trim()}${route ? (route.startsWith('/') ? route : `/${route}`) : ''}`
 }
 
+const BARE_IP = /^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/
+
+/** What to save for whatever was pasted in the one address field: a bare IP becomes its link, the rest goes as it is. */
+export function cameraSourceFrom(link: string): string {
+  const value = link.trim()
+  return BARE_IP.test(value) ? ipCameraSource(value) : value
+}
+
 const localNames = new Set(['localhost', '127.0.0.1', '[::1]'])
 
 /** This PC's address on the farm's wifi, as the AI service sees it; null if it does not know. */

@@ -8,9 +8,7 @@ li.tile {
   align-content: start;
   gap: var(--space-1);
   padding: var(--space-4);
-  background:
-    radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--tone-surface) 55%, transparent), transparent 60%),
-    var(--glass-fill);
+  background: var(--glass-fill);
 }
 
 .brand { --tone: var(--color-brand); --tone-ink: var(--color-safe-ink); --tone-surface: var(--color-mint); }
@@ -29,7 +27,7 @@ li.tile {
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   color: var(--tone-ink);
-  background: linear-gradient(135deg, var(--tone-surface), color-mix(in srgb, var(--tone-surface) 35%, var(--color-surface-raised)));
+  background: var(--tone-surface);
   box-shadow: var(--glass-highlight), 0 6px 14px -6px color-mix(in srgb, var(--tone) 45%, transparent);
 }
 .brand .badge { background: var(--gradient-brand-soft); }

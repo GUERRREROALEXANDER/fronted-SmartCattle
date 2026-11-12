@@ -8,9 +8,7 @@ section.card {
 /* An open critical alert tints the whole card so it reads from across the room. */
 section.hot {
   border-color: color-mix(in srgb, var(--color-alarm) 40%, var(--glass-border));
-  background:
-    radial-gradient(120% 70% at 0% 0%, color-mix(in srgb, var(--color-alarm-surface) 70%, transparent), transparent 65%),
-    var(--glass-fill);
+  background: var(--glass-fill);
 }
 
 .header { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
@@ -61,7 +59,7 @@ section.hot {
 /* Open critical alerts: a solid edge plus a tinted surface; color is never the only cue (icon + label too). */
 .item.critical:not(.handled) {
   border-color: color-mix(in srgb, var(--color-alarm) 45%, transparent);
-  background: linear-gradient(90deg, var(--color-alarm-surface), color-mix(in srgb, var(--color-alarm-surface) 30%, var(--glass-fill-subtle)));
+  background: var(--color-alarm-surface);
   box-shadow: inset 4px 0 0 var(--color-alarm);
 }
 .handled { opacity: 0.78; }
