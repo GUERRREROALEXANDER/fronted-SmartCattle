@@ -122,16 +122,15 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
     }
     if (paused) return
 
-    // The AI's word decides the gait: walking when it says walking, however little the box moved; never
-    // while it says lying. Without a word, the gait follows the movement.
-    const walking = cow.posture === 'walking' || (cow.state !== 'grazing' && cow.posture !== 'lying')
+    const walking = cow.state !== 'grazing' && cow.posture !== 'lying'
     const motion = blend.current
     motion.clock += delta
     // Grazing cows mostly eat, lifting the head now and then.
     const cycle = motion.clock % 22
     const resting: Mode = cycle < 14 ? 'eat' : cycle < 18 ? 'look' : 'idle'
-    // Grazing for show would claim something the AI never said, so an animal with no reported posture just stands.
-    const mode: Mode = walking ? 'walk' : cow.posture === 'standing' && cycle >= 16 ? 'look' : cow.posture === undefined ? resting : 'idle'
+    // Only without word from the AI does it graze for show: a cow reported lying or standing rests, as it does there.
+    const known = cow.posture === 'lying' || cow.posture === 'standing'
+    const mode: Mode = walking ? 'walk' : known ? (cow.posture === 'lying' || cycle < 16 ? 'idle' : 'look') : resting
     const fade = shouldReduceMotion ? 1 : 1 - Math.exp(-delta * 4)
     for (const key of MODES) {
       motion.weights[key] = MathUtils.lerp(motion.weights[key], key === mode ? 1 : 0, fade)

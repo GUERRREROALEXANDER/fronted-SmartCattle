@@ -3,7 +3,7 @@
 .notice { margin-bottom: var(--space-4); }
 
 .head { margin-bottom: var(--space-6); }
-.head > header { margin-bottom: var(--space-5); }
+.head > header { margin-bottom: var(--space-1); }
 .lead { max-width: 64ch; color: var(--color-ink-muted); font-size: var(--text-sm); }
 
 .livePill {

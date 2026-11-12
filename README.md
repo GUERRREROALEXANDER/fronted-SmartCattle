@@ -4,19 +4,17 @@ Web interface for **SmartCattle**, a platform that monitors cattle farms with ca
 
 This repository contains only the frontend. The REST API lives in the separate `SmartCattle-Backend` repository (Python, FastAPI), and detection (OpenCV + YOLO) belongs to `SmartCattle-AI`.
 
-> **Status:** Phases 1–9 are complete, plus a realistic 3D pasture, analytics, a daily report, a first-run conversation and the **Cartel de feria** redesign: a public scroll story, flat poster inks and an assistant named Lucero. Cameras are live only: video upload is gone. See [Roadmap](#roadmap).
+> **Status:** Phases 1–9 are complete, plus a realistic 3D pasture, an analytics page and the **Dashboard V15** redesign (glass panels and motion across the app). The final quality pass remains. See [Roadmap](#roadmap).
 
-![The public page: the headline is cut out of black ink and the pasture shows through the letters](docs/screenshots/landing-desktop.png)
-
-![Home dashboard printed in the page's ink, with the herd as seen by the cameras along the band](docs/screenshots/dashboard-desktop.png)
+![Home dashboard with live metrics, the live herd monitor and the cattle summary](docs/screenshots/dashboard-desktop.png)
 
 | Login (desktop) | Login (mobile) |
 |---|---|
-| ![Login with the dusk pasture photo and a plain printed form](docs/screenshots/login-desktop.png) | ![Login screen on mobile](docs/screenshots/login-mobile.png) |
+| ![Login with the dusk pasture photo and a glass form card](docs/screenshots/login-desktop.png) | ![Login screen on mobile](docs/screenshots/login-mobile.png) |
 
 | Home on a phone | Mobile "Más" sheet |
 |---|---|
-| ![Home dashboard on a phone](docs/screenshots/dashboard-mobile.png) | ![Mobile tab bar and the "Más" sheet](docs/screenshots/app-shell-mobile-more.png) |
+| ![Home dashboard on a phone](docs/screenshots/dashboard-mobile.png) | ![Mobile tab bar and the glass "Más" sheet](docs/screenshots/app-shell-mobile-more.png) |
 
 ---
 
@@ -33,8 +31,6 @@ This repository contains only the frontend. The REST API lives in the separate `
 - [Dashboard](#dashboard)
 - [Live monitoring](#live-monitoring)
 - [3D pasture](#3d-pasture)
-- [Daily report](#daily-report)
-- [First run and the assistant](#first-run-and-the-assistant)
 - [Analytics](#analytics)
 - [Motion](#motion)
 - [Design system](#design-system)
@@ -54,7 +50,7 @@ This repository contains only the frontend. The REST API lives in the separate `
 | Language | TypeScript 6 (strict) | Typed API contracts and safer refactors |
 | Build tool | Vite 8 | Fast dev server, CSS Modules out of the box |
 | Routing | React Router 8 | Data router with nested layout routes |
-| Styling | Plain CSS: CSS Modules + custom properties | No framework lock-in, tokens in one file, one ink per page |
+| Styling | Plain CSS: CSS Modules + custom properties | No framework lock-in, tokens in one file, glass recipe built from tokens |
 | Icons | lucide-react | Consistent stroke icons, tree-shaken |
 | 3D | three.js + @react-three/fiber + @react-three/drei | Declarative 3D scene in React, orbit controls, HTML labels, glTF loading |
 | Motion | motion (`motion/react`, the successor of framer-motion) | Page transitions, layout animations, shared-element indicators, springs, reduced-motion hook |
@@ -63,7 +59,7 @@ This repository contains only the frontend. The REST API lives in the separate `
 | Tests | Vitest | Same config as Vite, fast |
 | Lint | ESLint 10 + typescript-eslint | Flat config |
 
-No UI kit, CSS framework or state library is used. The public page, the 3D pasture and the analytics page are lazy-loaded, so three.js and Recharts are only downloaded when those pages open.
+No UI kit, CSS framework or state library is used. The 3D pasture and analytics pages are lazy-loaded, so three.js and Recharts are only downloaded when those pages open.
 
 ## Getting started
 
@@ -174,7 +170,7 @@ src/
   components/
     layout/     AppShell, SideRail, TopBar, MobileTabBar, MoreSheet, AlarmBanner
     ui/         Reusable UI primitives (GlassCard, BrandMark, Button, TextField, StatusPill, ...)
-  features/     One folder per section (auth, dashboard, monitoring, events, landing, onboarding, report, assistant, pasture3d, ...)
+  features/     One folder per section (auth, dashboard, monitoring, events, videos, pasture3d, ...)
   lib/          Pure helpers: event catalog, permissions, safe storage, zone alarm
                 (`permissions.ts` mirrors the roles the backend enforces; it
                 shapes the interface and protects nothing)
@@ -457,18 +453,14 @@ and simply cannot be there.
 flowchart TB
     root(["/"]) --> pub["RedirectIfAuthenticated"]
     root --> priv["RequireAuth"]
-    root --> land["/bienvenida (public, lazy)"]
     pub --> login["/login"]
     pub --> register["/register"]
-    priv --> first["RequireOnboarding"]
-    priv --> onb["/primeros-pasos"]
-    first --> shell["AppShell"]
+    priv --> shell["AppShell"]
     shell --> d["/ Inicio"]
     shell --> m["/live En vivo"]
     shell --> e["/events Eventos"]
     shell --> c["/cattle Ganado"]
     shell --> pa["/pasture Potrero 3D (lazy)"]
-    shell --> inf["/informe Informe diario"]
     shell --> an["/analytics Análisis (lazy)"]
     shell --> cam["/cameras Cámaras"]
     shell --> s["/settings Ajustes"]
@@ -476,12 +468,11 @@ flowchart TB
     shell --> nf["* Página no encontrada"]
 ```
 
-- Anonymous visitors to `/` land on the public page, `/bienvenida`. Any other private route redirects to `/login` and comes back to the requested page after signing in.
-- Someone who has not had the first-run conversation goes to `/primeros-pasos` once. After that, signing in opens the page they chose as their start.
+- Anonymous visitors to a private route are redirected to `/login` and come back to the requested page after signing in.
 - The navigation is defined once in `src/app/navigation.ts`.
-- **Desktop (≥ 1024 px):** black side rail with the nine sections, the active one printed in that page's ink, the demo badge and the signed-in user.
-- **Mobile:** black top bar, a five-cell tab bar (Inicio, En vivo, Eventos, Informe, Más) and a native `<dialog>` sheet for Ganado, Potrero 3D, Análisis, Cámaras, Ajustes and Perfil.
-- **Alarm banner:** when the live map or the 3D pasture raises a zone alarm, a solid red band prints across the page with a "Silenciar" action.
+- **Desktop (≥ 1024 px):** floating glass side rail with the nine sections, a green indicator that slides to the active page, the demo badge and the signed-in user.
+- **Mobile:** glass top bar, a floating five-cell tab bar (Inicio, En vivo, Eventos, Ganado, Más) and a native `<dialog>` glass sheet for Potrero 3D, Análisis, Cámaras, Ajustes and Perfil.
+- **Alarm banner:** when any part of the app raises a zone alarm (live map, 3D pasture), a red banner slides down with a "Silenciar" action.
 - "Security" is a tab inside Events rather than a separate page: security alerts are events, and a separate page would duplicate the list and filters.
 
 ---
@@ -535,7 +526,7 @@ Rules the dashboard follows:
 
 `/live?camera=<id>` shows one camera as the protagonist. Without a `camera` parameter it opens the camera with the most recent alert, so "Verificar cámara" on the dashboard lands on the evidence.
 
-![Live monitoring with detections, safe zone and camera switcher](docs/screenshots/live-desktop.png)
+![Live monitoring with detections, safe zone and the glass camera switcher](docs/screenshots/live-desktop.png)
 
 The camera stage stacks independent layers over the picture. Overlay coordinates are normalized (0–1) and drawn in the picture's own pixel space, so boxes stay registered to the image at any size.
 
@@ -567,6 +558,7 @@ flowchart TB
 - **Layer toggles** (Detecciones, Zona segura, Etiquetas) only change the display. They never touch backend data.
 - **Polling:** detections every 5 s, cameras, events and status every 15 s. Changing camera never shows the previous camera's data.
 - **Mobile:** the camera strip scrolls horizontally and keeps the selected camera in view; persons and outside-zone labels stay, other labels hide on narrow screens to avoid clutter.
+- **Glass layout:** the dark stage sits in a glass frame; the camera switcher and status panels are glass cards, and switching camera animates the selection.
 
 ---
 
@@ -590,49 +582,13 @@ flowchart LR
 ```
 
 - **Modular asset kit.** Assets live in family folders, like a modular asset library: `kit/terrain`, `kit/environment`, `kit/fences`, `kit/animals`, `kit/people`, `kit/structures`, `kit/nature`. Cows use a CC0 glTF model (`public/models/cow.glb`) with coats (Holstein, criollo, black Brangus, zebu) generated at runtime; people, fences, barn, trees, rocks, grass, terrain and sky are procedural. Geometries and materials are shared.
+- **Glass wrapper.** The page header, controls, zone panel and exit log use the glass panels of the rest of the app; the scene itself is unchanged.
 - **Zone state.** Each lot is a safe zone. Membership is a point-in-polygon test on the lot boundary. A breached zone shows red, a pulsing outline, a label with the cow's name and the words "fuera de zona", so the state is never color-only.
 - **Controls.** Pause/resume, "Provocar salida" (forces one cow out to demo the alert), name labels on/off and camera presets (overview and one per lot). The zone panel lists cows inside each lot; the exit log keeps the session's exits and returns.
 - **Performance.** Positions update in refs inside the render loop; React state changes only when a zone's status changes. Device pixel ratio is capped at 2.
 - **Fallbacks.** Without WebGL the page explains it instead of showing an empty canvas. With `prefers-reduced-motion` the simulation starts paused and camera presets jump instead of flying.
 
 ---
-
-## Daily report
-
-`/informe` ("Informe diario") reads the day's report from `GET /api/reports/daily`, the same one the dashboard summarises. Nobody has to generate or send it.
-
-![Daily report: hours observed, peak count, alerts, and how much of the observed time the herd spent lying, standing and walking](docs/screenshots/informe-desktop.png)
-
-- Four big figures: time observed, peak animals in view, alerts and detected events.
-- "Qué hizo el ganado": lying, standing and walking as bars that add up to 100 %, each with its share and hours.
-- Alerts of the day by severity, open and resolved, and notices such as a herd that barely lay down.
-- Previous and next day. Without activity the page says so; it never invents a figure. It is not a veterinary diagnosis, and the page says that too.
-
----
-
-## First run and the assistant
-
-**First run.** After the first sign-in, Lucero asks what the person wants to watch (cattle leaving, people, animals lying down, the daily report) and where they want to start. The answers order the dashboard's "Lo que elegiste vigilar" strip and the assistant's suggestions. They are stored in this browser per user (`smartcattle.onboarding.<userId>`), because the backend has no endpoint for preferences yet.
-
-**Lucero.** The star in the corner of every signed-in page. Each question goes to `POST /api/assistant/messages`, where the backend answers with Claude from the signed-in account's counts. No email or camera address leaves the server, and the browser never sees an API key.
-
-```mermaid
-sequenceDiagram
-    participant U as Farmer
-    participant F as Lucero (browser)
-    participant B as SmartCattle backend
-    participant C as Claude API
-    U->>F: "¿Cuántas alertas hay abiertas?"
-    F->>B: POST /api/assistant/messages (token, message, history)
-    B->>B: Read this account's counts
-    B->>C: Question + farm snapshot
-    C-->>B: Answer
-    B-->>F: Answer
-    F-->>U: Answer
-    Note over F,B: No key, an error or no backend: Lucero answers<br/>from the on-page rules and says it is in basic mode
-```
-
-Without `ANTHROPIC_API_KEY` the endpoint returns 503, and Lucero falls back to the rule-based answers, saying so. The model never writes SQL and has no tools.
 
 ## Analytics
 
@@ -654,46 +610,64 @@ Without `ANTHROPIC_API_KEY` the endpoint returns 503, and Lucero falls back to t
 - Every chart has a one-line insight computed from the data and a visually hidden data table for screen readers.
 - Confidence is labeled as the detector's per-event value, not model accuracy. A lower count is not presented as lost animals.
 - Data comes from `GET /api/events` (demo events in `mock` mode, marked with the demo badge).
-- A range selector moves between 24 h, 7 días and 30 días. KPI tiles count up and show their change.
+- Charts sit on glass cards with gradient fills, a shared glass tooltip and a range selector whose indicator slides between 24 h, 7 días and 30 días. KPI tiles count up and show their change.
 
 ---
 
 ## Motion
 
-Motion is about the cattle, and it follows what the cameras report. Presets live in `src/motion/presets.ts` and mirror the CSS tokens.
+Motion is short, calm and functional. Presets live in `src/motion/presets.ts` (ease-out curves, 140–600 ms) and mirror the CSS tokens.
 
 | Where | What moves |
 |---|---|
-| Public page | Scroll flies through a letter of the headline into the pasture, then a walk, a cow lying down and a cow leaving the zone. The fence turns red and the page's frame prints in red |
-| Page bands | One printed figure per animal in view, in the posture the AI reports: walking figures walk, lying figures lie |
-| 3D pasture | Each cow takes the reported posture. A lying cow far from its target moves there before walking on, so it never slides while lying |
-| Side rail and mobile tab bar | The active marker slides between items |
-| Lucero | The star idles, turns while thinking and pulses while speaking |
-| Login and register | The photo's detection boxes appear one by one over the real dusk photo |
-| Analytics | Range tabs slide their indicator; KPIs count up; bars grow in |
-| Buttons | Press feedback under 160 ms; hover effects only on devices that really hover |
+| Route change | Content fades in with a 12 px rise (0.45 s) |
+| Side rail and mobile tab bar | The active marker slides between items (shared layout animation) |
+| Dashboard | Sections reveal in sequence; metrics count up with delta chips; cattle markers walk, turn and graze; new log entries slide in |
+| Lists (events, field log, cattle, cameras, videos) | Items stagger in on first render, capped at 8 steps |
+| Login and register | The photo's detection boxes appear one by one, a scan line sweeps the image and the outside-zone box pulses; the form card rises in |
+| Analytics | Range tabs slide their indicator; KPIs count up; charts draw in |
+| Cards and buttons | Clickable cards lift 2 px on hover; buttons have press feedback and a sheen on the primary gradient |
+| Alarms | Pulsing red ring on the marker and a banner that slides down |
 
-Animation uses `transform`, `opacity` and `clip-path`. With `prefers-reduced-motion` the public page is a still farm with the headline over it, the printed figures stop and the scroll story is replaced by the sections below it.
+Only `transform` and `opacity` are animated. With `prefers-reduced-motion` every primitive falls back to a short fade or no motion.
+
+---
 
 ## Design system
 
-The visual direction is **"Cartel de feria"**, a cattle fair poster: flat inks, huge condensed type, thick rules, no glass and no gradients. Every page prints in one ink, chosen in `src/app/navigation.ts`. The camera stage stays dark and the 3D pasture keeps its realistic look.
+The visual direction is **"Dashboard V15"**: glass panels floating over a soft pastel-green gradient, natural greens and smooth, purposeful motion, on top of the original **"farm survey plan"** language (safe zones drawn as *linderos*, cameras as observation points, the history as a field log). It avoids cartoon farm imagery.
 
-| Ink | Token | Value | Used by |
-|---|---|---|---|
-| Verde | `--ink-verde` | `#00A650` | Inicio, Potrero 3D |
-| Maíz | `--ink-maiz` | `#FFC800` | Ganado, Cámaras, main actions |
-| Fucsia | `--ink-fucsia` | `#DB0A73` | Informe diario, Lucero |
-| Cobalto | `--ink-cobalto` | `#1B2FD8` | En vivo, Análisis |
-| Naranja | `--ink-naranja` | `#FF5A1F` | Eventos |
-| Tinta | `--ink-tinta` | `#15120E` | Ajustes, Perfil, shell, text |
-| Papel | `--ink-papel` | `#FAFAF5` | Ground |
+All values live as CSS custom properties in `src/styles/tokens.css`. Components use tokens only.
 
-- **Typography:** Anton for headlines, Alfa Slab One for figures and stamps, Archivo for reading.
-- **Routes:** `data-ink` on the shell sets `--route-ink` and `--route-on-ink`, and components read those.
+| Role | Token | Value |
+|---|---|---|
+| Ground | `--color-ground` | `#F7FCF8` |
+| Surface | `--color-surface` | `#FFFFFF` |
+| Ink | `--color-ink` | `#0F2418` |
+| Brand (primary action, active item) | `--color-brand` | `#16A34A` |
+| Brand strong | `--color-brand-strong` | `#15803D` |
+| Safe / connected | `--color-safe` | `#16A34A` |
+| Warning | `--color-warning` | `#D97706` |
+| Critical / alarm | `--color-critical`, `--color-alarm` | `#EF233C` |
+| Info | `--color-info` | `#0284C7` |
+| Camera stage | `--color-stage` | `#0E1A13` |
+| Pastel accents | `--color-mint`, `-sky`, `-butter`, `-peach`, `-lilac` | each with an `-ink` text token |
+
+**Glass recipe.** Cards, rail, top bar and sheets share one recipe built from tokens:
+
+```css
+background: var(--glass-fill);              /* white at 62 % */
+border: 1px solid var(--glass-border);
+box-shadow: var(--glass-highlight), var(--glass-shadow);
+backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+```
+
+Variants: `--glass-fill-strong` for dense content, `--glass-fill-subtle` for nested wells, `--glass-fill-brand` for the active item and `--glass-dark-fill` over photos and the camera stage. The page backdrop is `--glass-backdrop` (mint, sky and butter radial gradients) and primary actions use `--gradient-brand`. The fills stay readable without `backdrop-filter`.
+
+- **Light app, dark camera stage.** Owners check the app outdoors in daylight, so the app is light; video sits on a dark viewfinder surface.
+- **Typography:** Archivo Variable. The wide cut is for headings, the condensed cut for dense labels, with tabular figures for counts and times.
 - **States** always combine an icon and a word, never color alone. Outside-zone areas are also hatched.
-- **Honesty:** what is simulated says so. The public page is labeled "Simulación ilustrativa" and demo data carries the demo badge.
-- Older `--glass-*` and `--gradient-*` tokens map to flat values, so a component that still names them prints flat.
+- **Motion:** short ease-out transitions (140–600 ms); see [Motion](#motion). Everything respects `prefers-reduced-motion`.
 - Text selection, focus rings, the caret and scrollbars are themed from the palette.
 
 ## Accessibility
@@ -755,7 +729,7 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 - Cameras with recent alerts first, then cameras with connection problems
 - Owners see a note that adding or rezoning cameras needs backend support; no fake configuration controls
 
-![Cameras page with camera cards](docs/screenshots/cameras-desktop.png)
+![Cameras page with glass camera cards](docs/screenshots/cameras-desktop.png)
 
 **Phase 6: Cattle**
 - Herd figures: registered vs. detected now, with the occlusion note
@@ -763,7 +737,7 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 - Recent cattle movements (outside-zone exits, external animals)
 - No veterinary data: no vaccines, treatments, weights or collars
 
-![Cattle page with the herd table on a panel](docs/screenshots/cattle-desktop.png)
+![Cattle page with the herd table on a glass panel](docs/screenshots/cattle-desktop.png)
 
 **Phases 7 and 8: Events, alerts and security**
 - Category tabs with counts: Todos, Seguridad, Ganado, Sistema (security is a tab, not a separate page, because security alerts are events)
@@ -785,19 +759,21 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 
 | Settings | Profile |
 |---|---|
-| ![Settings page with sections](docs/screenshots/settings-desktop.png) | ![Profile page with its band](docs/screenshots/profile-desktop.png) |
+| ![Settings page with glass sections](docs/screenshots/settings-desktop.png) | ![Profile page with the gradient banner](docs/screenshots/profile-desktop.png) |
 
-**3D pasture, analytics and motion**
+**3D pasture, videos, analytics and motion**
 - Interactive 3D pasture with a procedural asset kit, a seeded herd simulation and zones that turn red when a cow leaves them
+- Local video review with thumbnails and camera assignment; assigned videos play on the camera card and the live stage
 - Analytics page with percentage charts, KPIs and accessible data tables
 - App-wide motion: route transitions, sliding navigation marker, staggered lists, count-up figures, masked headlines
 
-**Cartel de feria redesign**
-- Public page at `/bienvenida`: a scroll story through the approved pasture, labeled as a simulation, with a still version for reduced motion
-- Flat poster inks, one per page; herd band printed from the live detections
-- Camera form reduced to Name and Link; the phone, network search and QR options are one fold away; video upload removed: cameras are live only
-- The 3D pasture shows the postures the AI reports and names them in a legend, with no contradictions
-- Daily report page, first-run conversation and the Lucero assistant
+**Dashboard V15 redesign**
+- Glass tokens and a shared `GlassCard`; floating glass side rail, top bar, tab bar and sheets over a pastel-green backdrop
+- Professional sign-in on the dusk pasture photo with animated detections, feature chips and a glass form card
+- Live herd monitor with animated cattle and people markers, real-time metrics with deltas and 60-second charts
+- Realistic 3D pasture with a glTF cow model; only its page wrapper joined the glass layout
+- Video analyzer with simulated YOLO detection, an editable safe zone and saved summaries
+- Every other page (En vivo, Eventos, Ganado, Cámaras, Ajustes, Perfil, Videos, Análisis) moved to glass panels with motion
 
 ## Roadmap
 
@@ -812,10 +788,9 @@ Each change is also reviewed with desktop (1440 px) and mobile (390 px) screensh
 | 7 | Events & alerts: history, filters, detail with evidence | Done |
 | 8 | Security: person detection, possible intrusion, restricted hours | Done |
 | 9 | Settings: farm, users, cameras, alerts, account (permission-aware) | Done |
-| — | 3D pasture, analytics, motion | Done |
-| — | Dashboard V15: live herd monitor, realistic 3D pasture | Done, later replaced visually |
-| — | Cartel de feria: public page, daily report, first run, assistant, live-only cameras | Done |
-| 10 | Quality: accessibility and responsive audit | Next |
+| — | 3D pasture, videos, analytics, motion | Done |
+| — | Dashboard V15: glass redesign, live herd monitor, video analyzer, realistic 3D pasture | Done |
+| 10 | Quality: accessibility and responsive audit, motion review, `DESIGN.md` | Next |
 
 Pending on the backend side: authentication, cameras, streaming, detections, safe zones, severity and notifications. The frontend is ready to switch each capability from demo data to the API as it lands.
 
@@ -825,5 +800,4 @@ Pending on the backend side: authentication, cameras, streaming, detections, saf
 - Icons: [Lucide](https://lucide.dev) (ISC License).
 - 3D: [three.js](https://threejs.org) and [React Three Fiber](https://docs.pmnd.rs/react-three-fiber) (MIT License). Cow model: "Cow" from the [Ultimate Animated Animal Pack](https://quaternius.com/packs/ultimateanimatedanimals.html) by Quaternius (CC0 1.0); see `public/models/CREDITS.md`. All other 3D assets are procedural and original to this project.
 - Charts: [Recharts](https://recharts.org) (MIT License). Motion: [Motion](https://motion.dev) (MIT License).
-- Fonts: [Archivo](https://fonts.google.com/specimen/Archivo) by Omnibus-Type, [Anton](https://fonts.google.com/specimen/Anton) by Vernon Adams and [Alfa Slab One](https://fonts.google.com/specimen/Alfa+Slab+One) by JM Solé (SIL Open Font License).
-- Printed cattle figures: rendered from the Quaternius cow model above with `scripts/render-herd-sprites.mjs`.
+- Font: [Archivo](https://fonts.google.com/specimen/Archivo) by Omnibus-Type (SIL Open Font License).

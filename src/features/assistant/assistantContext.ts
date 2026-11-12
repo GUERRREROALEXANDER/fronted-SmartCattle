@@ -1,14 +1,14 @@
 import { createContext, useContext } from 'react'
+import type { LuciaMood } from './luciaMood'
 
 export interface AssistantMessage { id: number; from: 'assistant' | 'user'; text: string }
 
 export interface AssistantConversation {
   messages: readonly AssistantMessage[]
   busy: boolean
+  mood: LuciaMood
   /** One line on what is answering: the model, or the local rules when it is not available. */
   status: string
-  /** What to offer before the first question. */
-  offered: readonly string[]
   ask: (question: string) => Promise<void>
   clear: () => void
 }

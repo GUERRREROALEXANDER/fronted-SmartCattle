@@ -1,5 +1,4 @@
 import { ClipboardList } from 'lucide-react'
-import { Link } from 'react-router'
 import { GlassCard, Skeleton } from '../../components/ui'
 import { formatCount } from '../../lib/format'
 import { useResource } from '../../lib/useResource'
@@ -33,7 +32,6 @@ function Figures({ report }: { report: DailyReport }) {
       </li>)}
     </ul>}
     <p className={styles.note}>Calculado de lo que vieron las cámaras; no es un diagnóstico veterinario.</p>
-    <p className={styles.note}><Link to="/informe">Ver el informe completo</Link></p>
   </>
 }
 

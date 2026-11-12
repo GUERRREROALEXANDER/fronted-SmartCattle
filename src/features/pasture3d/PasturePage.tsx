@@ -3,7 +3,6 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { OctagonAlert, UserRound } from 'lucide-react'
 import { ConnectionChip, ErrorState, PageHeader } from '../../components/ui'
 import { describeApiError } from '../../api/errors'
-import { countPostures } from '../../live/herdNow'
 import { zoneSummaries, useExitLog } from '../../live/herdSummary'
 import { herdCount } from '../../live/liveState'
 import { useNow } from '../../lib/useNow'
@@ -39,13 +38,11 @@ export function PasturePage() {
   const { log, announcement } = useExitLog(planData, entities)
   const presets = useMemo(() => buildCameraPresets(planData ? sceneLots(planData) : []), [planData])
   const [camera, setCamera] = useState({ id: OVERVIEW_PRESET_ID, request: 0 })
-  // On from the start: seeing what the AI says each animal is doing is the point of this page.
-  const [showNames, setShowNames] = useState(true)
+  const [showNames, setShowNames] = useState(false)
   const [webgl] = useState(isWebGLAvailable)
   const preset = presets.find(item => item.id === camera.id) ?? presets[0]
   const breached = zones.filter(zone => zone.breached)
   const people = entities.filter(entity => entity.kind === 'person').length
-  const postures = countPostures(entities.filter(entity => entity.kind === 'cow'))
   const cameraStatus = useMemo(() => new Map(live.cameras.map(item => [item.id, item.status])), [live.cameras])
   const cameraNames = useMemo(() => new Map(live.cameras.map(item => [item.id, item.name])), [live.cameras])
 
@@ -125,10 +122,6 @@ export function PasturePage() {
                   {/* Floating chips never take pointer events, so the canvas keeps every drag and pinch. */}
                   {preset && <div className={styles.chips}>
                     <span className={styles.chip}>{preset.label}</span>
-                    {postures.total > 0 && <span className={styles.chip} data-testid="posture-legend">
-                      {postures.lying} echadas · {postures.standing} de pie · {postures.walking} caminando
-                      {postures.unknown > 0 && ` · ${postures.unknown} sin postura`}
-                    </span>}
                   </div>}
                 </div>
               </div>

@@ -3,9 +3,9 @@ import { useAuth } from '../../app/auth/useAuth'
 import { herdCount } from '../../live/liveState'
 import { useLive } from '../../live/useLive'
 import { askAssistantModel, getAlertReport, getDailyReport, type AssistantTurn } from '../../services'
-import { onboardingOf, suggestionsFor } from '../onboarding/onboardingModel'
-import { answer, greeting, suggestions, type AssistantData } from './assistantEngine'
+import { answer, greeting, type AssistantData } from './assistantEngine'
 import { AssistantContext, type AssistantMessage } from './assistantContext'
+import { luciaMood, talkingMs } from './luciaMood'
 
 const reportData: Pick<AssistantData, 'daily' | 'alerts'> = {
   daily: async day => (await getDailyReport({ day })).data,
@@ -21,6 +21,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false)
   const [usingModel, setUsingModel] = useState<boolean | null>(null)
   const [messages, setMessages] = useState<AssistantMessage[]>(() => [{ id: 0, from: 'assistant', text: greeting(name) }])
+  const [talking, setTalking] = useState(false)
+  const stopTalking = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const nextId = useRef(1)
   // Read when asked, not when the question was typed: live data changes while the answer loads.
   const facts = useRef(live)
@@ -28,10 +30,15 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     facts.current = live
   }, [live])
+  useEffect(() => () => clearTimeout(stopTalking.current), [])
 
   function push(from: AssistantMessage['from'], text: string) {
     const id = nextId.current++
     setMessages(current => [...current, { id, from, text }])
+    if (from !== 'assistant') return
+    clearTimeout(stopTalking.current)
+    setTalking(true)
+    stopTalking.current = setTimeout(() => setTalking(false), talkingMs(text))
   }
 
   async function ask(question: string) {
@@ -66,8 +73,8 @@ export function AssistantProvider({ children }: { children: ReactNode }) {
   return <AssistantContext.Provider value={{
     messages,
     busy,
+    mood: luciaMood(busy, talking),
     status: usingModel === false ? 'Modo básico: reglas con los datos de tu finca' : 'Responde con los datos de tu finca',
-    offered: session ? suggestionsFor(onboardingOf(session.user.id)?.goals ?? [], suggestions) : suggestions,
     ask,
     clear,
   }}>{children}</AssistantContext.Provider>

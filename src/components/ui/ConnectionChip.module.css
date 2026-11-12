@@ -18,7 +18,7 @@
 .chip svg { flex-shrink: 0; }
 
 .live {
-  background: var(--ink-papel);
+  background: linear-gradient(var(--glass-fill-brand), var(--glass-fill-brand)), var(--glass-fill);
   color: var(--color-brand-strong);
 }
 

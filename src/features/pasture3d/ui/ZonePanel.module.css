@@ -46,7 +46,7 @@
 
 .zone[aria-pressed='true'] {
   border-color: color-mix(in srgb, var(--color-brand) 60%, var(--glass-border));
-  background: var(--ink-maiz);
+  background: linear-gradient(var(--glass-fill-brand), var(--glass-fill-brand)), var(--glass-fill-strong);
 }
 
 .zone:focus-visible { outline: none; box-shadow: var(--focus-ring); }

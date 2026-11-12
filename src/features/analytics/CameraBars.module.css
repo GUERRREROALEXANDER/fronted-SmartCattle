@@ -6,20 +6,22 @@
 .track { height: 0.75rem; overflow: hidden; border: 1px solid var(--glass-border); border-radius: var(--radius-full); background: color-mix(in srgb, var(--color-mint) 55%, var(--glass-fill-subtle)); box-shadow: inset 0 1px 2px color-mix(in srgb, var(--color-ink) 6%, transparent); }
 .fill {
   display: block;
-  width: 100%;
+  min-width: 0;
   height: 100%;
-  background: var(--ink-cobalto);
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-sage), var(--color-brand) 70%, var(--color-brand-strong));
+  box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--color-brand) 50%, transparent);
   transform-origin: left center;
 }
 
-/* Bars grow in on entrance and glide to the new length when the range changes. */
+/* Bars grow in on entrance and glide to the new width when the range changes. */
 @media (prefers-reduced-motion: no-preference) {
   .fill {
-    transition: transform var(--duration-slow) var(--ease-out);
-    animation: grow var(--duration-slow) var(--ease-out) backwards;
+    transition: width var(--duration-slow) var(--ease-out);
+    animation: grow var(--duration-slow) var(--ease-out) both;
   }
   .row:nth-child(2) .fill { animation-delay: 60ms; }
   .row:nth-child(3) .fill { animation-delay: 120ms; }
   .row:nth-child(n + 4) .fill { animation-delay: 180ms; }
 }
-@keyframes grow { from { transform: scaleX(0); } }
+@keyframes grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }

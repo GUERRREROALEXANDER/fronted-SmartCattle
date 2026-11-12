@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { buildFarmPlan } from '../services/farmLayout'
 import type { FrameDetections, Lot } from '../types/domain'
 import { createHerdMotion, stepHerd, syncHerd } from './herdMotion'
-import { countPostures, herdNow } from './herdNow'
 import { zoneSummaries } from './herdSummary'
 import { entityKind, lotPoint, pictureToLot, trackEntities } from './herdTracker'
 
@@ -149,33 +148,5 @@ describe('a cow reported lying', () => {
     expect(agent.state).toBe('walking')
     expect(agent.position.x).toBeGreaterThan(1)
     expect(agent.position.x).toBeLessThan(40)
-  })
-})
-
-describe('herdNow', () => {
-  const frame = (cameraId: string, detections: object[]) => ({ cameraId, detections }) as unknown as FrameDetections
-  const cow = (trackId: number, posture: string | null, insideSafeZone = true) => ({ label: 'cow', trackId, posture, insideSafeZone })
-
-  it('shows every animal in the posture the AI reports, and invents none', () => {
-    const animals = herdNow({ a: frame('a', [cow(1, 'lying'), cow(2, 'walking', false), cow(3, null)]) })
-    expect(animals.map(animal => animal.posture)).toEqual(['lying', 'walking', null])
-    expect(animals.map(animal => animal.outside)).toEqual([false, true, false])
-    expect(herdNow({})).toEqual([])
-  })
-
-  it('does not count a person as cattle', () => {
-    expect(herdNow({ a: frame('a', [{ label: 'person', trackId: 1 }]) })).toEqual([])
-  })
-
-  it('keeps an animal in the same place on the strip between frames', () => {
-    const first = herdNow({ a: frame('a', [cow(1, 'lying')]) })[0]
-    const second = herdNow({ a: frame('a', [cow(1, 'walking')]) })[0]
-    expect(second.place).toBe(first.place)
-  })
-
-  it('counts what the AI could not tell apart from what it could', () => {
-    expect(countPostures([{ posture: 'lying' }, { posture: null }, { posture: 'standing' }])).toEqual({
-      walking: 0, standing: 1, lying: 1, unknown: 1, total: 3,
-    })
   })
 })

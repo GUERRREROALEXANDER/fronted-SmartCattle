@@ -6,8 +6,11 @@
 }
 .panelInner {
   width: 100%; max-width: 460px; margin-inline: auto; padding: var(--space-6) var(--space-5);
-  border: 3px solid var(--ink-tinta); border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+  background: var(--glass-fill-strong);
+  box-shadow: var(--glass-highlight), var(--glass-shadow-hover);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
 }
 .cardTop { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3); }
 .securityBadge {
@@ -18,8 +21,8 @@
 }
 .heading { position: relative; margin-top: var(--space-6); }
 .title {
-  color: var(--ink-tinta); font-family: var(--font-display); font-size: var(--text-3xl); font-weight: 400;
-  line-height: 1.05; text-transform: uppercase;
+  color: var(--color-ink); font-size: var(--text-xl); font-stretch: var(--stretch-wide);
+  font-weight: var(--weight-display); letter-spacing: var(--tracking-tight); line-height: var(--leading-tight);
 }
 .description { margin-top: var(--space-2); color: var(--color-ink-muted); font-size: var(--text-sm); line-height: var(--leading-normal); }
 .content { margin-top: var(--space-6); }
@@ -27,7 +30,7 @@
   margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--glass-border-subtle);
   color: var(--color-ink-muted); font-size: var(--text-sm); text-align: center;
 }
-.footer a { color: var(--ink-tinta); text-decoration-thickness: 2px; font-weight: var(--weight-semibold); text-decoration: none; border-radius: var(--radius-sm); }
+.footer a { color: var(--color-brand-strong); font-weight: var(--weight-semibold); text-decoration: none; border-radius: var(--radius-sm); }
 @media (hover: hover) { .footer a:hover { text-decoration: underline; } }
 .legal {
   display: flex; align-items: center; justify-content: center; gap: var(--space-2);
@@ -36,10 +39,11 @@
 @media (min-width: 1024px) {
   .layout {
     display: grid; grid-template-columns: minmax(0, 58fr) minmax(0, 42fr);
-    height: 100dvh; gap: var(--space-4);
+    height: 100dvh; padding: var(--space-4); gap: var(--space-4);
   }
   .scene {
-    height: 100%; min-height: 0; overflow: hidden;
+    height: 100%; min-height: 0; overflow: hidden; border-radius: var(--radius-xl);
+    box-shadow: var(--glass-shadow-hover);
   }
   .panel {
     display: flex; flex-direction: column; align-items: center; margin-top: 0;
@@ -48,7 +52,7 @@
   /* Auto margins center the card but let it scroll from the top when the register form is taller. */
   .panelInner { margin-block: auto 0; padding: var(--space-8); }
   .legal { margin-bottom: auto; }
-  .title { font-size: var(--text-4xl); }
+  .title { font-size: var(--text-2xl); }
   .description { font-size: var(--text-base); }
 }
 

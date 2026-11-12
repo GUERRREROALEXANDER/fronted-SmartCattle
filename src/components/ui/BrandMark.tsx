@@ -13,6 +13,6 @@ export function BrandMark({ compact = false, tone = 'default', size = 'md', clas
   return <span className={[styles.mark, styles[size], tone === 'on-dark' && styles.onDark, className].filter(Boolean).join(' ')}>
     <span className={styles.glyph} aria-hidden="true"><ScanEye strokeWidth={2} /></span>
     {compact ? <span className="visually-hidden">SmartCattle</span>
-      : <span className={styles.word}>SmartCattle</span>}
+      : <span className={styles.word}>Smart<span className={styles.accent}>Cattle</span></span>}
   </span>
 }

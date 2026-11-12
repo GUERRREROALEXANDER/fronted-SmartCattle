@@ -3,7 +3,6 @@ import { useLocation, useMatches, useOutlet } from 'react-router'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useDocumentTitle } from '../../app/useDocumentTitle'
 import { useAuth } from '../../app/auth/useAuth'
-import { inkFor } from '../../app/navigation'
 import { duration, ease } from '../../motion'
 import { AssistantProvider } from '../../features/assistant/AssistantProvider'
 import { AssistantWidget } from '../../features/assistant/AssistantWidget'
@@ -37,7 +36,7 @@ export function AppShell() {
   const title = usePageTitle()
   const { session } = useAuth()
   useDocumentTitle()
-  return <LiveProvider><AssistantProvider><div className={styles.shell} data-ink={inkFor(pathname)}>
+  return <LiveProvider><AssistantProvider><div className={styles.shell}>
     <a className={styles.skipLink} href="#main-content">Saltar al contenido</a>
     <SideRail />
     <TopBar title={title} user={session?.user} />

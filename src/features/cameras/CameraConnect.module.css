@@ -1,16 +1,4 @@
 .wrap { display: grid; gap: var(--space-5); min-width: 0; }
-
-/* The one thing this page asks for, printed big. */
-.quick { display: grid; gap: var(--space-4); padding: var(--space-5); border: 4px solid var(--ink-tinta); background: var(--color-surface); color: var(--ink-tinta); }
-.quickTitle { font-family: var(--font-display); font-size: clamp(2.25rem, 6vw, 4rem); font-weight: 400; line-height: 1.02; text-transform: uppercase; }
-.quickForm { display: grid; gap: var(--space-3); align-items: end; }
-.quickSubmit { min-height: 3.25rem; font-size: var(--text-md); }
-.others { display: grid; gap: var(--space-4); padding: var(--space-4); border: 2px solid var(--ink-tinta); }
-.others[open] > * + * { margin-top: var(--space-4); }
-.othersTitle { font-weight: var(--weight-bold); cursor: pointer; }
-@media (min-width: 760px) {
-  .quickForm { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; }
-}
 .title { font-size: var(--text-md); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-tight); }
 .note { color: var(--color-ink-subtle); font-size: var(--text-sm); }
 .error { color: var(--color-alarm-ink); font-size: var(--text-sm); }

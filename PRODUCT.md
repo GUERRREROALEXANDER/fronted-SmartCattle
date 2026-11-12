@@ -45,15 +45,13 @@ Real backend capabilities today (FastAPI, in-memory storage):
 
 Not in the backend yet (frontend uses centralized, labeled mock data; endpoints are never invented): authentication and sessions, users and roles, farms and worker association, cameras, video streaming, per-frame detections, safe-zone geometry, person/vehicle detection, event severity, zone, evidence and review state, real-time push, notifications, day/night rules.
 
-Cameras are live only: uploading recordings was removed on purpose. Connecting a camera asks only for a name and a link.
-
 Scope limits: not veterinary software. No vaccines, reproduction, treatments, medical records, weighing, GPS collars or physical sensors unless explicitly requested.
 
 Language: all source code, comments, docs and commits in English; the visible UI is in Spanish.
 
 ## Brand Commitments
 
-Name: SmartCattle. Visual direction chosen by the owner: "Cartel de feria", a cattle fair poster with vivid flat inks, huge condensed type and motion about the cattle, meant to catch the public's attention. Personality: loud on the surface, exact in what it says. Trustworthy because every figure and posture comes from the cameras or is labeled as simulated. No cartoon cows or childish illustration: the login keeps the real photo with detection boxes, the 3D pasture keeps its approved realistic look. The assistant is Lucero, a star; it speaks plainly and answers only from the account's data.
+Name: SmartCattle. No logo or established visual identity. The previous prototype (plain white backgrounds, cartoon illustrations, weak hierarchy) is an anti-reference. Desired personality: professional, calm, trustworthy, rural but technological, realistic. No cartoon cows or childish illustration.
 
 ## Evidence on Hand
 

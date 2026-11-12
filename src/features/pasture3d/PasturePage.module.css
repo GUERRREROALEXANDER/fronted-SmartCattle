@@ -1,7 +1,7 @@
 .page { display: grid; min-width: 0; grid-template-columns: minmax(0, 1fr); }
 
 .head { margin-bottom: var(--space-6); }
-.head > header { margin-bottom: var(--space-5); }
+.head > header { margin-bottom: var(--space-1); }
 .metrics { margin-bottom: var(--space-6); }
 
 .demo {
@@ -11,7 +11,7 @@
   padding: var(--space-1) var(--pill-padding-inline);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-full);
-  background: var(--ink-papel);
+  background: linear-gradient(var(--glass-fill-brand), var(--glass-fill-brand)), var(--glass-fill);
   box-shadow: var(--glass-highlight), var(--glass-shadow);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
