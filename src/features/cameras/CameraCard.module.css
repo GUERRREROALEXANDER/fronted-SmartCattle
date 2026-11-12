@@ -27,7 +27,7 @@
   background: var(--color-stage);
   color: var(--color-stage-ink-muted);
 }
-.thumb img, .thumb video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.thumb img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 /* Same proportion with or without a picture so cards in a row line up; phones (one column) keep it short. */
 @media (max-width: 599px) { .thumb:has(.placeholder) { aspect-ratio: 16 / 5; } }

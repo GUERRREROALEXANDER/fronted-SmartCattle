@@ -96,6 +96,10 @@ Copy `.env.example` to `.env`. Never commit `.env`.
 
 The frontend holds no secrets. Do not put API keys in `VITE_*` variables: they are embedded in the client bundle. `AI_API_KEY` belongs only to the backend and the AI service.
 
+**RTSP cameras.** The Cameras page uses the backend's `/api/camera-streams` with the person's session, and plays each `hls_url` with hls.js, loaded only when a player opens. The camera service's key (`CAMERA_API_KEY`) lives in the backend's `.env` and never reaches the browser. The video itself comes from MediaMTX, not through the backend, so the page's origin must be in `hlsAllowOrigins` in `mediamtx.local.yml`, and `hls_url` points at `127.0.0.1` unless that changes: it plays on the PC running the service.
+
+**WhatsApp number.** Sign-up requires a number starting with `+57` and asks the backend to send it a code; the number only receives alerts once that code is written in Ajustes > Cuenta (`/api/auth/me/whatsapp*`). A failed send never costs the account.
+
 For production, change only `VITE_API_BASE_URL` (for example `https://your-backend-domain.example`) and add the frontend origin to the backend's `ALLOWED_ORIGINS`. Vite reads these values at build time, so rebuild after changing them.
 
 ---
@@ -118,7 +122,7 @@ flowchart LR
     cam --> ai
 ```
 
-The frontend reads from the backend and only writes video analysis summaries. It never calls the AI service directly and never posts AI events.
+The frontend reads from the backend. It never calls the AI service directly and never posts AI events.
 
 ### Frontend layers
 
@@ -211,15 +215,8 @@ The backend (`SmartCattle-Backend`) is a FastAPI service backed by PostgreSQL (S
 | GET | `/api/cameras`, `/api/cameras/{id}` | `{ items, total }` / one camera | Camera list and status |
 | GET | `/api/zones` | `{ items, total }` | Safe zones (**signed in**) |
 | POST, PATCH, DELETE | `/api/zones/...` | One zone | Editing a safe zone (**owner**) |
-| POST | `/api/videos/analyses` | Saved analysis | Stores a finished analysis (**signed in**) |
-| GET | `/api/videos/analyses`, `/api/videos/analyses/{id}` | Analyses list / one analysis | Analysis history |
 | GET | `/api/metrics/summary` | Aggregated counts | Metrics summary |
 | POST | `/api/ai/events`, PUT `/api/ai/cameras/{id}/status`, PUT `/api/animals/{tag}/detection` | — | AI service only (API key). **The frontend never calls them.** |
-
-`POST /api/videos/analyses` needs a signed-in user rather than the AI key,
-because it is called by the browser and `AI_API_KEY` cannot live in a `VITE_`
-variable -- those are public in the bundle. That is also why it was the one
-unauthenticated path into the shared events table until users existed.
 
 Event shape (mirrored in `src/types/api.ts`):
 

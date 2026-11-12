@@ -12,6 +12,7 @@ import { SideRail } from './SideRail'
 import { TopBar } from './TopBar'
 import { AlarmBanner } from './AlarmBanner'
 import { MobileTabBar } from './MobileTabBar'
+import { WhatsappReminder } from './WhatsappReminder'
 import styles from './AppShell.module.css'
 
 // Keeps the leaving page on screen while its exit animation runs.
@@ -42,6 +43,7 @@ export function AppShell() {
     <TopBar title={title} user={session?.user} />
     <AlarmBanner />
     <main className={styles.main} id="main-content" tabIndex={-1}>
+      <WhatsappReminder />
       <AnimatePresence mode="wait">
         <motion.div className={styles.content} key={pathname}
           initial={{ opacity: 0, y: reduce ? 0 : 12 }}

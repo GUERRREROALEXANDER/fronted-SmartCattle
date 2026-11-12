@@ -16,6 +16,7 @@ import type { CowCoat } from '../../../../live/herdMotion'
 import { ALERT_COLOR } from '../materials'
 import { hashString } from '../noise'
 import { heightAt } from '../terrain/heightfield'
+import { createLyingRig, lyingPhases, poseLying, stepRest } from './cowLying'
 import { alertPulse, COW_MODEL_URL, cowMaterial, prepareCowTemplate } from './cowModel'
 
 /** What the model reads every frame; the live herd agents provide it. */
@@ -32,9 +33,6 @@ export interface CowPose {
   /** What the AI estimates it is doing, when live data says. */
   posture?: 'standing' | 'walking' | 'lying' | null
 }
-
-/** How far the body sinks to rest on the ground: the model has no lying animation, so its legs fold out of sight. */
-const LYING_DROP = 0.62
 
 /** Appear and leave from 90 % size, never from nothing. */
 function presenceScale(presence = 1): number {
@@ -66,6 +64,8 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
   const variant = Math.floor(seed * 3)
   const rootRef = useRef<Group>(null)
   const ringRef = useRef<Group>(null)
+  // Only the body comes down: the ring and the label stay where they are.
+  const bodyRef = useRef<Group>(null)
   const shouldReduceMotion = useReducedMotion()
   const blend = useRef({ weights: { walk: 0, eat: 1, idle: 0, look: 0 } as Record<Mode, number>, clock: seed * 20, lying: 0 })
 
@@ -84,6 +84,8 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
     }
     return { mixer, actions }
   }, [model, seed, template.animations])
+
+  const lyingRig = useMemo(() => createLyingRig(model, template.animations), [model, template.animations])
 
   useEffect(() => () => {
     rig.mixer.stopAllAction()
@@ -109,10 +111,7 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
   useFrame((state, delta) => {
     const root = rootRef.current
     if (root) {
-      const rest = shouldReduceMotion ? (cow.posture === 'lying' ? 1 : 0)
-        : MathUtils.lerp(blend.current.lying, cow.posture === 'lying' ? 1 : 0, 1 - Math.exp(-delta * 2.5))
-      blend.current.lying = rest
-      root.position.set(cow.position.x, heightAt(cow.position.x, cow.position.z) - rest * LYING_DROP, cow.position.z)
+      root.position.set(cow.position.x, heightAt(cow.position.x, cow.position.z), cow.position.z)
       root.rotation.y = -cow.heading
       root.scale.setScalar(presenceScale(cow.presence))
       root.visible = (cow.presence ?? 1) > 0.02
@@ -144,14 +143,25 @@ export function Cow({ cow, alert = false, paused = false, children }: CowProps) 
       walk.setEffectiveTimeScale(MathUtils.clamp(pace / template.naturalSpeed, 0.5, 1.9))
     }
     rig.mixer.update(shouldReduceMotion ? 0 : delta)
+
+    motion.lying = stepRest(motion.lying, cow.posture === 'lying', delta, Boolean(shouldReduceMotion))
+    const phases = lyingPhases(motion.lying)
+    poseLying(lyingRig, phases, shouldReduceMotion ? 0 : motion.clock)
+    if (bodyRef.current) {
+      bodyRef.current.position.y = -phases.drop
+      // The model's nose points along +X here, so a dip is a turn about -Z.
+      bodyRef.current.rotation.z = -phases.pitch
+    }
   })
 
   return (
     <group ref={rootRef} position={[cow.position.x, 0, cow.position.z]} rotation={[0, -cow.heading, 0]}>
-      {/* The model's muzzle points to +Z; the simulation's heading points to +X. */}
-      <group rotation={[0, Math.PI / 2, 0]}>
-        <group position={template.offset} scale={template.scale}>
-          <primitive object={model} />
+      <group ref={bodyRef}>
+        {/* The model's muzzle points to +Z; the simulation's heading points to +X. */}
+        <group rotation={[0, Math.PI / 2, 0]}>
+          <group position={template.offset} scale={template.scale}>
+            <primitive object={model} />
+          </group>
         </group>
       </group>
       {alert && (

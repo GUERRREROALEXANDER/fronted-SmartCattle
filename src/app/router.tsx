@@ -32,7 +32,7 @@ const pages = {
   settings: SettingsPage,
 }
 
-// Heavy pages (3D scene, charts, video tooling) load on first visit so the shell stays light.
+// Heavy pages (3D scene, charts) load on first visit so the shell stays light.
 const lazyPages: Record<string, LazyRouteFunction<RouteObject>> = {
   pasture: async () => ({ Component: (await import('../features/pasture3d/PasturePage')).PasturePage }),
   analytics: async () => ({ Component: (await import('../features/analytics/AnalyticsPage')).AnalyticsPage }),

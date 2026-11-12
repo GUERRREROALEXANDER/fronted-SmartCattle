@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { Cctv, Laptop, Plug, QrCode as QrIcon, Radar, Smartphone, Trash2, Unplug, Usb, Wifi } from 'lucide-react'
+import { AppWindow, Cctv, Laptop, Plug, QrCode as QrIcon, Radar, Smartphone, Trash2, Unplug, Usb, Wifi } from 'lucide-react'
 import { aiServiceUrl } from '../../api/config'
 import { ApiError, describeApiError } from '../../api/errors'
 import { skipCameraSetup } from '../../app/auth/cameraSetupSkip'
@@ -8,8 +8,8 @@ import { withSessionToken } from '../../api/session'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
 import {
-  DEVICE_SOURCE, activeService, addCamera, addressProblem, cameraProblem, cameraSourceFrom, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, isDeviceCamera, listSavedCameras, onlyInsideItsNetwork,
-  loginProblem, phoneLink, removeCamera, saveCamera, scanCameras, serviceRoot, startFarmPcPairing, startPairing, waitForCamera,
+  DEVICE_SOURCE, activeService, addCamera, addressProblem, cameraProblem, cameraSourceFrom, canShareScreen, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, isDeviceCamera, isScreenCamera, listSavedCameras, onlyInsideItsNetwork,
+  loginProblem, phoneLink, rememberScreenCamera, removeCamera, saveCamera, scanCameras, serviceRoot, startFarmPcPairing, startPairing, waitForCamera,
   type CameraScan, type FoundCamera, type SavedCamera,
 } from '../../services'
 import type { Camera, CameraStatus } from '../../types/domain'
@@ -126,7 +126,7 @@ function SavedCard({ camera, live, previews, busy, canConnect, asksLogin, onConn
   return <GlassCard as="li" padding="none" className={styles.card}>
     {previews && connected && live?.streamUrl && <LivePreview baseUrl={live.streamUrl} name={name} />}
     <div className={styles.cardBody}>
-      <span className={styles.cardName}><strong>{name}</strong><span className="tabular">{isDeviceCamera(camera.source) ? 'Cámara de un celular' : camera.source}</span></span>
+      <span className={styles.cardName}><strong>{name}</strong><span className="tabular">{!isDeviceCamera(camera.source) ? camera.source : isScreenCamera(camera.id) ? 'Ventana de un computador' : 'Cámara de un celular'}</span></span>
       <StatusPill {...statusPill[status]} />
     </div>
     {live?.lastError && !connected && <p className={styles.error}>{live.lastError}</p>}
@@ -222,7 +222,8 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   const [othersOpen, setOthersOpen] = useState(() => new URLSearchParams(globalThis.location.search).get('con') === 'celular')
   const [result, setResult] = useState<{ tone: 'safe' | 'critical'; text: string } | null>(null)
   const broadcastEnded = useCallback((text: string) => setResult({ tone: 'critical', text }), [])
-  const { videoRef: deviceVideo, activeId: broadcastingId, weakSignal, open: openDevice, send: sendFromDevice, stop: stopDevice } = useDeviceCamera(broadcastEnded)
+  const [anyName, setAnyName] = useState('')
+  const { videoRef: deviceVideo, activeId: broadcastingId, weakSignal, open: openDevice, openScreen, send: sendFromDevice, stop: stopDevice } = useDeviceCamera(broadcastEnded)
   const reloadSaved = saved.refresh
   // Something on a local network can reach its cameras: a linked PC, or a service running on this network. In the cloud, no.
   const reachesLocalCameras = Boolean(farmPc.data) || Boolean(serviceBase && !serviceBase.startsWith('https://'))
@@ -286,7 +287,10 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       reloadSaved()
       // Saved is not the goal, seeing it is: open it right away. Without a service to open it, the card waits.
       if (serviceBase) await connect(camera, '', '')
-      else setResult({ tone: 'safe', text: 'Cámara guardada. Se conectará cuando el PC de la finca esté encendido.' })
+      else {
+        setNeedsFarmPc(true)
+        setResult({ tone: 'safe', text: 'Cámara guardada. Podrás conectarla cuando el PC de la finca esté encendido.' })
+      }
     } catch (error) {
       setResult({ tone: 'critical', text: /credentials/i.test(describeApiError(error).description)
         ? 'Quita el usuario y la contraseña de la dirección: se escriben al conectar.'
@@ -296,11 +300,11 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
     }
   }
 
-  const broadcast = async (camera: SavedCamera) => {
+  const broadcast = async (camera: SavedCamera, opened?: MediaStream) => {
     setBusyId(camera.id)
     setResult(null)
     try {
-      const media = await openDevice()
+      const media = opened ?? await (isScreenCamera(camera.id) ? openScreen() : openDevice())
       const added = await addCamera(serviceBase, { kind: 'browser', cameraId: camera.id }).catch((error: unknown) => {
         media.getTracks().forEach(track => track.stop())
         throw error
@@ -315,9 +319,37 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       stopDevice()
       setResult({ tone: 'critical', text: `${camera.name} no llegó al servicio. Revisa la señal de este celular y vuelve a intentarlo.` })
     } catch (error) {
-      setResult({ tone: 'critical', text: error instanceof Error && !(error instanceof ApiError) && error.cause !== undefined ? error.message : problemText(error) })
+      const own = error instanceof Error && !(error instanceof ApiError) && error.cause !== undefined
+      // Closing the dialog of windows is a change of mind, not a problem: it has no text.
+      if (!own || error.message) setResult({ tone: 'critical', text: own ? error.message : problemText(error) })
     } finally {
       setBusyId('')
+    }
+  }
+
+  /** The window is chosen first: browsers only allow asking right after the click, and a change of mind saves nothing. */
+  const addAnyCamera = async (event: FormEvent) => {
+    event.preventDefault()
+    setResult(null)
+    let media: MediaStream
+    try {
+      media = await openScreen()
+    } catch (error) {
+      if (error instanceof Error && error.message) setResult({ tone: 'critical', text: error.message })
+      return
+    }
+    setSaving(true)
+    try {
+      const camera = await saveCamera(anyName, DEVICE_SOURCE)
+      rememberScreenCamera(camera.id)
+      setAnyName('')
+      reloadSaved()
+      await broadcast(camera, media)
+    } catch (error) {
+      media.getTracks().forEach(track => track.stop())
+      setResult({ tone: 'critical', text: problemText(error) })
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -431,7 +463,31 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       </form>
     </section>
 
-    {(needsFarmPc || !serviceBase) && !farmPc.data && farmPc.status !== 'loading' && <FarmPcPanel />}
+    <section aria-labelledby="any-camera-title" className={styles.quick}>
+      <h2 id="any-camera-title" className={styles.quickTitle}>Conecta cualquier cámara</h2>
+      <p className={styles.note}>Sin importar la marca ni el modelo, y sin IP ni contraseña: si ves su imagen en este computador, la IA puede analizarla.</p>
+      {canShareScreen()
+        ? <>
+          <ol className={styles.steps}>
+            <li>Abre la imagen de la cámara en su app, en el navegador o en el programa del grabador.</li>
+            <li>Escribe un nombre y pulsa el botón.</li>
+            <li>Elige la ventana donde se ve la cámara.</li>
+          </ol>
+          <form className={styles.anyForm} onSubmit={addAnyCamera}>
+            <TextField label="Nombre" value={anyName} onChange={event => setAnyName(event.target.value)} required maxLength={80}
+              placeholder="Corral" autoComplete="off" />
+            <Button type="submit" icon={AppWindow} loading={saving} disabled={!serviceBase || Boolean(broadcastingId)} className={styles.quickSubmit}>Elegir la ventana</Button>
+          </form>
+          <p className={styles.note}>
+            {serviceBase
+              ? 'Deja ese computador encendido y la ventana abierta, sin minimizarla: la IA analiza lo que se ve en ella. Si algo la tapa, también lo verá.'
+              : 'Para usarlo, enciende primero el servicio de IA o el PC de la finca.'}
+          </p>
+        </>
+        : <p className={styles.note}>Esto se hace desde un computador, en Chrome o Edge. Desde este celular puedes transmitir su propia cámara en «Otras formas».</p>}
+    </section>
+
+    {needsFarmPc && !farmPc.data && farmPc.status !== 'loading' && <FarmPcPanel />}
     {result && <p className={result.tone === 'safe' ? styles.ok : styles.error} role="status">{result.text}</p>}
 
     <div className={styles.broadcast} hidden={!broadcastingId}>
@@ -456,6 +512,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
 
     <details className={styles.others} open={othersOpen} onToggle={event => setOthersOpen(event.currentTarget.open)}>
       <summary className={styles.othersTitle}>Otras formas: un celular, buscar en la red o QR</summary>
+      {!needsFarmPc && !serviceBase && !farmPc.data && farmPc.status !== 'loading' && <FarmPcPanel />}
       <Instructions />
       <div className={styles.modes} role="group" aria-label="Cómo agregarla">
         {ways.map(item => <button key={item.id} type="button" className={styles.mode} aria-pressed={way === item.id} onClick={() => setWay(item.id)}>

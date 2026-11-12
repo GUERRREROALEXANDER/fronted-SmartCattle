@@ -10,6 +10,7 @@ import { duration, ease, FadeUp, staggerDelay } from '../../motion'
 import { getCurrentFarm, getFarmPlan, getSecurityHours, listFarmMembers, listSafeZones } from '../../services'
 import { useLiveCameras } from '../../live/useLiveCameras'
 import { NotificationSettingsForm } from './NotificationSettingsForm'
+import { WhatsappLink } from './WhatsappLink'
 import type { EventKind, SafeZone, Sourced, UserRole } from '../../types/domain'
 import styles from './SettingsPage.module.css'
 
@@ -55,6 +56,7 @@ export function SettingsPage() {
           <Row label="Rol">{roleLabel[session.user.role]}</Row>
           <Row label="Contraseña"><span className={styles.muted}>El cambio de contraseña llegará con la autenticación del servidor.</span></Row>
         </dl>}
+        <WhatsappLink />
       </Section>
 
       {allowed('farm:edit') && <Section index={2} icon={MapIcon} id="farm" title="Finca" description="Nombre y lotes de la finca.">

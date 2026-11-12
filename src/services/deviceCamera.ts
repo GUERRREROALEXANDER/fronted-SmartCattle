@@ -1,4 +1,5 @@
 import { authHeaders } from '../api/session'
+import { safeStorage } from '../lib/safeStorage'
 
 // A phone as a camera with nothing to install: its browser sends pictures to the AI service, so it needs no address,
 // no password and no shared network with whoever is watching.
@@ -16,6 +17,23 @@ export function onlyInsideItsNetwork(address: string): boolean {
   if (/^\d+$/.test(text)) return true
   const host = /^(?:[a-z]+:\/\/)?(?:[^/@]*@)?([^/:?]+)/i.exec(text)?.[1]?.toLowerCase() ?? ''
   return host === 'localhost' || host.endsWith('.local') || /^(10\.|127\.|192\.168\.|169\.254\.|172\.(1[6-9]|2\d|3[01])\.)/.test(host)
+}
+
+// Any camera whose picture can be seen on a computer, whatever its brand: the window showing it is what gets sent.
+// The backend only knows "browser", so which of the two it is stays on the computer that set it up.
+
+const screenKey = (cameraId: string) => `smartcattle.cameraScreen.${cameraId}`
+
+export const canShareScreen = () => typeof navigator !== 'undefined' && typeof navigator.mediaDevices?.getDisplayMedia === 'function'
+export const rememberScreenCamera = (cameraId: string) => safeStorage.setJson(screenKey(cameraId), true)
+export const isScreenCamera = (cameraId: string) => safeStorage.getJson<boolean>(screenKey(cameraId)) === true
+
+/** Why the window could not be shared; empty when the person just closed the dialog, which needs no telling. */
+export function screenShareProblem(error: unknown): string {
+  const name = error instanceof Error ? error.name : ''
+  if (name === 'NotAllowedError' || name === 'AbortError') return ''
+  if (name === 'TypeError' || name === 'NotSupportedError') return 'Este navegador no deja compartir una ventana. Abre esta página en Chrome o Edge, en un computador.'
+  return 'No se pudo compartir esa ventana. Vuelve a intentarlo y elige otra.'
 }
 
 /** Enough for the model and light enough for mobile data. */

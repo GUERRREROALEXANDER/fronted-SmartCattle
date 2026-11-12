@@ -1,0 +1,75 @@
+/* Lucía's own colours, the same in both themes: she is a character, not part of the interface. */
+.robot {
+  --lucia-line: #1f2a44;
+  --lucia-metal: #e4e8f0;
+  --lucia-shade: #cbd2df;
+  --lucia-visor: #1d4058;
+  --lucia-light: #5ff0f5;
+  --lucia-straw: #e8c068;
+  --lucia-straw-line: #a57a26;
+  --lucia-band: #15803d;
+  display: block;
+  overflow: visible;
+}
+
+.metal { fill: var(--lucia-metal); stroke: var(--lucia-line); stroke-width: 4; stroke-linejoin: round; }
+.shade { fill: var(--lucia-shade); }
+.seam { fill: none; stroke: #2fc9d0; stroke-width: 2.5; stroke-linejoin: round; }
+.visor { fill: var(--lucia-visor); stroke: var(--lucia-line); stroke-width: 4; }
+.glint { fill: none; stroke: rgb(255 255 255 / 0.45); stroke-width: 4; stroke-linecap: round; }
+.light { fill: var(--lucia-light); }
+.straw { fill: var(--lucia-straw); stroke: var(--lucia-line); stroke-width: 4; stroke-linejoin: round; }
+.band { fill: var(--lucia-band); stroke: var(--lucia-line); stroke-width: 3; }
+.weave { fill: none; stroke: var(--lucia-straw-line); stroke-width: 2; stroke-linecap: round; }
+.shadow { fill: rgb(31 42 68 / 0.16); }
+
+/* Every moving part turns around its real joint, in the drawing's own coordinates. */
+.figure, .head, .hat, .armLeft, .armRight, .eyes, .mouth, .shadow { transform-box: view-box; }
+.figure { transform-origin: 100px 212px; }
+.head { transform-origin: 100px 104px; }
+.hat { transform-origin: 100px 36px; transform: rotate(-5deg); }
+.armLeft { transform-origin: 72px 124px; }
+.armRight { transform-origin: 128px 124px; }
+.eyes { transform-origin: 100px 66px; }
+.mouth { transform-origin: 100px 77px; }
+.shadow { transform-origin: 100px 229px; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .figure { animation: float 3.6s ease-in-out infinite; }
+  .shadow { animation: shadow 3.6s ease-in-out infinite; }
+  .eyes { animation: blink 4.6s linear infinite; }
+  .armLeft { animation: swayLeft 3.6s ease-in-out infinite; }
+  .armRight { animation: swayRight 3.6s ease-in-out infinite; }
+  .hat { animation: hatNudge 9s ease-in-out infinite; }
+
+  /* Hand up to say hello, and the hat lifted with the other. */
+  [data-mood='greeting'] .armRight, .robot:hover .armRight { animation: wave 1.1s ease-in-out infinite; }
+  [data-mood='greeting'] .hat, .robot:hover .hat { animation: hatLift 2.2s ease-in-out infinite; }
+  [data-mood='greeting'] .head, .robot:hover .head { animation: nod 2.2s ease-in-out infinite; }
+
+  /* Head to one side, eyes going over the farm's data, one arm held out. */
+  [data-mood='thinking'] .head { animation: ponder 2.4s ease-in-out infinite; }
+  [data-mood='thinking'] .eyes { animation: scan 1.2s ease-in-out infinite; }
+  [data-mood='thinking'] .armLeft { animation: none; transform: rotate(38deg); }
+  [data-mood='thinking'] .figure { animation-duration: 2.4s; }
+
+  /* Speaks while her answer appears. */
+  [data-mood='talking'] .mouth { animation: talk 0.32s ease-in-out infinite alternate; }
+  [data-mood='talking'] .head { animation: chat 1.3s ease-in-out infinite; }
+  [data-mood='talking'] .armRight { animation: explain 1.3s ease-in-out infinite; }
+}
+
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes shadow { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(0.84); opacity: 0.7; } }
+@keyframes blink { 0%, 93%, 100% { transform: scaleY(1); } 96.500% { transform: scaleY(0.1); } }
+@keyframes swayLeft { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(5deg); } }
+@keyframes swayRight { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-5deg); } }
+@keyframes hatNudge { 0%, 88%, 100% { transform: rotate(-5deg); } 92% { transform: rotate(-11deg) translateY(-3px); } 96% { transform: rotate(-2deg); } }
+@keyframes wave { 0%, 100% { transform: rotate(-112deg); } 50% { transform: rotate(-146deg); } }
+@keyframes hatLift { 0%, 100% { transform: rotate(-5deg); } 45%, 60% { transform: rotate(-14deg) translateY(-12px); } }
+@keyframes nod { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(4deg) translateY(2px); } }
+@keyframes ponder { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(-3deg); } }
+@keyframes scan { 0%, 100% { transform: translateX(-5px); } 50% { transform: translateX(5px); } }
+@keyframes talk { from { transform: scaleY(0.35); } to { transform: scaleY(1.25); } }
+@keyframes chat { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(3deg); } }
+@keyframes explain { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(-52deg); } }
