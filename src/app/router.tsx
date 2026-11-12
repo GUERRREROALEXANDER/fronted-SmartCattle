@@ -17,12 +17,14 @@ import { LoginPage } from '../features/auth/LoginPage'
 import { PhonePairPage } from '../features/cameras/PhonePairPage'
 import { RegisterPage } from '../features/auth/RegisterPage'
 import { ReportPage } from '../features/report/ReportPage'
+import { ModelPage } from '../features/assistant/ModelPage'
 import { RequireOnboarding } from './auth/RequireOnboarding'
 import { OnboardingPage } from '../features/onboarding/OnboardingPage'
 
 const pages = {
   dashboard: DashboardPage,
   report: ReportPage,
+  model: ModelPage,
   monitoring: MonitoringPage,
   events: EventsPage,
   cattle: CattlePage,

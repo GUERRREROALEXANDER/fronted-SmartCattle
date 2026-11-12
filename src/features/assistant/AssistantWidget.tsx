@@ -1,44 +1,23 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Send, X } from 'lucide-react'
 import { useReducedMotion, motion } from 'motion/react'
-import { useAuth } from '../../app/auth/useAuth'
-import { herdCount } from '../../live/liveState'
-import { useLive } from '../../live/useLive'
-import { askAssistantModel, getAlertReport, getDailyReport, type AssistantTurn } from '../../services'
-import { onboardingOf, suggestionsFor } from '../onboarding/onboardingModel'
-import { answer, ASSISTANT_NAME, greeting, suggestions, type AssistantData } from './assistantEngine'
+import { useLocation } from 'react-router'
+import { MODEL_PAGE_PATH } from '../../app/navigation'
+import { useAssistant } from './assistantContext'
+import { ASSISTANT_NAME } from './assistantEngine'
 import { Lucero } from './Lucero'
 import styles from './AssistantWidget.module.css'
 
-interface Message { id: number; from: 'assistant' | 'user'; text: string }
-
-const reportData: Pick<AssistantData, 'daily' | 'alerts'> = {
-  daily: async day => (await getDailyReport({ day })).data,
-  alerts: async (start, end) => (await getAlertReport({ start, end })).data,
-}
-const HISTORY_TURNS = 8
-
-/** Lives in the shell, so it is one tap away on every page and keeps the conversation between them. */
+/** The conversation one tap away on every page, except the one that already shows it in full. */
 export function AssistantWidget() {
-  const { session } = useAuth()
-  const live = useLive()
+  const { messages, busy, status, offered, ask } = useAssistant()
+  const { pathname } = useLocation()
   const reduce = useReducedMotion()
-  const name = session?.user.name
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [usingModel, setUsingModel] = useState<boolean | null>(null)
-  const [messages, setMessages] = useState<Message[]>(() => [{ id: 0, from: 'assistant', text: greeting(name) }])
-  const nextId = useRef(1)
   const log = useRef<HTMLDivElement>(null)
   const input = useRef<HTMLInputElement>(null)
-  // Read when asked, not when the question was typed: live data changes while the answer loads.
-  const facts = useRef(live)
-  const offered = session ? suggestionsFor(onboardingOf(session.user.id)?.goals ?? [], suggestions) : suggestions
 
-  useEffect(() => {
-    facts.current = live
-  }, [live])
   useEffect(() => {
     if (open) input.current?.focus()
   }, [open])
@@ -46,40 +25,14 @@ export function AssistantWidget() {
     log.current?.scrollTo?.({ top: log.current.scrollHeight })
   }, [messages, open])
 
-  function push(from: Message['from'], text: string) {
-    const id = nextId.current++
-    setMessages(current => [...current, { id, from, text }])
-  }
-
-  async function ask(question: string) {
-    const text = question.trim()
-    if (!text || busy) return
-    const history: AssistantTurn[] = messages.slice(1).slice(-HISTORY_TURNS).map(message => ({ role: message.from, text: message.text }))
-    push('user', text)
-    setDraft('')
-    setBusy(true)
-    try {
-      const reply = await askAssistantModel(text, history)
-      setUsingModel(reply !== null)
-      push('assistant', reply ?? await answer(text, {
-        ...reportData,
-        live: () => ({
-          cattleNow: herdCount(facts.current)?.total ?? null,
-          cameras: facts.current.cameras.map(camera => ({ name: camera.name, online: camera.status === 'online' })),
-          openAlerts: facts.current.alerts.filter(alert => alert.status === 'open').length,
-        }),
-      }, new Date(), name))
-    } catch {
-      push('assistant', 'No pude consultar los datos de la finca en este momento. Revisa la conexión e inténtalo de nuevo.')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   function submit(event: FormEvent) {
     event.preventDefault()
+    if (busy) return
     void ask(draft)
+    setDraft('')
   }
+
+  if (pathname === MODEL_PAGE_PATH) return null
 
   if (!open) {
     return <button type="button" className={styles.launcher} onClick={() => setOpen(true)} aria-label={`Abrir el asistente ${ASSISTANT_NAME}`}>
@@ -95,7 +48,7 @@ export function AssistantWidget() {
     <header className={styles.head}>
       <Lucero size={52} mood={busy ? 'thinking' : 'idle'} />
       <span className={styles.title}><strong>{ASSISTANT_NAME}</strong>
-        <small>{usingModel === false ? 'Modo básico: reglas con los datos de tu finca' : 'Responde con los datos de tu finca'}</small></span>
+        <small>{status}</small></span>
       <button type="button" className={styles.close} onClick={() => setOpen(false)} aria-label="Cerrar el asistente">
         <X size={20} strokeWidth={2.5} aria-hidden="true" />
       </button>

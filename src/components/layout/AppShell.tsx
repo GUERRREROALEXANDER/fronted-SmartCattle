@@ -5,6 +5,7 @@ import { useDocumentTitle } from '../../app/useDocumentTitle'
 import { useAuth } from '../../app/auth/useAuth'
 import { inkFor } from '../../app/navigation'
 import { duration, ease } from '../../motion'
+import { AssistantProvider } from '../../features/assistant/AssistantProvider'
 import { AssistantWidget } from '../../features/assistant/AssistantWidget'
 import { LiveProvider } from '../../live/LiveProvider'
 import { SideRail } from './SideRail'
@@ -35,7 +36,7 @@ export function AppShell() {
   const title = usePageTitle()
   const { session } = useAuth()
   useDocumentTitle()
-  return <LiveProvider><div className={styles.shell} data-ink={inkFor(pathname)}>
+  return <LiveProvider><AssistantProvider><div className={styles.shell} data-ink={inkFor(pathname)}>
     <a className={styles.skipLink} href="#main-content">Saltar al contenido</a>
     <SideRail />
     <TopBar title={title} user={session?.user} />
@@ -52,5 +53,5 @@ export function AppShell() {
     </main>
     <MobileTabBar />
     <AssistantWidget />
-  </div></LiveProvider>
+  </div></AssistantProvider></LiveProvider>
 }
