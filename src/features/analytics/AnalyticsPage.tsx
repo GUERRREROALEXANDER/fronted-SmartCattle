@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { CalendarSearch, Info } from 'lucide-react'
 import { DataSourceBadge, EmptyState, ErrorState, Notice, PageHeader, Skeleton } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
-import { listCameras, listEvents } from '../../services'
+import { listEvents } from '../../services'
+import { useLiveCameras } from '../../live/useLiveCameras'
 import { buildAnalyticsModel, previousPeriodDeltas, type AnalyticsRange } from './analyticsModel'
 import { CameraBars } from './CameraBars'
 import { CategoryDonut } from './CategoryDonut'
@@ -36,7 +37,7 @@ export function AnalyticsPage() {
   const [range, setRange] = useState<AnalyticsRange>('24h')
   const [now, setNow] = useState(() => new Date())
   const events = useResource(signal => listEvents({ signal }), { refreshMs: 60_000 })
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 60_000 })
+  const cameras = useLiveCameras()
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 60_000)

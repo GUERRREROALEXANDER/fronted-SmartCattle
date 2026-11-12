@@ -1,10 +1,7 @@
 import { eventCatalog } from '../lib/eventCatalog'
-import type { ApiAnimalsResponse, ApiCamera, ApiCamerasResponse, ApiEvent, ApiEventsResponse, ApiLiveDetection, ApiLiveStatus, ApiStatus } from '../types/api'
+import type { ApiAnimal, ApiAnimalsResponse, ApiZone, ApiZonePoint, ApiZonesResponse, ApiCamera, ApiCamerasResponse, ApiEvent, ApiEventsResponse, ApiLiveDetection, ApiLiveStatus, ApiStatus } from '../types/api'
 import { ApiError } from './errors'
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
+import { isObject } from './parsers'
 
 function invalid(message: string): never { throw new ApiError('parse', message) }
 
@@ -17,16 +14,45 @@ export function parseStatusResponse(body: unknown): ApiStatus {
     !isObject(body.ai_service) || typeof body.ai_service.configured !== 'boolean' || typeof body.storage !== 'string') {
     return invalid('Invalid status response')
   }
-  return { status: body.status, version: body.version, ai_service: { configured: body.ai_service.configured }, storage: body.storage }
+  return {
+    status: body.status, version: body.version,
+    ai_service: { configured: body.ai_service.configured },
+    storage: body.storage,
+    // Optional rather than required: a backend that predates the field is
+    // still a working backend, and failing the whole status call over a hint
+    // would blank the dashboard header.
+    ...(typeof body.auth_enabled === 'boolean' ? { auth_enabled: body.auth_enabled } : {}),
+  }
 }
+
+const animalStatuses = new Set(['active', 'inactive', 'lost'])
 
 export function parseAnimalsResponse(body: unknown): ApiAnimalsResponse {
   if (!isObject(body) || !Array.isArray(body.items) || typeof body.total !== 'number' || !Number.isFinite(body.total)) return invalid('Invalid animals response')
-  const items = body.items.map((item: unknown) => {
-    if (!isObject(item) || typeof item.id !== 'string' || typeof item.tag !== 'string') return invalid('Invalid animal item')
-    return { id: item.id, tag: item.tag }
-  })
-  return { items, total: body.total }
+  return { items: body.items.map(parseAnimal), total: body.total }
+}
+
+export function parseAnimal(body: unknown): ApiAnimal {
+  if (!isObject(body) || typeof body.tag !== 'string' || !body.tag
+    || typeof body.status !== 'string' || !animalStatuses.has(body.status)
+    || !isTimestamp(body.created_at) || !isTimestamp(body.updated_at)
+    // Nullable, and null is meaningful: an animal nobody has located, and one
+    // never detected. Accepting undefined too, because an older backend
+    // omitted these fields rather than sending null.
+    || (body.name != null && typeof body.name !== 'string')
+    || (body.camera_id != null && typeof body.camera_id !== 'string')
+    || (body.last_detection != null && !isTimestamp(body.last_detection))) {
+    return invalid('Invalid animal item')
+  }
+  return {
+    tag: body.tag,
+    name: (body.name as string | null | undefined) ?? null,
+    status: body.status as ApiAnimal['status'],
+    camera_id: (body.camera_id as string | null | undefined) ?? null,
+    last_detection: (body.last_detection as string | null | undefined) ?? null,
+    created_at: body.created_at as string,
+    updated_at: body.updated_at as string,
+  }
 }
 
 export function parseEventsResponse(body: unknown): ApiEventsResponse {
@@ -43,14 +69,23 @@ export function parseEventsResponse(body: unknown): ApiEventsResponse {
       unknownTypes.add(item.event_type)
       continue
     }
-    items.push({ id: item.id, event_type: item.event_type as ApiEvent['event_type'], camera_id: item.camera_id,
-      detected_object: item.detected_object, confidence: item.confidence, timestamp: item.timestamp, received_at: item.received_at })
+    items.push({
+      id: item.id, event_type: item.event_type as ApiEvent['event_type'], camera_id: item.camera_id,
+      detected_object: item.detected_object, confidence: item.confidence,
+      timestamp: item.timestamp, received_at: item.received_at,
+      // A backend that predates the severity column sends no level. Treated as
+      // medium, which is the default that column has always carried, rather
+      // than failing the whole response over a field this app can live
+      // without.
+      level: eventLevels.has(item.level as string) ? item.level as ApiEvent['level'] : 'medium',
+    })
   }
   if (unknownTypes.size) console.warn(`Unknown event types: ${[...unknownTypes].join(', ')}`)
   return { items, total: body.total }
 }
 
 const cameraStatuses = new Set(['online', 'offline', 'error'])
+const eventLevels = new Set(['low', 'medium', 'high'])
 const isTimestamp = (value: unknown) => typeof value === 'string' && !Number.isNaN(Date.parse(value))
 const isSize = (value: unknown) => value === null || (typeof value === 'number' && Number.isInteger(value) && value > 0)
 
@@ -63,7 +98,10 @@ export function parseCamerasResponse(body: unknown): ApiCamerasResponse {
       (item.stream_url != null && (typeof item.stream_url !== 'string' || !/^https?:\/\//.test(item.stream_url)))) return invalid('Invalid camera item')
     return { id: item.id, status: item.status as ApiCamera['status'], last_online_at: (item.last_online_at as string | null | undefined) ?? null,
       frame_width: (item.frame_width as number | null | undefined) ?? null, frame_height: (item.frame_height as number | null | undefined) ?? null,
-      stream_url: (item.stream_url as string | null | undefined) ?? null }
+      stream_url: (item.stream_url as string | null | undefined) ?? null,
+      last_error: typeof item.last_error === 'string' ? item.last_error : null,
+      fps: typeof item.fps === 'number' && Number.isFinite(item.fps) ? item.fps : null,
+      display_name: typeof item.display_name === 'string' ? item.display_name : null }
   })
   return { items, total: body.total }
 }
@@ -80,4 +118,53 @@ export function parseLiveStatus(body: unknown): ApiLiveStatus {
   })
   return { camera_id: body.camera_id, status: body.status, width: (body.width as number | null | undefined) ?? null,
     height: (body.height as number | null | undefined) ?? null, captured_at: (body.captured_at as string | null | undefined) ?? null, detections }
+}
+
+const isNormalised = (value: unknown) =>
+  typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1
+
+function parseOutline(value: unknown): ApiZonePoint[] | null {
+  // Null and absent both mean "rectangle only". A malformed polygon is
+  // rejected rather than silently dropped: the zone would still render, from
+  // the bounding box, and silently cover different ground than the one that
+  // was drawn.
+  if (value == null) return null
+  if (!Array.isArray(value) || value.length < 3) return invalid('Invalid zone outline')
+  return value.map(point => {
+    if (!isObject(point) || !isNormalised(point.x) || !isNormalised(point.y)) {
+      return invalid('Invalid zone outline point')
+    }
+    return { x: point.x as number, y: point.y as number }
+  })
+}
+
+export function parseZone(body: unknown): ApiZone {
+  if (!isObject(body) || typeof body.id !== 'number' || !Number.isInteger(body.id)
+    || typeof body.camera_id !== 'string' || !body.camera_id
+    || typeof body.name !== 'string' || !body.name
+    || !isNormalised(body.x_min) || !isNormalised(body.y_min)
+    || !isNormalised(body.x_max) || !isNormalised(body.y_max)
+    || typeof body.active !== 'boolean' || !isTimestamp(body.created_at)) {
+    return invalid('Invalid zone')
+  }
+  const [xMin, yMin, xMax, yMax] = [body.x_min, body.y_min, body.x_max, body.y_max] as number[]
+  // An inverted or flat rectangle makes the whole frame read as outside the
+  // zone, which fires one alert per visible animal. The backend refuses it;
+  // refusing it here too means a database written before that constraint
+  // cannot quietly produce the same flood.
+  if (xMin >= xMax || yMin >= yMax) return invalid('Zone rectangle has no area')
+
+  return {
+    id: body.id, camera_id: body.camera_id, name: body.name,
+    x_min: xMin, y_min: yMin, x_max: xMax, y_max: yMax,
+    outline: parseOutline(body.outline),
+    active: body.active, created_at: body.created_at as string,
+  }
+}
+
+export function parseZonesResponse(body: unknown): ApiZonesResponse {
+  if (!isObject(body) || !Array.isArray(body.items) || typeof body.total !== 'number' || !Number.isFinite(body.total)) {
+    return invalid('Invalid zones response')
+  }
+  return { items: body.items.map(parseZone), total: body.total }
 }

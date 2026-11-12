@@ -4,7 +4,8 @@ import { EventRow } from '../../components/events/EventRow'
 import { EmptyState, ErrorState, Notice, PageHeader, StatusPill } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
 import { FadeUp, staggerDelay } from '../../motion'
-import { getCameraStream, getFrameDetections, getSystemStatus, hasPicture, listCameras, listEvents, listSafeZones, loadCameraSnapshots } from '../../services'
+import { getCameraStream, getFrameDetections, getSystemStatus, hasPicture, listEvents, listSafeZones, loadCameraSnapshots } from '../../services'
+import { useLiveCameras } from '../../live/useLiveCameras'
 import type { Severity } from '../../types/domain'
 import { recentAlerts } from '../dashboard/dashboardModel'
 import { useVideoLibraryContext } from '../videos/useVideoLibraryContext'
@@ -38,7 +39,7 @@ export function MonitoringPage() {
   }, [])
 
   // Polled faster than the rest so a camera that connects or disconnects shows up within seconds.
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: cameraRefreshMs })
+  const cameras = useLiveCameras({ onlineOnly: true })
   const events = useResource(signal => listEvents({ signal }), { refreshMs: liveRefreshMs })
   const status = useResource(signal => getSystemStatus({ signal }), { refreshMs: liveRefreshMs })
 

@@ -1,9 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApiError } from '../api/errors'
+import { SESSION_STORAGE_KEY, tokenStore } from '../api/session'
+import { safeStorage } from '../lib/safeStorage'
 import { eventCatalog } from '../lib/eventCatalog'
 import { buildMockFarmEvents, buildMockFrameDetections, mockCameras, mockDetectedCattle, mockFarm, mockRegisteredCattle, mockSafeZones } from '../mocks/mockData'
 import type { ApiEvent } from '../types/api'
-import { getCameraStream, getCurrentFarm, getDetectedCattleCount, getFrameDetections, getRegisteredCattleCount, getSystemStatus, listCameras, listEvents, listSafeZones } from './index'
+import {
+  acknowledgeAlert, getCameraStream, getCurrentFarm, getDetectedCattleCount, getFarmPlan, getFrameDetections, getRegisteredCattleCount,
+  getSystemStatus, listAlerts, listCameras, listEvents, listSafeZones, resolveAlert,
+} from './index'
 import { isWithinBounds } from './mappers'
 
 const now = new Date(2026, 9, 3, 16)
@@ -13,6 +18,7 @@ const backendEvents: ApiEvent[] = events.filter(event => event.kind === 'cattle_
   return {
   id: event.id, event_type: 'cattle_out_of_zone', camera_id: event.cameraId, detected_object: event.detectedObject,
   confidence: event.confidence, timestamp: event.occurredAt.toISOString(), received_at: event.receivedAt.toISOString(),
+  level: 'medium' as const,
   }
 })
 
@@ -22,7 +28,14 @@ describe('backend services', () => {
   it.each(['api', 'hybrid'] as const)('loads backend events in %s mode', async mode => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: backendEvents, total: backendEvents.length }))
     const result = await listEvents({ mode, fetchImpl, now })
-    expect(result).toEqual({ data: events.filter(event => event.kind === 'cattle_out_of_zone'), source: 'api' })
+    // severitySource is 'backend' now: the ranking came from the server's
+    // level rather than from the catalog's per-type default.
+    expect(result).toEqual({
+      data: events
+        .filter(event => event.kind === 'cattle_out_of_zone')
+        .map(event => ({ ...event, severitySource: 'backend' })),
+      source: 'api',
+    })
     expect(fetchImpl).toHaveBeenCalledWith(expect.stringMatching(/\/api\/events$/), expect.objectContaining({ method: 'GET' }))
   })
   it('orders backend events by detection time, not arrival time', async () => {
@@ -37,7 +50,8 @@ describe('backend services', () => {
   it('returns offline status on health network failure', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockRejectedValue(new TypeError('Failed to fetch'))
     await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({
-      source: 'api', data: { backend: 'offline', aiConfigured: null, version: null, storage: null, checkedAt: now },
+      source: 'api',
+      data: { backend: 'offline', aiConfigured: null, authEnabled: null, version: null, storage: null, checkedAt: now },
     })
     expect(fetchImpl).toHaveBeenCalledOnce()
   })
@@ -71,14 +85,18 @@ describe('backend services', () => {
       .mockResolvedValueOnce(Response.json({ status: 'ok', version: '', ai_service: { configured: false }, storage: '' }))
       .mockResolvedValueOnce(Response.json({ items: [], total: 0 }))
     await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({
-      source: 'api', data: { backend: 'online', aiConfigured: false, version: '', storage: '', checkedAt: now },
+      source: 'api',
+      data: { backend: 'online', aiConfigured: false, authEnabled: null, version: '', storage: '', checkedAt: now },
     })
     await expect(getRegisteredCattleCount({ mode: 'api', fetchImpl, now })).resolves.toEqual({ data: 0, source: 'api' })
     expect(fetchImpl.mock.calls.map(([url]) => new URL(String(url)).pathname)).toEqual(['/health', '/api/status', '/api/animals'])
   })
   it('keeps backend online with unknown details after status failure', async () => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValueOnce(Response.json({ status: 'ok' })).mockRejectedValueOnce(new TypeError('Failed to fetch'))
-    await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({ source: 'api', data: { backend: 'online', aiConfigured: null, version: null, storage: null, checkedAt: now } })
+    await expect(getSystemStatus({ mode: 'api', fetchImpl, now })).resolves.toEqual({
+      source: 'api',
+      data: { backend: 'online', aiConfigured: null, authEnabled: null, version: null, storage: null, checkedAt: now },
+    })
   })
 })
 
@@ -95,7 +113,7 @@ describe('camera services', () => {
   it.each(['api', 'hybrid'] as const)('lists backend cameras in %s mode', async mode => {
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: [backendCamera], total: 1 }))
     await expect(listCameras({ mode, fetchImpl, now })).resolves.toEqual({
-      source: 'api', data: [{ id: 'camera-01', name: 'Cámara 01', location: 'Cámara IP', status: 'online', lastSeenAt: now }],
+      source: 'api', data: [{ id: 'camera-01', name: 'Cámara 01', location: 'Cámara IP', status: 'online', lastSeenAt: now, lastError: null, streamUrl: null }],
     })
     expect(fetchImpl).toHaveBeenCalledWith(expect.stringMatching(/\/api\/cameras$/), expect.objectContaining({ method: 'GET' }))
   })
@@ -112,6 +130,21 @@ describe('camera services', () => {
       source: 'api', data: { kind: 'mjpeg', url: 'http://localhost:8090/video.mjpg', width: 640, height: 352, annotated: true },
     })
     expect(fetchImpl).toHaveBeenCalledWith('http://localhost:8090/status', expect.anything())
+  })
+  it('keeps the stream URL each camera reported', async () => {
+    const url = 'http://192.168.1.10:8090/cameras/cam-1'
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: [{ ...backendCamera, stream_url: url }], total: 1 }))
+    expect((await listCameras({ mode: 'api', fetchImpl, now })).data?.[0].streamUrl).toBe(url)
+  })
+  it('never sends the session token to the AI service', async () => {
+    safeStorage.setJson(SESSION_STORAGE_KEY, { source: 'api', accessToken: 'jwt-123' })
+    try {
+      const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json(live))
+      expect((await getCameraStream('camera-01', { mode: 'api', fetchImpl, now, aiServiceUrl })).data?.kind).toBe('mjpeg')
+      expect(fetchImpl.mock.calls[0][1]?.headers).toBeUndefined()
+    } finally {
+      tokenStore.clear()
+    }
   })
   it('uses the public stream URL the camera reported to the backend', async () => {
     const tunnel = 'https://abc-def.trycloudflare.com'
@@ -156,32 +189,92 @@ describe('camera services', () => {
   })
 })
 
-describe('mock-only services', () => {
+describe('farm services', () => {
   const cameraId = mockCameras[0].id
-  const services = [getDetectedCattleCount, getCurrentFarm,
-    (options: Parameters<typeof listSafeZones>[1]) => listSafeZones(cameraId, options)]
-  it.each(services)('returns unavailable in api mode without fetching', async service => {
-    const fetchImpl = vi.fn<typeof fetch>()
-    await expect(service({ mode: 'api', now, fetchImpl })).resolves.toEqual({ data: null, source: 'unavailable' })
-    expect(fetchImpl).not.toHaveBeenCalled()
+  const farm = { id: 7, owner_id: 1, name: 'La Esperanza', location: 'Meta', area_hectares: 40, coordinates: null, lot_count: 2,
+    created_at: now.toISOString(), updated_at: now.toISOString() }
+  const lot = (id: number, name: string, area: number, camera: string | null) => ({
+    id, farm_id: 7, name, kind: 'pasture', area_square_meters: area, length_meters: null, width_meters: null, capacity: 30,
+    boundary: null, camera_id: camera, active: true, created_at: now.toISOString(), updated_at: now.toISOString(),
   })
-  it.each(['mock', 'hybrid'] as const)('returns mock-only data in %s mode', async mode => {
+  const camera = (id: string, status: string) => ({ id, reported_status: status, status, last_report_at: now.toISOString(),
+    last_online_at: now.toISOString(), last_error: null, frame_width: 1280, frame_height: 720, fps: 12 })
+  const route = (routes: Record<string, unknown>) => vi.fn<typeof fetch>().mockImplementation(async input => {
+    const path = new URL(String(input)).pathname
+    if (!(path in routes)) return new Response(null, { status: 404 })
+    return Response.json(routes[path])
+  })
+
+  it.each(['mock'] as const)('keeps the demo farm in %s mode without fetching', async mode => {
     const fetchImpl = vi.fn<typeof fetch>()
     const options = { mode, now, fetchImpl }
     expect((await getDetectedCattleCount(options)).data?.count).toBe(mockDetectedCattle)
     expect((await getCurrentFarm(options)).data).toEqual(mockFarm)
-    expect((await listSafeZones(cameraId, options)).data).toEqual(mockSafeZones.filter(zone => zone.cameraId === cameraId))
+    // listSafeZones is no longer mock-only: it reads the backend in api mode.
+    // Its own tests live in zoneService.test.ts.
+    expect((await listSafeZones(cameraId, { ...options, mode: 'mock' })).data)
+      .toEqual(mockSafeZones.filter(zone => zone.cameraId === cameraId))
     expect(fetchImpl).not.toHaveBeenCalled()
   })
-  it('delays unavailable results when no clock is supplied', async () => {
-    vi.useFakeTimers()
-    const complete = vi.fn()
-    const pending = getCurrentFarm({ mode: 'api' }).then(complete)
-    await vi.advanceTimersByTimeAsync(249)
-    expect(complete).not.toHaveBeenCalled()
-    await vi.advanceTimersByTimeAsync(1)
-    await pending
-    expect(complete).toHaveBeenCalledWith({ source: 'unavailable', data: null })
+  it('reads the first farm the backend lists', async () => {
+    const fetchImpl = route({ '/api/farms': { items: [farm], total: 1 } })
+    expect((await getCurrentFarm({ mode: 'api', fetchImpl, now })).data).toEqual({ id: '7', name: 'La Esperanza', location: 'Meta', areaHectares: 40 })
+  })
+  it('reports no farm until one is registered', async () => {
+    const fetchImpl = route({ '/api/farms': { items: [], total: 0 }, '/api/cameras': { items: [], total: 0 } })
+    expect((await getCurrentFarm({ mode: 'api', fetchImpl, now })).data).toBeNull()
+    expect((await getFarmPlan({ mode: 'api', fetchImpl, now })).data).toBeNull()
+  })
+  it('draws one paddock per lot and one pole per camera, offline ones included', async () => {
+    const fetchImpl = route({
+      '/api/farms': { items: [farm], total: 1 },
+      '/api/farms/7/lots': { items: [lot(1, 'Norte', 9000, 'camera-01'), lot(2, 'Sur', 12000, null)], total: 2 },
+      '/api/cameras': { items: [camera('camera-01', 'online'), camera('camera-02', 'offline')], total: 2 },
+    })
+    const plan = (await getFarmPlan({ mode: 'api', fetchImpl, now })).data!
+    expect(plan.lots.map(item => item.name)).toEqual(['Sur', 'Norte'])
+    expect(plan.cameras).toEqual([
+      expect.objectContaining({ cameraId: 'camera-01', lotId: 'lot-1' }),
+      expect.objectContaining({ cameraId: 'camera-02', lotId: 'lot-2' }),
+    ])
+  })
+  it('reads the active safe zones of a camera', async () => {
+    const zone = { id: 3, camera_id: 'camera-01', name: 'Potrero', x_min: 0.1, y_min: 0.2, x_max: 0.9, y_max: 0.95, outline: null, active: true,
+      created_at: now.toISOString() }
+    const fetchImpl = route({ '/api/zones': { items: [zone, { ...zone, id: 4, active: false }], total: 2 } })
+    expect((await listSafeZones('camera-01', { mode: 'api', fetchImpl, now })).data)
+      .toEqual([{ id: '3', cameraId: 'camera-01', name: 'Potrero', bounds: [0.1, 0.2, 0.9, 0.95], active: true }])
+    expect(String(fetchImpl.mock.calls[0][0])).toContain('camera_id=camera-01')
+  })
+  it('counts the herd from the live metrics, and nothing before any camera reported', async () => {
+    const metrics = { cameras_total: 2, cameras_online: 2, stale_cameras: 0, cattle_inside: 11, cattle_outside: 1, cattle_total: 12,
+      open_alerts: 1, events_last_hour: 3, system_status: 'operational', generated_at: now.toISOString() }
+    expect((await getDetectedCattleCount({ mode: 'api', fetchImpl: route({ '/api/metrics/live': metrics }), now })).data)
+      .toEqual({ count: 12, countedAt: now })
+    expect((await getDetectedCattleCount({ mode: 'api', fetchImpl: route({ '/api/metrics/live': { ...metrics, cameras_total: 0, cameras_online: 0, cattle_inside: 0, cattle_outside: 0, cattle_total: 0 } }), now })).data)
+      .toBeNull()
+  })
+})
+
+describe('alert services', () => {
+  const alert = { id: 'a1', event_id: 'e1', camera_id: 'camera-01', alert_type: 'cattle_out_of_zone', severity: 'high', status: 'open',
+    message: 'Cow out of zone', created_at: now.toISOString(), acknowledged_at: null, acknowledged_by: null, resolved_at: null, resolved_by: null }
+
+  it('lists alerts with backend filters and maps the severity', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ items: [alert], total: 1 }))
+    const result = await listAlerts({ status: 'open', severity: 'critical' }, { mode: 'api', fetchImpl, now })
+    expect(result.data[0]).toMatchObject({ id: 'a1', kind: 'cattle_out_of_zone', severity: 'critical', status: 'open' })
+    expect(String(fetchImpl.mock.calls[0][0])).toMatch(/status=open&severity=high/)
+  })
+  it('acknowledges through the backend', async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(Response.json({ ...alert, status: 'acknowledged', acknowledged_at: now.toISOString() }))
+    expect((await acknowledgeAlert('a1', { mode: 'api', fetchImpl, now })).status).toBe('acknowledged')
+    expect(fetchImpl).toHaveBeenCalledWith(expect.stringMatching(/\/api\/alerts\/a1\/acknowledge$/), expect.objectContaining({ method: 'POST' }))
+  })
+  it('moves demo alerts through their states in mock mode', async () => {
+    const [open] = (await listAlerts({ status: 'open' }, { mode: 'mock', now })).data
+    expect((await resolveAlert(open.id, { mode: 'mock', now })).status).toBe('resolved')
+    expect((await listAlerts({ status: 'open' }, { mode: 'mock', now })).data.map(item => item.id)).not.toContain(open.id)
   })
 })
 

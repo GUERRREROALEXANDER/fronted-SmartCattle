@@ -17,7 +17,11 @@ export interface FarmEvent {
   severitySource: 'backend' | 'catalog'
 }
 export type CameraStatus = 'online' | 'connecting' | 'offline' | 'error'
-export interface Camera { id: string; name: string; location: string; status: CameraStatus; lastSeenAt: Date | null }
+export interface Camera {
+  id: string; name: string; location: string; status: CameraStatus; lastSeenAt: Date | null; lastError?: string | null
+  /** Address of the AI service (live.py) streaming this camera, when it reported one. */
+  streamUrl?: string | null
+}
 // Coordinates range from 0 to 1.
 export type NormalizedBounds = readonly [xMin: number, yMin: number, xMax: number, yMax: number]
 export type NormalizedPoint = readonly [x: number, y: number]
@@ -32,15 +36,101 @@ export type StreamSource =
   | { kind: 'none' }
 // Coordinates range from 0 to 1, with a top-left origin.
 export interface NormalizedBox { x: number; y: number; width: number; height: number }
-export interface Detection { id: string; label: string; confidence: number; box: NormalizedBox; insideSafeZone: boolean | null }
+/** What the AI estimates a cow is doing. */
+export type Posture = 'standing' | 'walking' | 'lying'
+/** `trackId` is the AI tracker's id, stable across frames of one camera; null when the source has no tracker. */
+export interface Detection { id: string; trackId?: number | null; label: string; confidence: number; box: NormalizedBox; insideSafeZone: boolean | null; posture?: Posture | null }
 export interface FrameDetections { cameraId: string; capturedAt: Date; detections: Detection[] }
 export interface SystemStatus {
   // 'not-checked' means mock mode; the backend was never contacted.
   backend: 'online' | 'offline' | 'not-checked'
   aiConfigured: boolean | null
+  /**
+   * Whether the backend can authenticate anyone at all.
+   *
+   * Null when unknown -- mock mode, or a backend that predates the field.
+   * False means JWT_SECRET is unset there, so /api/auth/* answers 503 and a
+   * sign-in attempt fails in a way that reads as a server fault rather than
+   * as a deployment nobody has configured.
+   */
+  authEnabled: boolean | null
   version: string | null
   storage: string | null
   checkedAt: Date
 }
-export interface Farm { id: string; name: string }
+export interface Farm { id: string; name: string; location?: string | null; areaHectares?: number | null }
 export type UserRole = 'owner' | 'worker'
+
+export type AnimalStatus = 'active' | 'inactive' | 'lost'
+
+/**
+ * A registered animal. `tag` is the ear tag and the identity: there is no
+ * separate numeric id, because the tag is physically on the animal and is what
+ * the staff use.
+ *
+ * `lost` is not `inactive`. One is an administrative decision; the other is an
+ * animal that should be here and is not, which is what the system exists to
+ * detect.
+ */
+export interface Animal {
+  tag: string
+  name: string | null
+  status: AnimalStatus
+  /** Camera it was last seen by, or null when nobody has located it. */
+  cameraId: string | null
+  /** Null when never detected, which is not the same as detected long ago. */
+  lastDetection: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+export type AlertStatus = 'open' | 'acknowledged' | 'resolved'
+/** A security alert raised by a detection; people move it open → acknowledged → resolved. */
+export interface Alert {
+  id: string
+  eventId: string | null
+  cameraId: string | null
+  /** Null for alert types this frontend does not know yet; `message` still describes it. */
+  kind: EventKind | null
+  message: string
+  severity: Severity
+  status: AlertStatus
+  createdAt: Date
+  acknowledgedAt: Date | null
+  resolvedAt: Date | null
+}
+
+export type SystemHealth = 'operational' | 'degraded' | 'no_data'
+/** Farm-wide live counters (GET /api/metrics/live). */
+export interface LiveMetrics {
+  camerasTotal: number
+  camerasOnline: number
+  staleCameras: number
+  cattleInside: number
+  cattleOutside: number
+  cattleTotal: number
+  openAlerts: number
+  eventsLastHour: number
+  systemStatus: SystemHealth
+  generatedAt: Date
+}
+
+export type LotKind = 'paddock' | 'stable' | 'pen' | 'pasture'
+export interface Lot {
+  id: string
+  name: string
+  kind: LotKind
+  areaSquareMeters: number | null
+  capacity: number | null
+  /** Camera that watches this lot, if any. */
+  cameraId: string | null
+  active: boolean
+}
+
+/** Latest head count reported by the AI for one camera. */
+export interface Occupancy { cameraId: string; inside: number; outside: number; observedAt: Date }
+
+/** One minute of the head-count history of one camera. */
+export interface OccupancySample { cameraId: string; minute: Date; inside: number; outside: number }
+
+export interface AlertDay { day: string; total: number; info: number; warning: number; critical: number; open: number; acknowledged: number; resolved: number }
+export interface AlertReport { days: AlertDay[]; total: number; avgMinutesToAcknowledge: number | null; avgMinutesToResolve: number | null }

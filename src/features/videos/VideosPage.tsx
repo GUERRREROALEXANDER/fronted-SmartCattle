@@ -1,9 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { Clapperboard } from 'lucide-react'
 import { EmptyState, PageHeader } from '../../components/ui'
-import { useResource } from '../../lib/useResource'
 import { duration, ease, FadeUp, staggerDelay } from '../../motion'
-import { listCameras } from '../../services'
+import { useLiveCameras } from '../../live/useLiveCameras'
 import { AnalysisNotice } from './AnalysisNotice'
 import { VideoCard } from './VideoCard'
 import { VideoDropzone } from './VideoDropzone'
@@ -13,7 +12,7 @@ import styles from './VideosPage.module.css'
 
 export function VideosPage() {
   const { videos, selected, addFiles, remove, assignCamera, select } = useVideoLibraryContext()
-  const cameras = useResource(signal => listCameras({ signal }), { refreshMs: 60_000 })
+  const cameras = useLiveCameras({ onlineOnly: true })
   const reduce = useReducedMotion()
 
   const readyCount = videos.filter(video => video.status === 'ready').length

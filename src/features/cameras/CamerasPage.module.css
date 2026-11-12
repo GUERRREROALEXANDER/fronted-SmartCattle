@@ -34,3 +34,5 @@
 }
 
 .note { margin-top: var(--space-6); color: var(--color-ink-muted); font-size: var(--text-sm); }
+
+.next { margin-block: var(--space-3) var(--space-5); font-size: var(--text-sm); font-weight: var(--weight-semibold); }
