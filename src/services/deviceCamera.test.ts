@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEVICE_SOURCE, deviceCameraProblem, frameSize, isDeviceCamera, onlyInsideItsNetwork } from './deviceCamera'
+import { DEVICE_SOURCE, deviceCameraProblem, findIvcam, frameSize, isDeviceCamera, onlyInsideItsNetwork } from './deviceCamera'
 
 const failure = (name: string) => Object.assign(new Error('x'), { name })
 
@@ -23,6 +23,14 @@ describe('a phone as a camera', () => {
   it('sends a smaller picture without changing its shape, and never enlarges one', () => {
     expect(frameSize(1920, 1080)).toEqual({ width: 960, height: 540 })
     expect(frameSize(640, 480)).toEqual({ width: 640, height: 480 })
+  })
+
+  it('finds the iVCam webcam among the PC cameras, and only a camera', () => {
+    const camera = (label: string, deviceId: string, kind: MediaDeviceKind = 'videoinput') => ({ deviceId, kind, label })
+    expect(findIvcam([camera('Integrated Webcam (0bda:5521)', 'built-in'), camera('e2eSoft iVCam', 'phone')])).toBe('phone')
+    expect(findIvcam([camera('iVCam Microphone', 'mic', 'audioinput'), camera('Integrated Webcam', 'built-in')])).toBeNull()
+    // Before the camera permission is granted, the browser hides every name.
+    expect(findIvcam([camera('', 'a'), camera('', 'b')])).toBeNull()
   })
 
   it('explains each way the camera can fail to open', () => {

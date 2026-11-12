@@ -8,7 +8,7 @@ import { withSessionToken } from '../../api/session'
 import { Button, GlassCard, StatusPill, TextField } from '../../components/ui'
 import { useResource } from '../../lib/useResource'
 import {
-  DEVICE_SOURCE, activeService, addCamera, addressProblem, cameraProblem, cameraSourceFrom, canShareScreen, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, isDeviceCamera, isScreenCamera, listSavedCameras, onlyInsideItsNetwork,
+  DEVICE_SOURCE, IVCAM_DOWNLOAD, IVCAM_MISSING, activeService, isIvcamCamera, rememberIvcamCamera, addCamera, addressProblem, cameraProblem, cameraSourceFrom, canShareScreen, connectionFor, deleteSavedCamera, getFarmPc, getServiceHost, isDeviceCamera, isScreenCamera, listSavedCameras, onlyInsideItsNetwork,
   loginProblem, phoneLink, rememberScreenCamera, removeCamera, saveCamera, scanCameras, serviceRoot, startFarmPcPairing, startPairing, waitForCamera,
   type CameraScan, type FoundCamera, type SavedCamera,
 } from '../../services'
@@ -58,6 +58,10 @@ function Instructions() {
         <div>
           <dt><Smartphone size={16} aria-hidden="true" />Celular como cámara</dt>
           <dd>Abre esta página en el celular y pulsa «Transmitir». Déjalo enchufado, con la página abierta y la pantalla encendida.</dd>
+        </div>
+        <div>
+          <dt><Smartphone size={16} aria-hidden="true" />Celular con iVCam</dt>
+          <dd>Abre iVCam en el celular y en este PC y usa «Celular con iVCam», arriba. Busca la cámara de iVCam por su nombre, así que no se confunde con la webcam del PC.</dd>
         </div>
         <div>
           <dt><Usb size={16} aria-hidden="true" />Webcam de este PC</dt>
@@ -126,7 +130,7 @@ function SavedCard({ camera, live, previews, busy, canConnect, asksLogin, onConn
   return <GlassCard as="li" padding="none" className={styles.card}>
     {previews && connected && live?.streamUrl && <LivePreview baseUrl={live.streamUrl} name={name} />}
     <div className={styles.cardBody}>
-      <span className={styles.cardName}><strong>{name}</strong><span className="tabular">{!isDeviceCamera(camera.source) ? camera.source : isScreenCamera(camera.id) ? 'Ventana de un computador' : 'Cámara de un celular'}</span></span>
+      <span className={styles.cardName}><strong>{name}</strong><span className="tabular">{!isDeviceCamera(camera.source) ? camera.source : isScreenCamera(camera.id) ? 'Ventana de un computador' : isIvcamCamera(camera.id) ? 'Celular con iVCam' : 'Cámara de un celular'}</span></span>
       <StatusPill {...statusPill[status]} />
     </div>
     {live?.lastError && !connected && <p className={styles.error}>{live.lastError}</p>}
@@ -223,6 +227,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
   const [result, setResult] = useState<{ tone: 'safe' | 'critical'; text: string } | null>(null)
   const broadcastEnded = useCallback((text: string) => setResult({ tone: 'critical', text }), [])
   const [anyName, setAnyName] = useState('')
+  const [ivcamName, setIvcamName] = useState('')
   const { videoRef: deviceVideo, activeId: broadcastingId, weakSignal, open: openDevice, openScreen, send: sendFromDevice, stop: stopDevice } = useDeviceCamera(broadcastEnded)
   const reloadSaved = saved.refresh
   // Something on a local network can reach its cameras: a linked PC, or a service running on this network. In the cloud, no.
@@ -304,7 +309,7 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
     setBusyId(camera.id)
     setResult(null)
     try {
-      const media = opened ?? await (isScreenCamera(camera.id) ? openScreen() : openDevice())
+      const media = opened ?? await (isScreenCamera(camera.id) ? openScreen() : openDevice(isIvcamCamera(camera.id)))
       const added = await addCamera(serviceBase, { kind: 'browser', cameraId: camera.id }).catch((error: unknown) => {
         media.getTracks().forEach(track => track.stop())
         throw error
@@ -343,6 +348,33 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
       const camera = await saveCamera(anyName, DEVICE_SOURCE)
       rememberScreenCamera(camera.id)
       setAnyName('')
+      reloadSaved()
+      await broadcast(camera, media)
+    } catch (error) {
+      media.getTracks().forEach(track => track.stop())
+      setResult({ tone: 'critical', text: problemText(error) })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /** iVCam is looked for before saving anything: with the app closed, there is nothing to add yet. */
+  const addIvcam = async (event: FormEvent) => {
+    event.preventDefault()
+    setResult(null)
+    setSaving(true)
+    let media: MediaStream
+    try {
+      media = await openDevice(true)
+    } catch (error) {
+      setResult({ tone: 'critical', text: error instanceof Error && error.message ? error.message : IVCAM_MISSING })
+      setSaving(false)
+      return
+    }
+    try {
+      const camera = await saveCamera(ivcamName, DEVICE_SOURCE)
+      rememberIvcamCamera(camera.id)
+      setIvcamName('')
       reloadSaved()
       await broadcast(camera, media)
     } catch (error) {
@@ -462,6 +494,22 @@ export function CameraConnect({ cameras, onChanged, previews = true }: { cameras
         <Button type="submit" icon={Plug} loading={saving || Boolean(busyId)} className={styles.quickSubmit}>Conectar</Button>
       </form>
     </section>
+
+    {/* iVCam runs on a computer: a phone opening this page uses its own camera in «Otras formas». */}
+    {canShareScreen() && <section aria-labelledby="ivcam-title" className={styles.quick}>
+      <h2 id="ivcam-title" className={styles.quickTitle}>Celular con iVCam</h2>
+      <ol className={styles.steps}>
+        <li>Instala <a href={IVCAM_DOWNLOAD} target="_blank" rel="noreferrer">iVCam</a> en el celular y en este PC.</li>
+        <li>Ábrelo en los dos, en el mismo wifi o con el cable USB, hasta que el programa del PC muestre la imagen.</li>
+        <li>Escribe un nombre y pulsa el botón. Si el navegador pide permiso para la cámara, acéptalo.</li>
+      </ol>
+      <form className={styles.anyForm} onSubmit={addIvcam}>
+        <TextField label="Nombre" value={ivcamName} onChange={event => setIvcamName(event.target.value)} required maxLength={80}
+          placeholder="Potrero sur" autoComplete="off" />
+        <Button type="submit" icon={Smartphone} loading={saving} disabled={!serviceBase || Boolean(broadcastingId)} className={styles.quickSubmit}>Conectar iVCam</Button>
+      </form>
+      {!serviceBase && <p className={styles.note}>Para usarlo, enciende primero el servicio de IA o el PC de la finca.</p>}
+    </section>}
 
     <section aria-labelledby="any-camera-title" className={styles.quick}>
       <h2 id="any-camera-title" className={styles.quickTitle}>Conecta cualquier cámara</h2>

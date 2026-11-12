@@ -36,6 +36,21 @@ export function screenShareProblem(error: unknown): string {
   return 'No se pudo compartir esa ventana. Vuelve a intentarlo y elige otra.'
 }
 
+// iVCam (e2eSoft) puts a phone's camera on the PC as one more webcam, named after the app. The browser would open the
+// PC's own webcam first, so a camera added as iVCam asks for that one by name.
+
+export const IVCAM_DOWNLOAD = 'https://www.e2esoft.com/ivcam/'
+export const IVCAM_MISSING = 'Este PC no ve la cámara de iVCam. Abre iVCam en el celular y en el PC, espera a que el programa del PC muestre la imagen y vuelve a pulsar el botón.'
+
+const ivcamKey = (cameraId: string) => `smartcattle.cameraIvcam.${cameraId}`
+export const rememberIvcamCamera = (cameraId: string) => safeStorage.setJson(ivcamKey(cameraId), true)
+export const isIvcamCamera = (cameraId: string) => safeStorage.getJson<boolean>(ivcamKey(cameraId)) === true
+
+/** The id of the iVCam webcam among this PC's cameras, or null when the app is not running. Labels need camera permission. */
+export function findIvcam(devices: readonly Pick<MediaDeviceInfo, 'deviceId' | 'kind' | 'label'>[]): string | null {
+  return devices.find(device => device.kind === 'videoinput' && /ivcam/i.test(device.label))?.deviceId ?? null
+}
+
 /** Enough for the model and light enough for mobile data. */
 export const DEVICE_FRAME_WIDTH = 960
 export const DEVICE_FRAME_QUALITY = 0.7

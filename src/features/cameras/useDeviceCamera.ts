@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { DEVICE_FRAME_MS, DEVICE_FRAME_QUALITY, canShareScreen, deviceCameraProblem, frameSize, removeCamera, screenShareProblem, sendCameraFrame } from '../../services'
+import { DEVICE_FRAME_MS, DEVICE_FRAME_QUALITY, IVCAM_MISSING, canShareScreen, deviceCameraProblem, findIvcam, frameSize, removeCamera, screenShareProblem, sendCameraFrame } from '../../services'
 
 const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -20,12 +20,27 @@ export function useDeviceCamera(onEnded: (message: string) => void) {
   // Leaving the page ends the broadcast: nobody would be sending anything to the camera left running.
   useEffect(() => stop, [stop])
 
-  /** Asks for the camera first: a refusal must not leave anything connected. Throws a text for the person. */
-  const open = useCallback(async (): Promise<MediaStream> => {
+  /**
+   * Asks for the camera first: a refusal must not leave anything connected. Throws a text for the person.
+   * With `ivcam`, it ends on the phone that iVCam shows on this PC, never on the PC's own webcam.
+   */
+  const open = useCallback(async (ivcam = false): Promise<MediaStream> => {
+    let media: MediaStream
     try {
-      return await navigator.mediaDevices.getUserMedia({
+      media = await navigator.mediaDevices.getUserMedia({
         audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
       })
+    } catch (error) {
+      throw new Error(deviceCameraProblem(error), { cause: error })
+    }
+    if (!ivcam) return media
+    // Only now, with the permission granted, does the browser tell the cameras' names.
+    const id = findIvcam(await navigator.mediaDevices.enumerateDevices().catch(() => []))
+    if (id && media.getVideoTracks()[0]?.getSettings().deviceId === id) return media
+    media.getTracks().forEach(track => track.stop())
+    if (!id) throw new Error(IVCAM_MISSING, { cause: 'ivcam' })
+    try {
+      return await navigator.mediaDevices.getUserMedia({ audio: false, video: { deviceId: { exact: id }, width: { ideal: 1280 } } })
     } catch (error) {
       throw new Error(deviceCameraProblem(error), { cause: error })
     }
