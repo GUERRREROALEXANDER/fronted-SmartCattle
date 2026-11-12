@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { dataMode } from '../../api/config'
+import { aiServiceUrl, dataMode } from '../../api/config'
 import { addCamera, connectionFor, getFarmPc, getServiceIvcam, listSavedCameras, saveCamera } from '../../services'
 
 const TRY_EVERY_MS = 20_000
@@ -18,7 +18,8 @@ export function useAutoIvcam() {
       if (finished || running) return
       running = true
       try {
-        const pc = (await getFarmPc()).data
+        // The account's linked PC; otherwise a service set up for this page, as when everything runs on one PC.
+        const pc = (await getFarmPc()).data || aiServiceUrl
         if (!pc) return
         const index = await getServiceIvcam(pc)
         if (!index) return
