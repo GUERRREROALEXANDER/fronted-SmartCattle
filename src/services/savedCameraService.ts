@@ -117,6 +117,12 @@ export async function getServiceHost(baseUrl = aiServiceUrl, options: ServiceOpt
   return typeof body.lan_host === 'string' && !localNames.has(body.lan_host) ? body.lan_host : null
 }
 
+/** The webcam number under which the farm's PC shows a phone running iVCam; null when it has none. */
+export async function getServiceIvcam(baseUrl: string, options: ServiceOptions = {}): Promise<string | null> {
+  const body = await getJson<{ ivcam?: unknown }>('/status', { ...options, baseUrl, token: null, timeoutMs: 8000 })
+  return typeof body.ivcam === 'string' && /^\d+$/.test(body.ivcam) ? body.ivcam : null
+}
+
 /**
  * The link inside the QR. A phone cannot use "localhost", so a page opened that way needs this PC's address on the
  * network. Null when there is no address a phone could open.

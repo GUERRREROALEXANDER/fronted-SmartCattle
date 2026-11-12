@@ -6,6 +6,7 @@ import { useAuth } from '../../app/auth/useAuth'
 import { duration, ease } from '../../motion'
 import { AssistantProvider } from '../../features/assistant/AssistantProvider'
 import { AssistantWidget } from '../../features/assistant/AssistantWidget'
+import { useAutoIvcam } from '../../features/cameras/useAutoIvcam'
 import { LiveProvider } from '../../live/LiveProvider'
 import { SideRail } from './SideRail'
 import { TopBar } from './TopBar'
@@ -36,6 +37,7 @@ export function AppShell() {
   const title = usePageTitle()
   const { session } = useAuth()
   useDocumentTitle()
+  useAutoIvcam()
   return <LiveProvider><AssistantProvider><div className={styles.shell}>
     <a className={styles.skipLink} href="#main-content">Saltar al contenido</a>
     <SideRail />
